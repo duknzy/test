@@ -1013,13 +1013,18 @@ thoroughly: 徹底的に、完全に
 
                 // === ここが重要！データを送信するコード ===
                 // これがないとFirebaseには何も届かない
+                // === Updated Telemetry Transmission ===
                 if (window.recordLapTime) {
-                    console.log("Sending telemetry..."); // 確認用ログ
-                    window.recordLapTime(accuracy, totalTime);
-                } else {
-                    console.error("Telemetry System Offline (recordLapTime not found).");
+                    const roundName = this.rounds[this.currentRoundIndex].name; // 例: "ROUND 1"
+                    const correctCount = roundLen - this.missCount;
+                    const scoreString = `${correctCount}/${roundLen}`; // 例: "19/20"
+                    
+                    console.log("Sending detailed telemetry...", roundName, scoreString);
+                    
+                    // 引数を4つ渡す (正解率, タイム, ラウンド名, スコア文字)
+                    window.recordLapTime(accuracy, totalTime, roundName, scoreString);
                 }
-                // ==========================================
+                // ======================================
 
                 if (accuracy >= 90) {
                     accDisplay.style.color = "#4ade80"; 
@@ -1131,57 +1136,73 @@ thoroughly: 徹底的に、完全に
         }
       });
 
-      // 4. Telemetry Recorder (Global Function)
-      // クラスの中から呼び出せるように window オブジェクトに登録する
-      window.recordLapTime = async (accuracy, time) => {
-        if (!currentUser) return; // ゲストドライバーの記録は残さない
+      // 4. Telemetry Recorder (Updated)
+      window.recordLapTime = async (accuracy, time, roundName, scoreDetail) => {
+        if (!currentUser) return; 
 
-        // 精度の高い順、同じならタイムが速い順で評価されるべきだが
-        // シンプルにするため、まずはデータを投げることに集中する
         try {
             await addDoc(collection(db, "leaderboard"), {
                 uid: currentUser.uid,
                 driver: currentUser.displayName,
-                accuracy: parseFloat(accuracy.toFixed(1)), // 数値として保存
+                accuracy: parseFloat(accuracy.toFixed(1)),
                 time: parseFloat(time.toFixed(2)),
+                round: roundName,       // 追加: コース名
+                score: scoreDetail,     // 追加: "18/20" などのスコア
                 date: new Date()
             });
             console.log("Telemetry Data Sent.");
-            updateLeaderboard(); // 自分の記録を即座に反映
+            updateLeaderboard(); 
         } catch (e) {
             console.error("Telemetry Failure: ", e);
         }
       };
 
-      // 5. Update Leaderboard
+      // 5. Update Leaderboard (Updated)
       async function updateLeaderboard() {
-        rankingBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs opacity-50">Updating...</td></tr>';
+        rankingBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-xs opacity-50">Updating Telemetry...</td></tr>';
         
         try {
-            // 精度(accuracy)が高い順にトップ10を取得
-            // F1スタイルならタイムも考慮したいが、まずは「正確さ」で勝負だ
+            // 精度順にトップ10
             const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), limit(10));
             const querySnapshot = await getDocs(q);
 
             rankingBody.innerHTML = "";
             
             if (querySnapshot.empty) {
-                rankingBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs">No Data Yet. Be the first!</td></tr>';
+                rankingBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-xs">No Data Yet. Set the fastest lap!</td></tr>';
                 return;
+            }
+
+            // ヘッダーを更新（JSで書き換えるか、HTML側で直接書き換えてもいいが、ここで一括管理する）
+            const headerRow = document.querySelector('thead tr');
+            if(headerRow) {
+                headerRow.innerHTML = `
+                    <th class="p-2">Pos</th>
+                    <th class="p-2">Driver</th>
+                    <th class="p-2">Round</th>
+                    <th class="p-2">Score</th>
+                    <th class="p-2">Acc</th>
+                    <th class="p-2">Time</th>
+                `;
             }
 
             let rank = 1;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 const isMe = currentUser && data.uid === currentUser.uid;
-                // 自分がランクインしてたらハイライトする
                 const rowClass = isMe ? "bg-red-900/30 text-white font-bold" : "border-b border-gray-800";
                 
+                // 古いデータには round/score がないので "-" で埋めるガード処理を入れる
+                const roundDisplay = data.round || "-";
+                const scoreDisplay = data.score || "-";
+
                 const row = `
                     <tr class="${rowClass}">
                         <td class="p-2 text-yellow-500">${rank}</td>
-                        <td class="p-2 truncate max-w-[100px]">${data.driver}</td>
-                        <td class="p-2">${data.accuracy}%</td>
+                        <td class="p-2 truncate max-w-[80px] md:max-w-[150px]">${data.driver}</td>
+                        <td class="p-2 text-xs text-gray-400">${roundDisplay}</td>
+                        <td class="p-2 font-mono">${scoreDisplay}</td>
+                        <td class="p-2 text-green-400">${data.accuracy}%</td>
                         <td class="p-2 text-gray-500">${data.time}s</td>
                     </tr>
                 `;
@@ -1190,7 +1211,6 @@ thoroughly: 徹底的に、完全に
             });
         } catch (error) {
             console.error("Data Fetch Error:", error);
-            rankingBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs text-red-500">Telemetry Offline.<br>Check Firestore Rules.</td></tr>';
         }
       }
 
@@ -1200,5 +1220,6 @@ thoroughly: 徹底的に、完全に
 </body>
 
 </html>
+
 
 
