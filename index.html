@@ -1163,7 +1163,7 @@ thoroughly: 徹底的に、完全に
         
         try {
             // 精度順にトップ10
-            const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), limit(10));
+            const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), orderBy("time", "asc"), limit(10));
             const querySnapshot = await getDocs(q);
 
             rankingBody.innerHTML = "";
@@ -1220,6 +1220,7 @@ thoroughly: 徹底的に、完全に
 </body>
 
 </html>
+
 
 
 
