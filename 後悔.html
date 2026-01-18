@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary GP - 2026 Season</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            background-color: #0b0e14;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .f1-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .race-card {
+            background: linear-gradient(145deg, #1a1f2e, #111521);
+            border-left: 4px solid #e10600;
+        }
+
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-btn:hover {
+            transform: translateX(10px);
+            background-color: #e10600;
+            color: white;
+            border-color: #e10600;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background-color: #333;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #e10600;
+            transition: width 0.3s ease;
+        }
+
+        .checkered-pattern {
+            background-image: linear-gradient(45deg, #222 25%, transparent 25%), 
+                              linear-gradient(-45deg, #222 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #222 75%), 
+                              linear-gradient(-45deg, transparent 75%, #222 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .pass-card {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-2xl">
+        <div id="champion-screen" class="hidden race-card p-10 rounded-lg shadow-2xl text-center border-4 border-yellow-500">
+            <h1 class="f1-font text-5xl mb-6 font-bold text-yellow-500 tracking-widest">SEASON CHAMPION</h1>
+            <div class="pass-card p-6 rounded-lg mb-8">
+    <p class="f1-font text-sm uppercase font-bold mb-2">Access Granted</p>
+    <h2 class="text-3xl font-black">SUPER LICENSE PASS</h2>
+    <p class="mt-4 font-mono text-xs opacity-75">VALID FOR 2026 SEASON</p>
+</div>
+            <p class="mb-8 text-gray-300">素晴らしい!もっと極めよう!</p>
+            <div class="flex flex-col gap-4">
+                <button onclick="quiz.returnToGrid()" class="f1-font bg-white text-black px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95">
+                    Select Round
+                </button>
+                <button onclick="quiz.revokePass()" class="text-gray-500 text-xs hover:underline">Revoke License (Reset)</button>
+            </div>
+        </div>
+
+        <div id="start-screen" class="race-card p-8 rounded-lg shadow-2xl text-center">
+            <h1 class="f1-font text-4xl mb-2 font-bold text-white tracking-widest">VOCABULARY GP</h1>
+            <p class="f1-font text-red-500 font-bold mb-6">2026 SEASON</p>
+            
+            <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
+                <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
+                <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono">
+                    </select>
+            </div>
+
+            <div class="bg-red-900/30 border border-red-500 p-3 rounded mb-8">
+                <p class="text-red-500 font-bold text-sm">LICENSE CRITERIA: Accuracy 90%+</p>
+                <p class="text-xs text-gray-400">Total Words: <span id="total-words-count">0</span> | Rounds: 30</p>
+            </div>
+
+            <button onclick="quiz.start()" class="f1-font bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50">
+                Start Engine
+            </button>
+            <div class="mt-8 pt-8 border-t border-gray-700">
+                <div id="user-section" class="mb-6">
+                    <button id="login-btn" class="f1-font text-xs border border-gray-500 hover:bg-white hover:text-black text-gray-400 px-6 py-2 rounded uppercase transition-colors">
+                        Driver Login (Google)
+                    </button>
+                    <div id="user-info" class="hidden">
+                        <p class="text-sm text-gray-300 mb-2">
+                            Current Driver: <span id="user-name" class="font-bold text-white"></span>
+                        </p>
+                        <button id="logout-btn" class="text-xs text-red-500 hover:underline">Sign Out</button>
+                    </div>
+                </div>
+
+                <div class="bg-black/40 rounded p-4 border border-gray-800">
+                    <h3 class="f1-font text-xl text-yellow-500 mb-4 tracking-wider">CHAMPIONSHIP STANDINGS</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-gray-500 border-b border-gray-700 text-xs uppercase">
+                                <tr>
+                                    <th class="p-2">Pos</th>
+                                    <th class="p-2">Driver</th>
+                                    <th class="p-2">Accuracy</th>
+                                    <th class="p-2">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ranking-tbody" class="font-mono text-gray-300">
+                                <tr><td colspan="4" class="p-4 text-center text-xs opacity-50">Loading Telemetry...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            ```
+
+#### 2. JavaScript (VocabularyQuizクラス) の修正
+`finish()` メソッドの中に、データを送信するトリガーを追加する。
+
+**場所:** 420行目あたり、`finish() { ... }` の最後の方。`document.getElementById('rank-text').innerText = ...` の直後に以下を追加しろ。
+
+```javascript
+                // ... (既存のコード)
+                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
+
+                // === ADDED: Send Data to Firebase ===
+                // ログイン済み かつ グローバル関数が存在する場合のみ送信
+                if (window.recordLapTime) {
+                    // ここでは正解率(accuracy)をスコアとし、タイムも記録する
+                    window.recordLapTime(accuracy, totalTime);
+                }
+                // ====================================
+
+                const review = document.getElementById('review-list');
+                // ... (続きのコード)
+        </div>
+
+        <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col text-left">
+                    <span id="circuit-name" class="f1-font text-xs text-gray-500 uppercase tracking-widest">ROUND 1</span>
+                    <span id="question-number" class="f1-font text-red-500 font-bold text-xl">LAP 1 / 20</span>
+                </div>
+                <span id="timer" class="f1-font text-2xl text-yellow-400 font-mono">0.00s</span>
+            </div>
+            <div class="progress-bar mb-8">
+                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+            </div>
+
+            <div class="mb-10 text-center relative">
+                <p class="text-gray-400 text-sm uppercase tracking-widest mb-2">Meaning of:</p>
+                <h2 id="target-word" class="f1-font text-5xl md:text-6xl font-black text-white mb-4 tracking-tight drop-shadow-lg">word</h2>
+            </div>
+
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div id="feedback" class="mt-4 text-center h-6 font-bold"></div>
+        </div>
+
+        <div id="result-screen" class="hidden race-card p-8 rounded-lg shadow-2xl text-center">
+            <h2 class="f1-font text-3xl mb-4 font-bold text-white">RACE FINISHED</h2>
+            <div class="checkered-pattern h-8 w-full mb-6 rounded opacity-50"></div>
+            
+            <div id="accuracy-display" class="f1-font text-6xl font-bold mb-2">95.0%</div>
+            <p id="rank-text" class="f1-font text-sm mb-6 text-gray-300">P1: WORLD CHAMPION</p>
+
+            <div id="pass-issue-area" class="hidden mb-8 p-6 rounded-lg pass-card">
+                <h3 class="font-black text-2xl mb-1">PASS GRANTED!</h3>
+                <p class="text-sm mb-3">SUPER LICENSE ISSUED</p>
+                <button id="copy-pass-btn" class="bg-black text-white text-xs px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform">
+                    COPY LICENSE ID
+                </button>
+            </div>
+
+            <div id="fail-message" class="hidden mb-8 p-4 border border-red-500 bg-red-900/20 text-red-500 font-bold">
+                LICENSE DENIED: Accuracy below 90%
+            </div>
+
+            <div class="bg-black/30 p-4 rounded mb-8 text-left max-h-48 overflow-y-auto border border-gray-800" id="review-list"></div>
+
+            <div class="flex gap-4 justify-center">
+                <button onclick="quiz.returnToGrid()" class="f1-font border-2 border-white hover:bg-white hover:text-black text-white px-8 py-3 rounded-full font-bold transition-all">
+                    Back to Garage
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// RAW DATA INJECTION
+// データ内のノイズ（など）はJS初期化時に自動除去される
+const rawData = `
+proceed: 進む、続行する
+ensure: 確実にする、保証する
+interpret: 解釈する、通訳する
+cease: やめる、終わる
+ban: 禁止する、禁じる
+obey: 従う、守る
+eliminate: 除去する、削除する
+resist: 抵抗する、耐える
+accompany: 同行する、伴う
+commit: 犯す、委ねる、専心する
+pursue:追求する
+demonstrate: 証明する、実演する
+bet: 賭ける、確信する
+ruin: 台無しにする、破滅させる
+threaten: 脅す、脅かす
+attach: 取り付ける、添付する
+reverse: 逆転させる、反対にする
+restrict: 制限する、限定する
+compose: 構成する、作曲する
+lean: 傾く、もたれる
+substitute: 代わりにする、代用する
+trace: 跡をたどる、突き止める
+interrupt: 邪魔する、中断させる
+confront: 直面する、立ち向かう
+illustrate: 説明する、例証する
+arrest: 逮捕する、拘束する
+stimulate: 刺激する、促す
+assure: 保証する、安心させる
+consult: 相談する、意見を求める
+depress: 意気消沈させる、押し下げる
+crash: 衝突する、墜落する
+inspire: 奮起させる、鼓舞する
+specialize: 専門にする、特化する
+cultivate: 耕す、栽培する、育む
+fulfill: 果たす、実行する
+transmit: 送る、伝える、伝達する
+found: 設立する、基礎を置く
+clap: 手を叩く、拍手する
+burst: 破裂する、突然～しだす
+bow: お辞儀する、屈する、弓
+dismiss: 解雇する、退ける
+breed: 繁殖させる、生み出す
+prohibit: 禁止する、妨げる
+oblige: 強いる、義務付ける
+qualify: 資格を与える、適格とする
+invest: 投資する、注ぎ込む
+grasp: 掴む、把握する
+collapse: 崩壊する、倒れる
+overlook: 見落とす、見逃す
+accuse: 非難する、告訴する
+frustrate: イライラさせる、挫折させる
+deprive: 奪う、拒む
+astonish: 驚嘆させる、ひどく驚かせる
+register: 登録する、記録する
+correspond: 一致する、連絡を取り合う
+cast: 投げる、役を割り当てる
+attribute: ～のせいにする、属性
+neglect: 怠る、無視する
+starve: 飢える、渇望する
+resolve: 解決する、決心する
+impose: 課す、押しつける
+convert: 変える、転換する
+scare: 怖がらせる、おびえさせる
+constitute: 構成する、～とみなされる
+appoint: 指名する、任命する
+imply: 暗示する、ほのめかす
+assign: 割り当てる、任命する
+nod: 頷く、居眠りする
+elect: 選挙する、選出する
+transfer: 移す、転勤する
+rob: 奪う、強奪する
+capture: 捕らえる、捕獲する
+undertake: 引き受ける、着手する
+drown: 溺れ死ぬ、かき消す
+split: 割る、分裂する
+resort: 訴える、頼る
+descend: 降りる、伝わる
+irritate: イライラさせる、刺激する
+pronounce: 発音する、宣言する
+equip: 装備させる、備えつける
+cheat: 騙す、不正をする
+emerge: 現れる、明らかになる
+devote: 捧げる、委ねる
+heal: 治す、癒やす
+urge: 促す、強く勧める
+envy: 羨む、妬む
+chase: 追いかける、追跡する
+prompt: 促す、迅速な
+withdraw: 撤退させる、引き出す
+detect: 見つけ出す、感知する
+interfere: 邪魔する、干渉する
+kid: 冗談を言う、子供
+laugh: 笑う
+endanger: 危険にさらす
+foster: 育む、養育する
+diminish: 減少する、衰えさせる
+spill: こぼす、流出する
+infect: 感染させる、汚染する
+tap: 軽く叩く、蛇口
+embrace: 抱きしめる、受け入れる
+proportion: 割合、比率
+contract: 契約、収縮する
+chest: 胸、箱
+treasure: 宝物、大事にする
+stock: 在庫、株
+facility: 施設、才能
+sum: 合計、金額
+rank: 階級、順位
+democracy: 民主主義
+emergency: 緊急事態
+protest: 抗議、主張する
+immigrant: 移民
+vehicle: 乗り物、伝達手段
+routine: 決まりきった仕事、習慣
+stuff: 持ち物、材料
+row: 列、漕ぐ
+profile: 横顔、プロフィール
+dawn: 夜明け、始まり
+welfare: 福祉、幸福
+perspective: 視点、見方、遠近法
+enthusiasm: 熱狂、熱意
+faith: 信頼、信仰
+occupation: 職業、占領
+witness: 目撃者、証人
+kingdom: 王国、界
+equivalent: 同等のもの、相当する
+objective: 目標、客観的な
+pile: 積み重ね、山
+shelter: 避難所、住まい
+trial: 試み、裁判
+honor: 名誉、尊敬
+territory: 領土、縄張り
+frame: 枠組み、骨組み
+border: 境界、国境
+statistics: 統計
+enterprise: 企業、事業
+context: 文脈、状況
+load: 荷物、重荷
+grain: 穀物、わずか
+review: 再検討、復習、批評
+prejudice: 偏見、先入観
+strain: 負担、緊張
+trap: 罠、閉じ込める
+temper: 気分、気質
+slave: 奴隷
+wound: 傷、負傷させる
+divorce: 離婚、分離
+tune: 曲、調律する
+height: 高さ、絶頂
+faculty: 能力、学部
+span: 期間、範囲
+dimension: 寸法、次元
+version: 版、翻訳
+parallel: 平行な、類似した
+horizon: 地平線、水平線、視野
+acquaintance: 知人、面識
+burden: 重荷、負担
+basis: 基礎、根拠
+poison: 毒
+constitution: 憲法
+administration: 管理、行政、政権
+charm: 魅力、お守り
+organ: 臓器、器官、オルガン
+prey: 獲物、餌食
+venture: 冒険的事業、思い切って～する
+mission: 任務、使節団
+inquiry: 問い合わせ、調査
+award: 賞、授与する
+strip: 細長い破片、脱ぐ
+distress: 苦しみ、苦悩
+circulation: 循環、発行部数
+shade: 陰、日よけ
+stereotype: 固定観念、ステレオタイプ
+client: 顧客、依頼人
+output: 出力、生産高
+lord: 貴族、主
+convention: 慣習、会議、大会
+mine: 鉱山、地雷、私のもの
+craft: 工芸、技術、船
+core: 核心、芯
+stroke: 打撃、脳卒中、なでる
+frontier: 国境、辺境、最先端
+peer: 仲間、じっと見る
+vessel: 容器、船、血管
+disability: 障害、無力
+gravity: 重力、重大さ
+ethic: 倫理、道徳
+terminal: 終着駅、端末、末期の
+tide: 潮、潮流
+abuse: 虐待、酷使、乱用
+guilty: 有罪の
+vital: 極めて重要な、生命の
+fellow: 仲間、奴
+contemporary: 現代の、同時代の
+annual: 年に一度の、例年の
+accustomed: 慣れている
+steady: 着実な、安定した
+dull: 退屈な、鈍い
+keen: 鋭い、熱心な
+loose: ゆるい、解き放たれた
+delicate: 繊細な、虚弱な
+internal: 内部の、国内の
+casual: 何気ない、形式ばらない
+mature: 成熟した、熟した
+concrete: 具体的な
+awful: ひどい、恐ろしい
+exhausted: 疲れ果てた、使い果たした
+overall: 全体的な、概して
+tight: きつい、しっかりした
+prime: 最も重要な、主要な
+genuine: 本物の、真実の
+modest: 謙虚な、控えめな
+intimate: 親密な、詳解な
+minimum: 最小限の
+sophisticated: 洗練された、精巧な
+latter: 後者の
+bitter: 苦い、辛辣な
+peculiar: 独特の、固有の
+passive: 受動的な、消極的な
+ethnic: 民族の、人種の
+noble: 高貴な、崇高な
+vain: 無駄な、虚栄心の強い
+innocent: 無実の、無邪気な
+underlying: 根本的な、下にある
+alien: 異質な、外国の、宇宙人
+relevant: 関連のある、適切な
+inclined: ～したいと思う、傾向がある
+awkward: 不器用な、気まずい
+brilliant: 素晴らしい、輝かしい
+desperate: 必死の、絶望的な
+refreshing: さわやかな
+thrilled: わくわくした、感激した
+inner: 内側の、精神的な
+consistent: 一貫した、矛盾のない
+plain: 明白な、簡素な、平原
+vivid: 鮮やかな、鮮明な
+miserable: 惨めな、不幸な
+substantial: かなりの、実質的な
+fond: 好んで、好きで
+false: 誤った、偽の
+lazy: 怠惰な、だるい
+precisely: 正確に、まさに
+meanwhile: その間に、一方で
+altogether: 完全に、全部で
+lately: 最近
+barely: かろうじて
+scarcely: ほとんど～ない
+accordingly: それに応じて、したがって
+beneath: ～の下に
+whereas: ～である一方で
+declare: 宣言する、申告する
+alter: 変える、修正する
+arise: 生じる、起こる
+transform: 変える、変形させる
+defeat: 打ち負かす、敗北
+investigate: 調査する、研究する
+distinguish: 区別する、見分ける
+bury: 埋める、埋葬する
+cope: 対処する、うまく処理する
+occur: 起こる、心に浮かぶ
+accomplish: 成し遂げる、達成する
+hesitate: 躊躇する、ためらう
+endure: 耐える、持続する
+conclude: 結論づける、締めくくる
+guarantee: 保証する、請け合う
+dominate: 支配する、優位に立つ
+confirm: 確認する、裏付ける
+greet: 挨拶する、迎える
+entertain: 楽しませる、もてなす
+defend: 防御する、守る
+forbid: 禁止する
+broadcast: 放送する、広める
+sacrifice: 犠牲にする、捧げる
+punish: 罰する
+glance: ちらりと見る、一瞥
+retain: 保持する、覚えている
+calculate: 計算する、予測する
+sinking: 沈没、沈むこと
+rescue: 救助する
+beg: 乞う、頼む
+define: 定義する、明確にする
+deceive: 騙す、思い違いをさせる
+convey: 伝える、運ぶ
+sustain: 維持する、支える
+purchase: 購入する
+fade: 消えていく、色あせる
+regulate: 規制する、調整する
+distribute: 分配する、配布する
+enhance: 高める、増す
+chat: おしゃべりする
+exceed: 超える、上回る
+wipe: 拭く、拭い去る
+cooperate: 協力する
+inherit: 相続する、受け継ぐ
+unite: 団結させる、結合する
+leap: 跳ぶ、跳躍
+exaggerate: 誇張する
+conquer: 征服する、克服する
+melt: 溶ける
+invade: 侵入する、侵略する
+modify: 修正する、変更する
+scatter: まき散らす、散退させる
+undergo: 経験する、受ける
+evaluate: 評価する、査定する
+bend: 曲げる、屈服する
+derive: 引き出す、由来する
+screaming: 叫んでいる、絶叫
+gaze: 見つめる、注視
+pray: 祈る
+polish: 磨く、洗練させる
+classify: 分類する
+assert: 断言する、主張する
+grab: 掴む、ひっつかむ
+fold: 畳む、折り重ねる
+sweep: 掃除する、掃く
+whisper: 囁く、小声で話す
+imitate: 模倣する、真似る
+stare: 凝視する、じっと見る
+emphasize: 強調する
+get rid of: 処分する、取り除く
+pour: 注ぐ、流れる
+vanish: 消える、見えなくなる
+restore: 修復する、戻す
+deserve: 値する、ふさわしい
+laboratory: 研究所、実験室
+conference: 会議、協議連盟
+continent: 大陸
+insurance: 保険
+crew: 乗組員、班
+poverty: 貧困、欠乏
+shortage: 不足
+affair: 事件、事柄、事務
+exception: 例外
+low wage: 低賃金
+wisdom: 知恵、学識
+tax: 税金
+evolution: 進化、展開
+barrier: 障壁、防壁
+category: 範疇、カテゴリー
+unit: 単位、個体
+reputation: 評判、名声
+virtue: 美徳、長所
+courage: 勇気
+sympathy: 同情、共感
+union: 組合、団結、連合
+civilization: 文明
+volume: 音量、容積、巻
+blossom: 花、開花する
+era: 時代
+settle dispute: 紛争を解決する
+tourism: 観光、観光事業
+mankind: 人類
+murder: 殺人、殺害する
+landscape: 風景、景色
+destination: 目的地
+fairy tale: 童話、おとぎ話
+reform: 改革、改善
+muscle: 筋肉、力
+prospect: 見通し、可能性
+corporation: 法人、株式会社
+colony: 植民地、集団
+quarrel: 口論、喧嘩
+profession: 職業、専門職
+aspect: 側面、様相
+pause: 休止、中断
+conflict: 紛争、対立
+privilege: 特権、特典
+prosperity: 繁栄
+genius: 天才、才能
+seed: 種、原因
+symptom: 症状、兆候
+merit: 長所、功績
+layer: 層
+clue: 手がかり
+circumstances: 状況、境遇
+district: 地区、行政区
+prison: 刑務所
+companion: 仲間、付き添い
+executive: 役員、執行部、実行の
+justice: 正義、裁判
+procedure: 手続き、手順
+ray: 光線
+heaven: 天国、空
+luxury: 贅沢、高級品
+oxygen: 酸素
+fund: 資金、基金
+theme: 主題、テーマ
+boundary: 境界、端
+ambition: 野望、野心
+weather: 天候、気象
+psychology: 心理学、心理
+labor: 労働、苦労
+committee: 委員会
+physician: 医師、内科医
+philosophy: 哲学、原理
+affection: 愛情、好意
+candidate: 候補者、志望者
+bomb: 爆弾
+priority: 優先事項
+obstacle: 障害、邪魔
+appetite: 食欲、欲求
+tension: 緊張、不安
+tribe: 部族、種族
+budget: 予算
+campaign: キャンペーン、運動
+sorrow: 悲しみ、後悔
+satellite: 衛星
+insight: 洞察、眼識
+cough: 咳
+fate: 運命、宿命
+scheme: 計画、陰謀
+insult: 侮辱、無礼
+inhabitant: 居住者、住民
+fossil: 化石
+motive: 動機、目的
+instinct: 本能、直感
+legend: 伝説、言い伝え
+empire: 帝国
+suburb: 郊外
+architecture: 建築、構造
+passion: 情熱、激情
+cancer: 癌、害毒
+logic: 論理、理屈
+dozen: ダース、12個
+harvest: 収穫、結果
+ingredient: 材料、成分
+hypothesis: 仮説
+voyage: 航海、船旅
+editor: 編集者
+option: 選択肢、選択
+hemisphere: 半球
+mechanism: 仕組み、機構
+anthropologist: 人類学者
+tragedy: 悲劇、惨事
+antibiotic: 抗生物質
+fare: 運賃、料金
+debt: 借金、負債
+curriculum: 教育課程
+component: 構成要素、部品
+wheat: 小麦
+usage: 語法、慣習、使用法
+castle: 城
+famine: 飢饉、欠乏
+extinction: 絶滅、消滅
+purse: 小銭入れ
+folk: 人々、民俗の
+explosion: 爆発、急増
+portion: 部分、分け前
+organism: 有機体、生物
+merchant: 商人
+myth: 神話、作り事
+incident: 出来事、事件
+wildlife: 野生生物
+congress: 国会、会議
+bay: 湾、入り江
+penalty: 刑罰、罰金、ペナルティ
+heritage: 遺産、伝統
+diversity: 多様性
+thumb: 親指
+geography: 地理学、地形
+factor: 要因、要素
+discrimination: 差別、識別
+virus: ウイルス
+statue: 像、彫像
+priest: 聖職者、司祭
+pioneer: 先駆者、開拓者
+trait: 特徴、特性
+bond: 絆、債券、結束
+grocery: 食料雑貨
+secretary: 秘書、長官
+dialect: 方言
+astronomy: 天文学
+youngster: 若者、子供
+substance: 物質、実体、実質
+finding: 発見、調査結果
+strategy: 戦略
+lung: 肺
+opponent: 相手、敵対者
+ritual: 儀式、習慣
+outcome: 結果、成果
+conservation: 保存、保護
+mammal: 哺乳類
+telescope: 望遠鏡
+refugee: 難民
+code: 規約、符号、コード
+flavor: 風味、味
+particle: 粒子、微量
+nursing: 看護、育児
+suicide: 自殺
+habitat: 生息地、住処
+bullying: いじめ
+dinosaur: 恐竜
+council: 会議、評議会
+gender: 性別
+surgery: 手術、外科
+innovation: 革新、刷新
+protein: タンパク質
+nutrition: 栄養
+disaster: 災害、惨事
+emission: 排出、放出
+ape: 類人猿
+molecule: 分子
+sweat: 汗
+transplant: 移植
+species: 種
+tip: 助言、ヒント、先端、チップ
+cattle: 牛
+density: 密度、濃度
+concept: 概念、考え
+pale: 青白い、淡い
+precious: 貴重な、高価な
+loyal: 忠実な、誠実な
+isolated: 孤立した、分離された
+generous: 寛大な、気前のよい
+tropical: 熱帯の
+reluctant: 気が進まない、嫌がる
+vague: 曖昧な、漠然とした
+vast: 広大な、膨大な
+numerous: 数多くの
+rural: 田舎の
+widespread: 広範囲にわたる
+visible: 目に見える、明らかな
+raw: 生の、未加工の
+remote: 遠い、人里離れた
+urgent: 緊急の、切羽詰まった
+silly: 愚かな、ばかげた
+striking: 著しい、目立つ
+adequate: 適切な、十分な
+extraordinary: 並外れた、異常な
+odd: 奇妙な、奇数の
+abstract: 抽象的な
+mutual: 相互の、共通の
+excessive: 過度の、極端な
+ashamed: 恥じて
+tremendous: 凄まじい、巨大な
+inevitable: 避けられない
+pure: 純粋な、潔白な
+stable: 安定した、しっかりした
+indifferent: 無関心な
+aggressive: 攻撃的な、積極的な
+ultimate: 究極の、最後の
+shy: 内気な、恥ずかしがりの
+solar: 太陽の
+profound: 深い、深い知識のある
+subtle: 微妙な、鋭い
+conservative: 保守的な
+brave: 勇敢な
+intense: 激しい、強烈な
+alcoholic: アルコールの
+manual: 手動の、説明書
+cruel: 残酷な
+rational: 理性的な、合理的な
+initial: 初期の、頭文字
+immune: 免疫のある、免除された
+linguistic: 言語の
+crucial: 重要な、決定的な
+verbal: 言葉による、口頭の
+optimistic: 楽観的な
+flexible: 柔軟な、曲げやすい
+grateful: 感謝している
+lively: 元気な、活発な
+overwhelming: 圧倒的な
+abundant: 豊富な
+selfish: 利己的な
+ugly: 醜い、不快な
+racial: 人種の
+prominent: 卓越した、目立つ
+controversial: 論争を呼ぶ
+federal: 連邦の
+ridiculous: ばかげた
+imaginary: 想像上の
+harsh: 厳しい、ざらざらした
+random: 無作為な、手当たり次第の
+adolescent: 思春期の、若者
+up-to-date: 最新の
+liberal: 自由主義の、寛大な
+prior: 前の、優先的な
+moderate: 適度な、穏健な
+fluent: 流暢な
+elaborate: 精巧な、詳しく述べる
+incredible: 信じられない
+radical: 急進的な
+acid: 酸性の、辛辣な
+deaf: 耳が聞こえない
+medieval: 中世の
+ecological: 生態学的な
+slight: わずかな、軽視する
+ignorant: 無知な
+cognitive: 認知の
+absolutely: 絶対に、完全に
+virtually: 事実上、ほとんど
+somewhat: いくぶん、多少
+merely: 単に、たった
+literally: 文字通り
+seemingly: 見たところ、外見上は
+regardless: かかわらず
+thoroughly: 徹底的に、完全に
+`;
+
+        class VocabularyQuiz {
+            constructor() {
+                this.wordsPerRound = 20;
+                this.masterList = [];
+                this.rounds = [];
+                this.currentRoundIndex = 0;
+                
+                this.questions = [];
+                this.currentIndex = 0;
+                this.missCount = 0;
+                this.missedWordsLog = [];
+                this.startTime = 0;
+                this.timerInterval = null;
+
+                // エンジンの初期化
+                this.parseData();
+                this.generateRounds();
+                this.initUI();
+            }
+
+            // データ解析とクリーニング
+            parseData() {
+                // 生データを改行で分割し、sourceタグなどを除去
+                const lines = rawData.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0 && !line.startsWith('[source'));
+
+                this.masterList = [];
+
+                lines.forEach(line => {
+                    // "word: meaning" や "word meaning" などの形式に対応
+                    // コロン、または最初の空白で分割
+                    let separatorIndex = line.indexOf(':');
+                    if (separatorIndex === -1) separatorIndex = line.indexOf(' ');
+                    if (separatorIndex === -1) separatorIndex = line.indexOf('　'); // 全角スペース
+
+                    if (separatorIndex !== -1) {
+                        const w = line.substring(0, separatorIndex).trim();
+                        const m = line.substring(separatorIndex + 1).trim();
+                        if (w && m) {
+                            this.masterList.push({ w, m });
+                        }
+                    }
+                });
+
+                document.getElementById('total-words-count').innerText = this.masterList.length;
+            }
+
+            // ラウンド（サーキット）生成
+            generateRounds() {
+                // 全単語をシャッフルせずに、順番通りにセットを作るか、シャッフルするか。
+                // テキストファイルの並び順を維持して分割する場合はここを調整する。
+                // 今回は「リスト順」で分割する（学習進度のため）
+                const wordCopy = [...this.masterList]; 
+                
+                this.rounds = [];
+                let roundNum = 1;
+
+                while (wordCopy.length > 0) {
+                    const chunk = wordCopy.splice(0, this.wordsPerRound);
+                    if (chunk.length > 0) {
+                        this.rounds.push({
+                            id: roundNum,
+                            name: `ROUND ${roundNum}`,
+                            words: chunk
+                        });
+                        roundNum++;
+                    }
+                }
+            }
+
+            initUI() {
+                // セレクトボックスの生成
+                const selector = document.getElementById('round-selector');
+                selector.innerHTML = '';
+                this.rounds.forEach((round, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.text = `${round.name} (${round.words.length} words)`;
+                    selector.appendChild(opt);
+                });
+
+                // PASS確認
+                const savedPass = localStorage.getItem('PASS');
+                if (savedPass) {
+                    document.getElementById('start-screen').classList.add('hidden');
+                    document.getElementById('champion-screen').classList.remove('hidden');
+                    
+                    // 【削除】 ここにあった pass-id への代入と、ボタンの onclick 設定をすべて削除した
+                    // チャンピオン画面を表示するだけで十分だ
+                }
+            }
+            copyToClipboard(text, btnElement) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btnElement.innerText;
+                    btnElement.innerText = "COPIED!";
+                    btnElement.classList.add("bg-green-600", "text-white");
+                    setTimeout(() => {
+                        btnElement.innerText = originalText;
+                        btnElement.classList.remove("bg-green-600", "text-white");
+                    }, 2000);
+                });
+            }
+
+            start() {
+                const selector = document.getElementById('round-selector');
+                this.currentRoundIndex = parseInt(selector.value);
+                const selectedRound = this.rounds[this.currentRoundIndex];
+
+                // 出題セットを作成（選択肢生成を含む）
+                this.questions = selectedRound.words.map(target => {
+                    // 正解以外の選択肢をマスターリスト全体から3つランダム取得
+                    const distractors = this.getDistractors(target);
+                    const options = [target.m, ...distractors].sort(() => Math.random() - 0.5);
+                    return { w: target.w, m: target.m, o: options };
+                });
+
+                // 問題順をシャッフル
+                this.questions.sort(() => Math.random() - 0.5);
+
+                this.currentIndex = 0;
+                this.missCount = 0;
+                this.missedWordsLog = [];
+
+                document.getElementById('circuit-name').innerText = selectedRound.name;
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('champion-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+
+                this.startTime = Date.now();
+                this.startTimer();
+                this.showQuestion();
+            }
+
+            // 誤答選択肢の生成
+            getDistractors(targetWord) {
+                const distractors = [];
+                while (distractors.length < 3) {
+                    const randomIdx = Math.floor(Math.random() * this.masterList.length);
+                    const randomWord = this.masterList[randomIdx];
+                    
+                    // 自分自身や、既に選んだものでなければ追加
+                    if (randomWord.w !== targetWord.w && !distractors.includes(randomWord.m)) {
+                        distractors.push(randomWord.m);
+                    }
+                }
+                return distractors;
+            }
+
+            startTimer() {
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    const elapsed = (Date.now() - this.startTime) / 1000;
+                    document.getElementById('timer').innerText = elapsed.toFixed(2) + 's';
+                }, 50);
+            }
+
+            showQuestion() {
+                const q = this.questions[this.currentIndex];
+                document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
+                document.getElementById('target-word').innerText = q.w;
+                document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
+                document.getElementById('feedback').innerText = '';
+
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+
+                q.o.forEach(option => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn w-full text-left p-6 rounded bg-white/5 border border-white/10 hover:border-red-500 font-bold text-lg md:text-xl shadow-lg';
+                    btn.innerText = option;
+                    btn.onclick = () => this.handleAnswer(option, q);
+                    container.appendChild(btn);
+                });
+            }
+
+            handleAnswer(selected, questionObj) {
+                const feedback = document.getElementById('feedback');
+                
+                if (selected === questionObj.m) {
+                    this.currentIndex++;
+                    if (this.currentIndex < this.questions.length) {
+                        this.showQuestion();
+                    } else {
+                        this.finish();
+                    }
+                } else {
+                    this.missCount++;
+                    feedback.innerText = `WRONG: ${questionObj.w} = ${questionObj.m}`;
+                    feedback.className = "mt-4 text-center h-6 font-bold text-red-500 animate-pulse";
+                    
+                    if (!this.missedWordsLog.find(item => item.w === questionObj.w)) {
+                        this.missedWordsLog.push({ w: questionObj.w, m: questionObj.m });
+                    }
+                    this.questions.push(questionObj);
+                    
+                    const btns = document.querySelectorAll('.option-btn');
+                    btns.forEach(b => b.disabled = true);
+                    
+                    setTimeout(() => {
+                        this.currentIndex++;
+                        this.showQuestion();
+                    }, 1200);
+                }
+            }
+
+            finish() {
+                clearInterval(this.timerInterval);
+                document.getElementById('quiz-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+
+                const totalTime = (Date.now() - this.startTime) / 1000;
+                const roundLen = this.rounds[this.currentRoundIndex].words.length;
+                const accuracy = (roundLen / (roundLen + this.missCount)) * 100;
+                
+                const accDisplay = document.getElementById('accuracy-display');
+                accDisplay.innerText = `${accuracy.toFixed(1)}%`;
+                
+                const passArea = document.getElementById('pass-issue-area');
+                const failMsg = document.getElementById('fail-message');
+
+                if (accuracy >= 90) {
+                    accDisplay.style.color = "#4ade80"; // Green
+                    passArea.classList.remove('hidden');
+                    failMsg.classList.add('hidden');
+                    
+                    const passId = "embarrass";
+                    localStorage.setItem('PASS', passId);
+
+                    // 自動コピー実行（サイレントに処理）
+                    navigator.clipboard.writeText(passId).catch(err => console.error(err));
+
+                    // 【変更点】ボタンを表示する代わりに、HTMLごと書き換えてボタンを消滅させる
+                    // ユーザーには「コピー完了」の事実だけを伝える
+                    passArea.innerHTML = `
+                        <h3 class="font-black text-2xl mb-1">PASS GRANTED!</h3>
+                        <p class="text-sm mb-2"> LICENSE ISSUED</p>
+                        <div class="f1-font text-xs bg-black/10 text-black px-4 py-1 rounded-full inline-block font-bold tracking-widest border border-black/5">
+                            AUTO-COPIED TO CLIPBOARD
+                        </div>
+                    `;
+
+                } else {
+                    accDisplay.style.color = "#ef4444"; // Red
+                    passArea.classList.add('hidden');
+                    failMsg.classList.remove('hidden');
+                }
+
+                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
+
+                const review = document.getElementById('review-list');
+                let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Technical Telemetry</div>`;
+                if (this.missedWordsLog.length > 0) {
+                    summaryHtml += '<h3 class="text-red-500 mb-2 font-bold uppercase text-xs">Mechanical Failures (Review Needed):</h3>' + 
+                        this.missedWordsLog.map(item => `<div class="mb-2 text-sm p-2 bg-red-900/10 border border-red-900/30 rounded"><span class="font-bold text-white block">${item.w}</span><span class="text-gray-400">${item.m}</span></div>`).join('');
+                } else {
+                    summaryHtml += '<p class="text-green-500 font-bold">Perfect Lap. No Issues Detected.</p>';
+                }
+                review.innerHTML = summaryHtml;
+            }
+
+            returnToGrid() {
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('champion-screen').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+            }
+
+            revokePass() {
+                localStorage.removeItem('PASS');
+                location.reload();
+            }
+        }
+
+        const quiz = new VocabularyQuiz();
+    </script>
+<script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      // お前のマシンの設定だ
+      const firebaseConfig = {
+        apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
+        authDomain: "english-test-8ad4a.firebaseapp.com",
+        projectId: "english-test-8ad4a",
+        storageBucket: "english-test-8ad4a.firebasestorage.app",
+        messagingSenderId: "998730699699",
+        appId: "1:998730699699:web:8245c7259cec7dd20231c6",
+        measurementId: "G-FC2LRFVFGF"
+      };
+
+      // システム起動
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // DOM要素
+      const loginBtn = document.getElementById('login-btn');
+      const logoutBtn = document.getElementById('logout-btn');
+      const userSection = document.getElementById('user-info');
+      const userNameSpan = document.getElementById('user-name');
+      const rankingBody = document.getElementById('ranking-tbody');
+
+      let currentUser = null;
+
+      // 1. Pit In (Login)
+      loginBtn.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Pit Stop Error:", error);
+            alert("Login Failed. Check console.");
+        }
+      });
+
+      // 2. Retire (Logout)
+      logoutBtn.addEventListener('click', () => signOut(auth));
+
+      // 3. Driver Status Monitor (Auth State Persistence)
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            loginBtn.classList.add('hidden');
+            userSection.classList.remove('hidden');
+            userNameSpan.textContent = user.displayName || "Unknown Driver";
+            updateLeaderboard(); // ログイン時に最新ランキングを取得
+        } else {
+            currentUser = null;
+            loginBtn.classList.remove('hidden');
+            userSection.classList.add('hidden');
+            updateLeaderboard(); // ログアウト時もランキングは見せる
+        }
+      });
+
+      // 4. Telemetry Recorder (Global Function)
+      // クラスの中から呼び出せるように window オブジェクトに登録する
+      window.recordLapTime = async (accuracy, time) => {
+        if (!currentUser) return; // ゲストドライバーの記録は残さない
+
+        // 精度の高い順、同じならタイムが速い順で評価されるべきだが
+        // シンプルにするため、まずはデータを投げることに集中する
+        try {
+            await addDoc(collection(db, "leaderboard"), {
+                uid: currentUser.uid,
+                driver: currentUser.displayName,
+                accuracy: parseFloat(accuracy.toFixed(1)), // 数値として保存
+                time: parseFloat(time.toFixed(2)),
+                date: new Date()
+            });
+            console.log("Telemetry Data Sent.");
+            updateLeaderboard(); // 自分の記録を即座に反映
+        } catch (e) {
+            console.error("Telemetry Failure: ", e);
+        }
+      };
+
+      // 5. Update Leaderboard
+      async function updateLeaderboard() {
+        rankingBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs opacity-50">Updating...</td></tr>';
+        
+        try {
+            // 精度(accuracy)が高い順にトップ10を取得
+            // F1スタイルならタイムも考慮したいが、まずは「正確さ」で勝負だ
+            const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), limit(10));
+            const querySnapshot = await getDocs(q);
+
+            rankingBody.innerHTML = "";
+            
+            if (querySnapshot.empty) {
+                rankingBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs">No Data Yet. Be the first!</td></tr>';
+                return;
+            }
+
+            let rank = 1;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const isMe = currentUser && data.uid === currentUser.uid;
+                // 自分がランクインしてたらハイライトする
+                const rowClass = isMe ? "bg-red-900/30 text-white font-bold" : "border-b border-gray-800";
+                
+                const row = `
+                    <tr class="${rowClass}">
+                        <td class="p-2 text-yellow-500">${rank}</td>
+                        <td class="p-2 truncate max-w-[100px]">${data.driver}</td>
+                        <td class="p-2">${data.accuracy}%</td>
+                        <td class="p-2 text-gray-500">${data.time}s</td>
+                    </tr>
+                `;
+                rankingBody.innerHTML += row;
+                rank++;
+            });
+        } catch (error) {
+            console.error("Data Fetch Error:", error);
+            rankingBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs text-red-500">Telemetry Offline.<br>Check Firestore Rules.</td></tr>';
+        }
+      }
+
+      // 初回ロード
+      updateLeaderboard();
+    </script>
+</body>
+
+</html>
