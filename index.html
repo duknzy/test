@@ -133,26 +133,6 @@
                 </div>
             </div>
             ```
-
-#### 2. JavaScript (VocabularyQuizクラス) の修正
-`finish()` メソッドの中に、データを送信するトリガーを追加する。
-
-**場所:** 420行目あたり、`finish() { ... }` の最後の方。`document.getElementById('rank-text').innerText = ...` の直後に以下を追加しろ。
-
-```javascript
-                // ... (既存のコード)
-                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
-
-                // === ADDED: Send Data to Firebase ===
-                // ログイン済み かつ グローバル関数が存在する場合のみ送信
-                if (window.recordLapTime) {
-                    // ここでは正解率(accuracy)をスコアとし、タイムも記録する
-                    window.recordLapTime(accuracy, totalTime);
-                }
-                // ====================================
-
-                const review = document.getElementById('review-list');
-                // ... (続きのコード)
         </div>
 
         <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
@@ -1213,3 +1193,4 @@ thoroughly: 徹底的に、完全に
 </body>
 
 </html>
+
