@@ -1002,6 +1002,7 @@ thoroughly: 徹底的に、完全に
 
                 const totalTime = (Date.now() - this.startTime) / 1000;
                 const roundLen = this.rounds[this.currentRoundIndex].words.length;
+                // 精度を計算
                 const accuracy = (roundLen / (roundLen + this.missCount)) * 100;
                 
                 const accDisplay = document.getElementById('accuracy-display');
@@ -1010,19 +1011,25 @@ thoroughly: 徹底的に、完全に
                 const passArea = document.getElementById('pass-issue-area');
                 const failMsg = document.getElementById('fail-message');
 
+                // === ここが重要！データを送信するコード ===
+                // これがないとFirebaseには何も届かない
+                if (window.recordLapTime) {
+                    console.log("Sending telemetry..."); // 確認用ログ
+                    window.recordLapTime(accuracy, totalTime);
+                } else {
+                    console.error("Telemetry System Offline (recordLapTime not found).");
+                }
+                // ==========================================
+
                 if (accuracy >= 90) {
-                    accDisplay.style.color = "#4ade80"; // Green
+                    accDisplay.style.color = "#4ade80"; 
                     passArea.classList.remove('hidden');
                     failMsg.classList.add('hidden');
                     
                     const passId = "embarrass";
                     localStorage.setItem('PASS', passId);
-
-                    // 自動コピー実行（サイレントに処理）
                     navigator.clipboard.writeText(passId).catch(err => console.error(err));
 
-                    // 【変更点】ボタンを表示する代わりに、HTMLごと書き換えてボタンを消滅させる
-                    // ユーザーには「コピー完了」の事実だけを伝える
                     passArea.innerHTML = `
                         <h3 class="font-black text-2xl mb-1">PASS GRANTED!</h3>
                         <p class="text-sm mb-2"> LICENSE ISSUED</p>
@@ -1032,7 +1039,7 @@ thoroughly: 徹底的に、完全に
                     `;
 
                 } else {
-                    accDisplay.style.color = "#ef4444"; // Red
+                    accDisplay.style.color = "#ef4444"; 
                     passArea.classList.add('hidden');
                     failMsg.classList.remove('hidden');
                 }
@@ -1193,4 +1200,5 @@ thoroughly: 徹底的に、完全に
 </body>
 
 </html>
+
 
