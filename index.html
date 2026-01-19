@@ -915,20 +915,24 @@ thoroughly: 徹底的に、完全に
                 this.currentRoundIndex = parseInt(selector.value);
                 const selectedRound = this.rounds[this.currentRoundIndex];
 
-                // 出題セットを作成（選択肢生成を含む）
+                // 出題セットを作成
                 this.questions = selectedRound.words.map(target => {
-                    // 正解以外の選択肢をマスターリスト全体から3つランダム取得
                     const distractors = this.getDistractors(target);
                     const options = [target.m, ...distractors].sort(() => Math.random() - 0.5);
                     return { w: target.w, m: target.m, o: options };
                 });
 
-                // 問題順をシャッフル
                 this.questions.sort(() => Math.random() - 0.5);
 
                 this.currentIndex = 0;
                 this.missCount = 0;
                 this.missedWordsLog = [];
+
+                // === 追加: ストリーク変数のリセット ===
+                this.currentStreak = 0;
+                this.maxStreak = 0;
+                document.getElementById('streak-display').classList.add('hidden');
+                // ===================================
 
                 document.getElementById('circuit-name').innerText = selectedRound.name;
                 document.getElementById('start-screen').classList.add('hidden');
@@ -985,8 +989,25 @@ thoroughly: 徹底的に、完全に
 
             handleAnswer(selected, questionObj) {
                 const feedback = document.getElementById('feedback');
+                const streakDisp = document.getElementById('streak-display');
                 
                 if (selected === questionObj.m) {
+                    // === 正解時の処理: ストリーク加算 ===
+                    this.currentStreak++;
+                    if (this.currentStreak > this.maxStreak) {
+                        this.maxStreak = this.currentStreak;
+                    }
+                    
+                    // 2連勝以上なら表示
+                    if (this.currentStreak >= 2) {
+                        streakDisp.innerText = `COMBO: ${this.currentStreak}`;
+                        streakDisp.classList.remove('hidden');
+                        streakDisp.classList.remove('animate-pulse'); // リセットハック
+                        void streakDisp.offsetWidth; // リフロー強制
+                        streakDisp.classList.add('animate-pulse');
+                    }
+                    // =================================
+
                     this.currentIndex++;
                     if (this.currentIndex < this.questions.length) {
                         this.showQuestion();
@@ -994,6 +1015,11 @@ thoroughly: 徹底的に、完全に
                         this.finish();
                     }
                 } else {
+                    // === 不正解時の処理: ストリークリセット ===
+                    this.currentStreak = 0;
+                    streakDisp.classList.add('hidden');
+                    // ======================================
+
                     this.missCount++;
                     feedback.innerText = `WRONG: ${questionObj.w} = ${questionObj.m}`;
                     feedback.className = "mt-4 text-center h-6 font-bold text-red-500 animate-pulse";
@@ -1020,7 +1046,6 @@ thoroughly: 徹底的に、完全に
 
                 const totalTime = (Date.now() - this.startTime) / 1000;
                 const roundLen = this.rounds[this.currentRoundIndex].words.length;
-                // 精度を計算
                 const accuracy = (roundLen / (roundLen + this.missCount)) * 100;
                 
                 const accDisplay = document.getElementById('accuracy-display');
@@ -1029,18 +1054,14 @@ thoroughly: 徹底的に、完全に
                 const passArea = document.getElementById('pass-issue-area');
                 const failMsg = document.getElementById('fail-message');
 
-                // === ここが重要！データを送信するコード ===
-                // これがないとFirebaseには何も届かない
-                // === Updated Telemetry Transmission ===
+                // === Updated Telemetry: Streakを送る ===
                 if (window.recordLapTime) {
-                    const roundName = this.rounds[this.currentRoundIndex].name; // 例: "ROUND 1"
+                    const roundName = this.rounds[this.currentRoundIndex].name;
                     const correctCount = roundLen - this.missCount;
-                    const scoreString = `${correctCount}/${roundLen}`; // 例: "19/20"
+                    const scoreString = `${correctCount}/${roundLen}`;
                     
-                    console.log("Sending detailed telemetry...", roundName, scoreString);
-                    
-                    // 引数を4つ渡す (正解率, タイム, ラウンド名, スコア文字)
-                    window.recordLapTime(accuracy, totalTime, roundName, scoreString);
+                    // 5つ目の引数として this.maxStreak を渡す！
+                    window.recordLapTime(accuracy, totalTime, roundName, scoreString, this.maxStreak);
                 }
                 // ======================================
 
@@ -1238,6 +1259,7 @@ thoroughly: 徹底的に、完全に
 </body>
 
 </html>
+
 
 
 
