@@ -88,7 +88,15 @@
                 VOCABULARY<br class="block md:hidden"/>GP
             </h1>
             <p class="f1-font text-red-500 font-bold mb-6">2026 SEASON</p>
-            
+
+            <div class="mb-6 bg-gray-900/50 p-2 px-4 rounded border border-gray-700 inline-block">
+                <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Today's Track Activity</p>
+                <div class="flex items-center justify-center gap-2">
+                    <span class="animate-pulse text-red-500">●</span>
+                    <span id="daily-laps-display" class="f1-font text-2xl text-white font-mono font-bold">0</span>
+                    <span class="text-xs text-gray-500 uppercase">LAPS COMPLETED</span>
+                </div>
+            </div>
             <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
                 <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
                 <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono">
@@ -197,7 +205,7 @@
     </div>
 
     <script>
-// RAW DATA INJECTION
+// RAW DATA
 const rawData = `
 proceed: 進む、続行する
 ensure: 確実にする、保証する
@@ -1062,6 +1070,11 @@ thoroughly: 徹底的に、完全に
                 if (window.saveUserStreak) {
                     window.saveUserStreak(this.currentStreak, this.userMaxStreak);
                 }
+
+                // ★NEW: デイリー走行カウンターを回す
+                if (window.incrementDailyLaps) {
+                    window.incrementDailyLaps();
+                }
                 // =================
 
                 if (accuracy >= 90) {
@@ -1105,16 +1118,16 @@ thoroughly: 徹底的に、完全に
             }
         }
 
+        // 重要: 外部からアクセスできるように window に登録
         window.quiz = new VocabularyQuiz();
     </script>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-      // ★追加: doc, getDoc, setDoc をインポート
-      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      // ★追加: runTransaction, onSnapshot をインポート
+      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, getDoc, setDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-      // 自分のFirebase設定
       const firebaseConfig = {
         apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
         authDomain: "english-test-8ad4a.firebaseapp.com",
@@ -1134,24 +1147,19 @@ thoroughly: 徹底的に、完全に
       const userSection = document.getElementById('user-info');
       const userNameSpan = document.getElementById('user-name');
       const rankingBody = document.getElementById('ranking-tbody');
+      const dailyLapsDisplay = document.getElementById('daily-laps-display'); // カウンター表示用
 
       let currentUser = null;
 
-      // 1. Login
+      // 1. Auth
       loginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
-        try {
-            await signInWithPopup(auth, provider);
-        } catch (error) {
-            console.error("Pit Stop Error:", error);
-            alert("Login Failed. Check console.");
-        }
+        try { await signInWithPopup(auth, provider); } 
+        catch (error) { console.error("Login Error:", error); }
       });
 
-      // 2. Logout
       logoutBtn.addEventListener('click', () => signOut(auth));
 
-      // 3. User Status Monitor (Logic Updated)
       onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
@@ -1159,38 +1167,29 @@ thoroughly: 徹底的に、完全に
             userSection.classList.remove('hidden');
             userNameSpan.textContent = user.displayName || "Unknown Driver";
             
-            // ★ログイン時: ユーザーの保存されたコンボデータを取得して復元する
             try {
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
+                const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-                    // クイズクラスにデータを渡す (currentStreak, maxStreak)
-                    quiz.restoreStats(data.currentStreak || 0, data.maxStreak || 0);
-                    console.log("Stats Restored:", data);
+                    window.quiz.restoreStats(data.currentStreak || 0, data.maxStreak || 0);
                 } else {
-                    quiz.restoreStats(0, 0); // 新規ユーザー
+                    window.quiz.restoreStats(0, 0);
                 }
-            } catch (e) {
-                console.error("Failed to load user stats", e);
-            }
-
+            } catch (e) { console.error("Stats Load Error", e); }
+            
             updateLeaderboard(); 
         } else {
             currentUser = null;
             loginBtn.classList.remove('hidden');
             userSection.classList.add('hidden');
-            
-            // ログアウト時はコンボ表示をリセット
-            quiz.restoreStats(0, 0);
+            window.quiz.restoreStats(0, 0);
             updateLeaderboard(); 
         }
       });
 
-      // 4. Telemetry Recorder (Leaderboard)
+      // 2. Leaderboard Logic
       window.recordLapTime = async (accuracy, time, roundName, scoreString, roundMaxStreak) => {
         if (!currentUser) return; 
-
         try {
             await addDoc(collection(db, "leaderboard"), {
                 uid: currentUser.uid,
@@ -1202,50 +1201,81 @@ thoroughly: 徹底的に、完全に
                 streak: roundMaxStreak || 0,
                 date: new Date()
             });
-            console.log("Leaderboard Updated.");
             updateLeaderboard(); 
-        } catch (e) {
-            console.error("Telemetry Failure: ", e);
-        }
+        } catch (e) { console.error("Telemetry Error: ", e); }
       };
 
-      // ★新機能: User Profile Saver (Combo Persistence)
+      // 3. User Persistence
       window.saveUserStreak = async (current, max) => {
         if (!currentUser) return;
         try {
-            // users コレクションの自分のIDのドキュメントに保存
             await setDoc(doc(db, "users", currentUser.uid), {
                 currentStreak: current,
                 maxStreak: max,
                 lastActive: new Date()
-            }, { merge: true }); // merge: true で他のデータを消さずに更新
-            console.log("User Stats Saved:", current, max);
-        } catch (e) {
-            console.error("Save Failed:", e);
-        }
+            }, { merge: true });
+        } catch (e) { console.error("Save Error:", e); }
       }
 
-      // 5. Update Leaderboard
+      // ★新機能: デイリー走行カウンター (Global Daily Counter)
+      // 今日の日付(JST)を取得するヘルパー
+      const getTodayStr = () => new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
+
+      // A. カウントアップ関数 (トランザクション使用)
+      window.incrementDailyLaps = async () => {
+        const statsRef = doc(db, "stats", "daily_global");
+        const todayStr = getTodayStr();
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const sfDoc = await transaction.get(statsRef);
+                if (!sfDoc.exists()) {
+                    // ドキュメントがない場合は作成
+                    transaction.set(statsRef, { date: todayStr, count: 1 });
+                } else {
+                    const data = sfDoc.data();
+                    if (data.date !== todayStr) {
+                        // 日付が変わっていたらリセット
+                        transaction.update(statsRef, { date: todayStr, count: 1 });
+                    } else {
+                        // 同じ日ならインクリメント
+                        transaction.update(statsRef, { count: data.count + 1 });
+                    }
+                }
+            });
+            console.log("Track Activity Updated.");
+        } catch (e) {
+            console.error("Counter Error:", e);
+        }
+      };
+
+      // B. リアルタイム監視 (Monitor)
+      // 誰かが走るたびに、画面の数字が勝手に増えるようにする
+      const statsRef = doc(db, "stats", "daily_global");
+      onSnapshot(statsRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            const todayStr = getTodayStr();
+            // 日付が今日の場合のみカウントを表示、そうでなければ0
+            if (data.date === todayStr) {
+                dailyLapsDisplay.textContent = data.count;
+            } else {
+                dailyLapsDisplay.textContent = 0;
+            }
+        }
+      });
+
+      // 4. Update Table
       async function updateLeaderboard() {
         rankingBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-xs opacity-50">Updating Telemetry...</td></tr>';
-        
         try {
             const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), orderBy("time", "asc"), limit(10));
             const querySnapshot = await getDocs(q);
-
             rankingBody.innerHTML = "";
             
             const headerRow = document.querySelector('thead tr');
             if(headerRow) {
-                headerRow.innerHTML = `
-                    <th class="p-2">Pos</th>
-                    <th class="p-2">Driver</th>
-                    <th class="p-2">Round</th>
-                    <th class="p-2">Score</th>
-                    <th class="p-2">Streak</th>
-                    <th class="p-2">Acc</th>
-                    <th class="p-2">Time</th>
-                `;
+                headerRow.innerHTML = `<th class="p-2">Pos</th><th class="p-2">Driver</th><th class="p-2">Round</th><th class="p-2">Score</th><th class="p-2">Streak</th><th class="p-2">Acc</th><th class="p-2">Time</th>`;
             }
 
             if (querySnapshot.empty) {
@@ -1258,17 +1288,14 @@ thoroughly: 徹底的に、完全に
                 const data = doc.data();
                 const isMe = currentUser && data.uid === currentUser.uid;
                 const rowClass = isMe ? "bg-red-900/30 text-white font-bold" : "border-b border-gray-800";
-                
-                const roundDisplay = data.round || "-";
-                const scoreDisplay = data.score || "-";
                 const streakDisplay = data.streak ? `🔥${data.streak}` : "-"; 
 
                 const row = `
                     <tr class="${rowClass}">
                         <td class="p-2 text-yellow-500">${rank}</td>
                         <td class="p-2 truncate max-w-[80px] md:max-w-[150px]">${data.driver}</td>
-                        <td class="p-2 text-xs text-gray-400">${roundDisplay}</td>
-                        <td class="p-2 font-mono text-xs">${scoreDisplay}</td>
+                        <td class="p-2 text-xs text-gray-400">${data.round || "-"}</td>
+                        <td class="p-2 font-mono text-xs">${data.score || "-"}</td>
                         <td class="p-2 font-bold text-orange-500">${streakDisplay}</td>
                         <td class="p-2 text-green-400">${data.accuracy}%</td>
                         <td class="p-2 text-gray-500">${data.time}s</td>
@@ -1277,15 +1304,10 @@ thoroughly: 徹底的に、完全に
                 rankingBody.innerHTML += row;
                 rank++;
             });
-        } catch (error) {
-            console.error("Data Fetch Error:", error);
-        }
+        } catch (error) { console.error("Data Fetch Error:", error); }
       }
 
       updateLeaderboard();
     </script>
 </body>
 </html>
-
-
-
