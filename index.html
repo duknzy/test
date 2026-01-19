@@ -1079,7 +1079,8 @@ thoroughly: 徹底的に、完全に
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      // ★追加: doc, getDoc, setDoc をインポート
+      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       // 自分のFirebase設定
       const firebaseConfig = {
@@ -1104,7 +1105,7 @@ thoroughly: 徹底的に、完全に
 
       let currentUser = null;
 
-      // 1. Pit In (Login)
+      // 1. Login
       loginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
         try {
@@ -1115,27 +1116,47 @@ thoroughly: 徹底的に、完全に
         }
       });
 
-      // 2. Retire (Logout)
+      // 2. Logout
       logoutBtn.addEventListener('click', () => signOut(auth));
 
-      // 3. Driver Status Monitor
-      onAuthStateChanged(auth, (user) => {
+      // 3. User Status Monitor (Logic Updated)
+      onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
             loginBtn.classList.add('hidden');
             userSection.classList.remove('hidden');
             userNameSpan.textContent = user.displayName || "Unknown Driver";
+            
+            // ★ログイン時: ユーザーの保存されたコンボデータを取得して復元する
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    // クイズクラスにデータを渡す (currentStreak, maxStreak)
+                    quiz.restoreStats(data.currentStreak || 0, data.maxStreak || 0);
+                    console.log("Stats Restored:", data);
+                } else {
+                    quiz.restoreStats(0, 0); // 新規ユーザー
+                }
+            } catch (e) {
+                console.error("Failed to load user stats", e);
+            }
+
             updateLeaderboard(); 
         } else {
             currentUser = null;
             loginBtn.classList.remove('hidden');
             userSection.classList.add('hidden');
+            
+            // ログアウト時はコンボ表示をリセット
+            quiz.restoreStats(0, 0);
             updateLeaderboard(); 
         }
       });
 
-      // 4. Telemetry Recorder
-      window.recordLapTime = async (accuracy, time, roundName, scoreString, maxStreak) => {
+      // 4. Telemetry Recorder (Leaderboard)
+      window.recordLapTime = async (accuracy, time, roundName, scoreString, roundMaxStreak) => {
         if (!currentUser) return; 
 
         try {
@@ -1146,15 +1167,31 @@ thoroughly: 徹底的に、完全に
                 time: parseFloat(time.toFixed(2)),
                 round: roundName,
                 score: scoreString,
-                streak: maxStreak || 0,
+                streak: roundMaxStreak || 0,
                 date: new Date()
             });
-            console.log("Telemetry Data Sent with Streak.");
+            console.log("Leaderboard Updated.");
             updateLeaderboard(); 
         } catch (e) {
             console.error("Telemetry Failure: ", e);
         }
       };
+
+      // ★新機能: User Profile Saver (Combo Persistence)
+      window.saveUserStreak = async (current, max) => {
+        if (!currentUser) return;
+        try {
+            // users コレクションの自分のIDのドキュメントに保存
+            await setDoc(doc(db, "users", currentUser.uid), {
+                currentStreak: current,
+                maxStreak: max,
+                lastActive: new Date()
+            }, { merge: true }); // merge: true で他のデータを消さずに更新
+            console.log("User Stats Saved:", current, max);
+        } catch (e) {
+            console.error("Save Failed:", e);
+        }
+      }
 
       // 5. Update Leaderboard
       async function updateLeaderboard() {
@@ -1166,7 +1203,6 @@ thoroughly: 徹底的に、完全に
 
             rankingBody.innerHTML = "";
             
-            // ヘッダーに Streak 列を確実に追加
             const headerRow = document.querySelector('thead tr');
             if(headerRow) {
                 headerRow.innerHTML = `
@@ -1214,8 +1250,8 @@ thoroughly: 徹底的に、完全に
         }
       }
 
-      // 初回ロード
       updateLeaderboard();
     </script>
 </body>
 </html>
+
