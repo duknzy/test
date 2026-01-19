@@ -134,16 +134,32 @@
                     </div>
                 </div>
             </div>
-            ```
         </div>
-
-        <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
+<div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex flex-col text-left">
                     <span id="circuit-name" class="f1-font text-xs text-gray-500 uppercase tracking-widest">ROUND 1</span>
                     <span id="question-number" class="f1-font text-red-500 font-bold text-xl">LAP 1 / 20</span>
                 </div>
-                <span id="timer" class="f1-font text-2xl text-yellow-400 font-mono">0.00s</span>
+                
+                <div class="text-right">
+                    <div id="timer" class="f1-font text-2xl text-yellow-400 font-mono">0.00s</div>
+                    <div id="streak-display" class="f1-font text-xs text-red-500 font-bold uppercase tracking-widest hidden">COMBO: 0</div>
+                </div>
+            </div>
+
+            <div class="progress-bar mb-8">
+                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+            </div>
+
+            <div class="mb-10 text-center relative">
+                <p class="text-gray-400 text-sm uppercase tracking-widest mb-2">Meaning of:</p>
+                <h2 id="target-word" class="f1-font text-3xl md:text-6xl font-black text-white mb-4 tracking-tight drop-shadow-lg break-words px-2">word</h2>
+            </div>
+
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div id="feedback" class="mt-4 text-center h-6 font-bold"></div>
+        </div>
             </div>
             <div class="progress-bar mb-8">
                 <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
@@ -1222,6 +1238,7 @@ thoroughly: 徹底的に、完全に
 </body>
 
 </html>
+
 
 
 
