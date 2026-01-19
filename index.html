@@ -812,20 +812,37 @@ thoroughly: 徹底的に、完全に
                 this.startTime = 0;
                 this.timerInterval = null;
 
-                // エンジンの初期化
+                // ストリーク管理用
+                this.currentStreak = 0; // 現在の継続コンボ
+                this.userMaxStreak = 0; // 自己ベスト (キャリア通算)
+
                 this.parseData();
                 this.generateRounds();
                 this.initUI();
             }
 
-            // データ解析とクリーニング
+            // === 新機能: 外部(Firebase)から記録をロードする ===
+            restoreStats(current, max) {
+                this.currentStreak = current || 0;
+                this.userMaxStreak = max || 0;
+                
+                // 画面上のコンボ表示を更新
+                const streakDisp = document.getElementById('streak-display');
+                if (this.currentStreak >= 2) {
+                    streakDisp.innerText = `COMBO: ${this.currentStreak}`;
+                    streakDisp.classList.remove('hidden');
+                } else {
+                    streakDisp.classList.add('hidden');
+                }
+            }
+            // ===============================================
+
             parseData() {
                 const lines = rawData.split('\n')
                     .map(line => line.trim())
                     .filter(line => line.length > 0 && !line.startsWith('[source'));
 
                 this.masterList = [];
-
                 lines.forEach(line => {
                     let separatorIndex = line.indexOf(':');
                     if (separatorIndex === -1) separatorIndex = line.indexOf(' ');
@@ -834,29 +851,20 @@ thoroughly: 徹底的に、完全に
                     if (separatorIndex !== -1) {
                         const w = line.substring(0, separatorIndex).trim();
                         const m = line.substring(separatorIndex + 1).trim();
-                        if (w && m) {
-                            this.masterList.push({ w, m });
-                        }
+                        if (w && m) this.masterList.push({ w, m });
                     }
                 });
-
                 document.getElementById('total-words-count').innerText = this.masterList.length;
             }
 
-            // ラウンド生成
             generateRounds() {
                 const wordCopy = [...this.masterList]; 
                 this.rounds = [];
                 let roundNum = 1;
-
                 while (wordCopy.length > 0) {
                     const chunk = wordCopy.splice(0, this.wordsPerRound);
                     if (chunk.length > 0) {
-                        this.rounds.push({
-                            id: roundNum,
-                            name: `ROUND ${roundNum}`,
-                            words: chunk
-                        });
+                        this.rounds.push({ id: roundNum, name: `ROUND ${roundNum}`, words: chunk });
                         roundNum++;
                     }
                 }
@@ -879,28 +887,37 @@ thoroughly: 徹底的に、完全に
                 }
             }
 
+            copyToClipboard(text, btnElement) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btnElement.innerText;
+                    btnElement.innerText = "COPIED!";
+                    btnElement.classList.add("bg-green-600", "text-white");
+                    setTimeout(() => {
+                        btnElement.innerText = originalText;
+                        btnElement.classList.remove("bg-green-600", "text-white");
+                    }, 2000);
+                });
+            }
+
             start() {
                 const selector = document.getElementById('round-selector');
                 this.currentRoundIndex = parseInt(selector.value);
                 const selectedRound = this.rounds[this.currentRoundIndex];
 
-                // 出題セットを作成
                 this.questions = selectedRound.words.map(target => {
                     const distractors = this.getDistractors(target);
                     const options = [target.m, ...distractors].sort(() => Math.random() - 0.5);
                     return { w: target.w, m: target.m, o: options };
                 });
-
                 this.questions.sort(() => Math.random() - 0.5);
 
                 this.currentIndex = 0;
                 this.missCount = 0;
                 this.missedWordsLog = [];
 
-                // ストリーク変数のリセット
-                this.currentStreak = 0;
-                this.maxStreak = 0;
-                document.getElementById('streak-display').classList.add('hidden');
+                // ★変更: ここでの reset はしない (前回の続きからやるため)
+                // ただし、今回のラウンドでの最高到達点用変数は用意する
+                this.roundMaxStreak = this.currentStreak; 
 
                 document.getElementById('circuit-name').innerText = selectedRound.name;
                 document.getElementById('start-screen').classList.add('hidden');
@@ -918,7 +935,6 @@ thoroughly: 徹底的に、完全に
                 while (distractors.length < 3) {
                     const randomIdx = Math.floor(Math.random() * this.masterList.length);
                     const randomWord = this.masterList[randomIdx];
-                    
                     if (randomWord.w !== targetWord.w && !distractors.includes(randomWord.m)) {
                         distractors.push(randomWord.m);
                     }
@@ -958,12 +974,18 @@ thoroughly: 徹底的に、完全に
                 const streakDisp = document.getElementById('streak-display');
                 
                 if (selected === questionObj.m) {
-                    // 正解時: ストリーク加算
+                    // === 正解: 継続コンボを加算 ===
                     this.currentStreak++;
-                    if (this.currentStreak > this.maxStreak) {
-                        this.maxStreak = this.currentStreak;
-                    }
                     
+                    // 今回のラウンドでの最大値を更新（ランキング送信用）
+                    if (this.currentStreak > this.roundMaxStreak) {
+                        this.roundMaxStreak = this.currentStreak;
+                    }
+                    // キャリア通算の最大値を更新（ユーザーデータ保存用）
+                    if (this.currentStreak > this.userMaxStreak) {
+                        this.userMaxStreak = this.currentStreak;
+                    }
+
                     if (this.currentStreak >= 2) {
                         streakDisp.innerText = `COMBO: ${this.currentStreak}`;
                         streakDisp.classList.remove('hidden');
@@ -971,6 +993,7 @@ thoroughly: 徹底的に、完全に
                         void streakDisp.offsetWidth;
                         streakDisp.classList.add('animate-pulse');
                     }
+                    // ==============================
 
                     this.currentIndex++;
                     if (this.currentIndex < this.questions.length) {
@@ -979,9 +1002,15 @@ thoroughly: 徹底的に、完全に
                         this.finish();
                     }
                 } else {
-                    // 不正解時: ストリークリセット
+                    // === 不正解: コンボ終了 ===
                     this.currentStreak = 0;
                     streakDisp.classList.add('hidden');
+
+                    // ★重要: 間違えた瞬間に「0」になったことをFirebaseに保存する (不正防止)
+                    if (window.saveUserStreak) {
+                        window.saveUserStreak(0, this.userMaxStreak);
+                    }
+                    // ========================
 
                     this.missCount++;
                     feedback.innerText = `WRONG: ${questionObj.w} = ${questionObj.m}`;
@@ -1017,39 +1046,43 @@ thoroughly: 徹底的に、完全に
                 const passArea = document.getElementById('pass-issue-area');
                 const failMsg = document.getElementById('fail-message');
 
-                // Firebaseへ送信
+                // === データ送信 ===
+                // 1. ランキングには「今回のラウンドで到達した最大コンボ」を送る
+                // 2. ユーザーデータには「現在の継続コンボ」と「自己ベスト」を保存する
                 if (window.recordLapTime) {
                     const roundName = this.rounds[this.currentRoundIndex].name;
                     const correctCount = roundLen - this.missCount;
                     const scoreString = `${correctCount}/${roundLen}`;
                     
-                    window.recordLapTime(accuracy, totalTime, roundName, scoreString, this.maxStreak);
+                    // ランキング用
+                    window.recordLapTime(accuracy, totalTime, roundName, scoreString, this.roundMaxStreak);
                 }
+                
+                // ユーザーデータ保存 (次のラウンドへコンボを持ち越すため)
+                if (window.saveUserStreak) {
+                    window.saveUserStreak(this.currentStreak, this.userMaxStreak);
+                }
+                // =================
 
                 if (accuracy >= 90) {
                     accDisplay.style.color = "#4ade80"; 
                     passArea.classList.remove('hidden');
                     failMsg.classList.add('hidden');
-                    
                     const passId = "embarrass";
                     localStorage.setItem('PASS', passId);
                     navigator.clipboard.writeText(passId).catch(err => console.error(err));
-
                     passArea.innerHTML = `
                         <h3 class="font-black text-2xl mb-1">PASS GRANTED!</h3>
                         <p class="text-sm mb-2"> LICENSE ISSUED</p>
                         <div class="f1-font text-xs bg-black/10 text-black px-4 py-1 rounded-full inline-block font-bold tracking-widest border border-black/5">
                             AUTO-COPIED TO CLIPBOARD
-                        </div>
-                    `;
+                        </div>`;
                 } else {
                     accDisplay.style.color = "#ef4444"; 
                     passArea.classList.add('hidden');
                     failMsg.classList.remove('hidden');
                 }
-
                 document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
-
                 const review = document.getElementById('review-list');
                 let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Technical Telemetry</div>`;
                 if (this.missedWordsLog.length > 0) {
@@ -1066,7 +1099,6 @@ thoroughly: 徹底的に、完全に
                 document.getElementById('champion-screen').classList.add('hidden');
                 document.getElementById('start-screen').classList.remove('hidden');
             }
-
             revokePass() {
                 localStorage.removeItem('PASS');
                 location.reload();
@@ -1254,4 +1286,5 @@ thoroughly: 徹底的に、完全に
     </script>
 </body>
 </html>
+
 
