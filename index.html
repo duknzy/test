@@ -114,7 +114,7 @@
             
             <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
                 <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
-                <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono">
+                <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono text-sm">
                 </select>
             </div>
 
@@ -166,8 +166,8 @@
 
         <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <div class="flex flex-col text-left">
-                    <span id="circuit-name" class="f1-font text-xs text-gray-500 uppercase tracking-widest">ROUND 1</span>
+                <div class="flex flex-col text-left max-w-[60%]">
+                    <span id="circuit-name" class="f1-font text-xs text-gray-500 uppercase tracking-widest break-words leading-tight">ROUND 1</span>
                     <span id="question-number" class="f1-font text-red-500 font-bold text-xl">LAP 1 / 20</span>
                 </div>
                 
@@ -220,7 +220,9 @@
     </div>
 
     <script>
-// RAW DATA (2000 Words Placeholder - Paste your data here)
+// ==========================================
+// PASTE YOUR 2000 WORDS HERE
+// ==========================================
 const rawData = `
 follow: ～の後に続く、～に従う
 consider: ～を考慮する
@@ -2250,6 +2252,7 @@ conversely: 逆に
 predominantly: 主に
 lest: ～しないように
 `;
+// ==========================================
 
         class VocabularyQuiz {
             constructor() {
@@ -2266,25 +2269,20 @@ lest: ～しないように
                 this.timerInterval = null;
 
                 // ストリーク管理用
-                this.currentStreak = 0; // 現在の継続コンボ
-                this.userMaxStreak = 0; // 自己ベスト (キャリア通算)
+                this.currentStreak = 0;
+                this.userMaxStreak = 0; 
 
                 this.parseData();
                 this.generateRounds();
                 
                 // UI初期化
                 this.initUI();
-                
-                // ★削除: 起動時のライセンスチェックは撤廃！
-                // 常にスタート画面から開始する
             }
 
-            // === 新機能: 外部(Firebase)から記録をロードする ===
             restoreStats(current, max) {
                 this.currentStreak = current || 0;
                 this.userMaxStreak = max || 0;
                 
-                // 画面上のコンボ表示を更新
                 const streakDisp = document.getElementById('streak-display');
                 if (this.currentStreak >= 2) {
                     streakDisp.innerText = `COMBO: ${this.currentStreak}`;
@@ -2293,7 +2291,6 @@ lest: ～しないように
                     streakDisp.classList.add('hidden');
                 }
             }
-            // ===============================================
 
             parseData() {
                 const lines = rawData.split('\n')
@@ -2315,25 +2312,40 @@ lest: ～しないように
                 document.getElementById('total-words-count').innerText = this.masterList.length;
             }
 
+            // ★Option A: Hybrid Spec Implementation
             generateRounds() {
                 const wordCopy = [...this.masterList]; 
                 this.rounds = [];
                 let roundNum = 1;
+                
+                // 元の配列のインデックスを追跡するためのカウンター
+                let currentWordIndex = 1; 
+
                 while (wordCopy.length > 0) {
+                    // スライスする前の長さを保存
+                    const startNum = currentWordIndex;
+                    
                     const chunk = wordCopy.splice(0, this.wordsPerRound);
+                    
+                    const endNum = startNum + chunk.length - 1;
+                    
                     if (chunk.length > 0) {
-                        this.rounds.push({ id: roundNum, name: `ROUND ${roundNum}`, words: chunk });
+                        this.rounds.push({
+                            id: roundNum,
+                            // ここで番号を表示: ROUND 1 [No.1 - 20]
+                            name: `ROUND ${roundNum} [No.${startNum} - ${endNum}]`,
+                            words: chunk
+                        });
                         roundNum++;
+                        currentWordIndex += chunk.length;
                     }
                 }
             }
 
-            // ★NEW: カスタムラウンド作成機能
             createCustomRound() {
                 const startInput = document.getElementById('custom-start');
                 const endInput = document.getElementById('custom-end');
                 
-                // ユーザーは1始まりで入力するが、配列は0始まり
                 const start = parseInt(startInput.value) - 1; 
                 const end = parseInt(endInput.value);
 
@@ -2344,23 +2356,17 @@ lest: ～しないように
 
                 const customWords = this.masterList.slice(start, end);
                 
-                // カスタムラウンドを作成して先頭に追加
+                // カスタムラウンドも表記を合わせる: CUSTOM [No.1 - 50]
                 const customRound = {
                     id: 'custom',
-                    name: `TEST: #${start + 1}-${end}`,
+                    name: `CUSTOM [No.${start + 1} - ${end}]`,
                     words: customWords
                 };
 
-                // 既存のラウンドリストの先頭に追加 (unshift)
                 this.rounds.unshift(customRound);
-                
-                // UI更新
                 this.initUI();
-                
-                // 作成したカスタムラウンドを自動選択
-                document.getElementById('round-selector').value = 0; // 先頭に追加したので0
-                
-                alert(`Custom Round Set: Words ${start + 1} to ${end} loaded.`);
+                document.getElementById('round-selector').value = 0; 
+                alert(`Custom Round Set: [No.${start + 1} - ${end}] loaded.`);
             }
 
             initUI() {
@@ -2401,11 +2407,9 @@ lest: ～しないように
                 this.currentIndex = 0;
                 this.missCount = 0;
                 this.missedWordsLog = [];
-
-                // ★変更: ここでの reset はしない (前回の続きからやるため)
-                // ただし、今回のラウンドでの最高到達点用変数は用意する
                 this.roundMaxStreak = this.currentStreak; 
 
+                // ラウンド名が長くても表示崩れしないよう設定済み
                 document.getElementById('circuit-name').innerText = selectedRound.name;
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('champion-screen').classList.add('hidden');
@@ -2437,21 +2441,17 @@ lest: ～しないように
                 }, 50);
             }
 
-            // === 修正箇所: 選択肢を隠す (VISUALIZE MEANING) ===
             showQuestion() {
                 const q = this.questions[this.currentIndex];
                 document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
                 
-                // Font Tuning applied
                 document.getElementById('target-word').innerText = q.w;
-                
                 document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
                 document.getElementById('feedback').innerText = '';
 
                 const container = document.getElementById('options-container');
-                container.innerHTML = ''; // Clear previous contents
+                container.innerHTML = ''; 
 
-                // ★いきなり選択肢を出さず、「思考フェーズ」ボタンを表示
                 const revealBtn = document.createElement('button');
                 revealBtn.className = 'col-span-1 md:col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
                 revealBtn.innerHTML = `
@@ -2460,7 +2460,6 @@ lest: ～しないように
                     <span class="text-xs text-gray-500 font-mono">TAP TO UNLOCK DRS</span>
                 `;
                 
-                // クリックで選択肢を展開 (Reveal Options)
                 revealBtn.onclick = () => {
                     this.renderOptions(q, container);
                 };
@@ -2468,9 +2467,8 @@ lest: ～しないように
                 container.appendChild(revealBtn);
             }
 
-            // ★追加: 実際の選択肢を描画する関数 (Reveals options)
             renderOptions(q, container) {
-                container.innerHTML = ''; // Revealボタンを消す
+                container.innerHTML = '';
 
                 q.o.forEach(option => {
                     const btn = document.createElement('button');
@@ -2480,24 +2478,15 @@ lest: ～しないように
                     container.appendChild(btn);
                 });
             }
-            // ==========================================================
 
             handleAnswer(selected, questionObj) {
                 const feedback = document.getElementById('feedback');
                 const streakDisp = document.getElementById('streak-display');
                 
                 if (selected === questionObj.m) {
-                    // === 正解: 継続コンボを加算 ===
                     this.currentStreak++;
-                    
-                    // 今回のラウンドでの最大値を更新（ランキング送信用）
-                    if (this.currentStreak > this.roundMaxStreak) {
-                        this.roundMaxStreak = this.currentStreak;
-                    }
-                    // キャリア通算の最大値を更新（ユーザーデータ保存用）
-                    if (this.currentStreak > this.userMaxStreak) {
-                        this.userMaxStreak = this.currentStreak;
-                    }
+                    if (this.currentStreak > this.roundMaxStreak) this.roundMaxStreak = this.currentStreak;
+                    if (this.currentStreak > this.userMaxStreak) this.userMaxStreak = this.currentStreak;
 
                     if (this.currentStreak >= 2) {
                         streakDisp.innerText = `COMBO: ${this.currentStreak}`;
@@ -2506,7 +2495,6 @@ lest: ～しないように
                         void streakDisp.offsetWidth;
                         streakDisp.classList.add('animate-pulse');
                     }
-                    // ==============================
 
                     this.currentIndex++;
                     if (this.currentIndex < this.questions.length) {
@@ -2515,15 +2503,10 @@ lest: ～しないように
                         this.finish();
                     }
                 } else {
-                    // === 不正解: コンボ終了 ===
                     this.currentStreak = 0;
                     streakDisp.classList.add('hidden');
 
-                    // ★重要: 間違えた瞬間に「0」になったことをFirebaseに保存する (不正防止)
-                    if (window.saveUserStreak) {
-                        window.saveUserStreak(0, this.userMaxStreak);
-                    }
-                    // ========================
+                    if (window.saveUserStreak) window.saveUserStreak(0, this.userMaxStreak);
 
                     this.missCount++;
                     feedback.innerText = `WRONG: ${questionObj.w} = ${questionObj.m}`;
@@ -2559,28 +2542,15 @@ lest: ～しないように
                 const passArea = document.getElementById('pass-issue-area');
                 const failMsg = document.getElementById('fail-message');
 
-                // === データ送信 ===
-                // 1. ランキングには「今回のラウンドで到達した最大コンボ」を送る
-                // 2. ユーザーデータには「現在の継続コンボ」と「自己ベスト」を保存する
                 if (window.recordLapTime) {
                     const roundName = this.rounds[this.currentRoundIndex].name;
                     const correctCount = roundLen - this.missCount;
                     const scoreString = `${correctCount}/${roundLen}`;
-                    
-                    // ランキング用
                     window.recordLapTime(accuracy, totalTime, roundName, scoreString, this.roundMaxStreak);
                 }
                 
-                // ユーザーデータ保存 (次のラウンドへコンボを持ち越すため)
-                if (window.saveUserStreak) {
-                    window.saveUserStreak(this.currentStreak, this.userMaxStreak);
-                }
-
-                // ★NEW: デイリー走行カウンターを回す
-                if (window.incrementDailyLaps) {
-                    window.incrementDailyLaps();
-                }
-                // =================
+                if (window.saveUserStreak) window.saveUserStreak(this.currentStreak, this.userMaxStreak);
+                if (window.incrementDailyLaps) window.incrementDailyLaps();
 
                 if (accuracy >= 90) {
                     accDisplay.style.color = "#4ade80"; 
@@ -2623,14 +2593,12 @@ lest: ～しないように
             }
         }
 
-        // 重要: 外部からアクセスできるように window に登録
         window.quiz = new VocabularyQuiz();
     </script>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-      // ★追加: runTransaction, onSnapshot をインポート
       import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, getDoc, setDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -2652,11 +2620,10 @@ lest: ～しないように
       const userSection = document.getElementById('user-info');
       const userNameSpan = document.getElementById('user-name');
       const rankingBody = document.getElementById('ranking-tbody');
-      const dailyLapsDisplay = document.getElementById('daily-laps-display'); // カウンター表示用
+      const dailyLapsDisplay = document.getElementById('daily-laps-display'); 
 
       let currentUser = null;
 
-      // 1. Auth
       loginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
         try { await signInWithPopup(auth, provider); } 
@@ -2671,7 +2638,6 @@ lest: ～しないように
             loginBtn.classList.add('hidden');
             userSection.classList.remove('hidden');
             userNameSpan.textContent = user.displayName || "Unknown Driver";
-            
             try {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
@@ -2681,7 +2647,6 @@ lest: ～しないように
                     window.quiz.restoreStats(0, 0);
                 }
             } catch (e) { console.error("Stats Load Error", e); }
-            
             updateLeaderboard(); 
         } else {
             currentUser = null;
@@ -2692,7 +2657,6 @@ lest: ～しないように
         }
       });
 
-      // 2. Leaderboard Logic
       window.recordLapTime = async (accuracy, time, roundName, scoreString, roundMaxStreak) => {
         if (!currentUser) return; 
         try {
@@ -2710,7 +2674,6 @@ lest: ～しないように
         } catch (e) { console.error("Telemetry Error: ", e); }
       };
 
-      // 3. User Persistence
       window.saveUserStreak = async (current, max) => {
         if (!currentUser) return;
         try {
@@ -2722,46 +2685,33 @@ lest: ～しないように
         } catch (e) { console.error("Save Error:", e); }
       }
 
-      // ★新機能: デイリー走行カウンター (Global Daily Counter)
-      // 今日の日付(JST)を取得するヘルパー
       const getTodayStr = () => new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
 
-      // A. カウントアップ関数 (トランザクション使用)
       window.incrementDailyLaps = async () => {
         const statsRef = doc(db, "stats", "daily_global");
         const todayStr = getTodayStr();
-
         try {
             await runTransaction(db, async (transaction) => {
                 const sfDoc = await transaction.get(statsRef);
                 if (!sfDoc.exists()) {
-                    // ドキュメントがない場合は作成
                     transaction.set(statsRef, { date: todayStr, count: 1 });
                 } else {
                     const data = sfDoc.data();
                     if (data.date !== todayStr) {
-                        // 日付が変わっていたらリセット
                         transaction.update(statsRef, { date: todayStr, count: 1 });
                     } else {
-                        // 同じ日ならインクリメント
                         transaction.update(statsRef, { count: data.count + 1 });
                     }
                 }
             });
-            console.log("Track Activity Updated.");
-        } catch (e) {
-            console.error("Counter Error:", e);
-        }
+        } catch (e) { console.error("Counter Error:", e); }
       };
 
-      // B. リアルタイム監視 (Monitor)
-      // 誰かが走るたびに、画面の数字が勝手に増えるようにする
       const statsRef = doc(db, "stats", "daily_global");
       onSnapshot(statsRef, (doc) => {
         if (doc.exists()) {
             const data = doc.data();
             const todayStr = getTodayStr();
-            // 日付が今日の場合のみカウントを表示、そうでなければ0
             if (data.date === todayStr) {
                 dailyLapsDisplay.textContent = data.count;
             } else {
@@ -2770,7 +2720,6 @@ lest: ～しないように
         }
       });
 
-      // 4. Update Table
       async function updateLeaderboard() {
         rankingBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-xs opacity-50">Updating Telemetry...</td></tr>';
         try {
