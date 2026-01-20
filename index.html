@@ -62,30 +62,9 @@
             color: #000;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
-        .chat-fab {
-            position: fixed; 
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: #1a1a1a; /* 黒ベースでクールに */
-            color: #fff;
-            border: 1px solid #ff0000; /* 攻撃的な赤のアクセント */
-            padding: 12px 20px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.2s;
-            font-family: sans-serif; /* フォント崩れ防止 */
-        }
-
-        .chat-fab:active {
-            transform: scale(0.95);
-        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-     <a href="chat.html" class="chat-fab">💬 Chat</a>
 
     <div id="app" class="w-full max-w-2xl">
         
@@ -119,7 +98,19 @@
                     <span class="text-xs text-gray-500 uppercase">LAPS COMPLETED</span>
                 </div>
             </div>
-            
+
+            <div class="mb-6 bg-gray-800/50 p-4 rounded border border-gray-600 text-left">
+                <label class="text-xs text-gray-400 uppercase tracking-widest block mb-2">CUSTOM TEST RANGE (WORD #)</label>
+                <div class="flex gap-2 items-center">
+                    <input type="number" id="custom-start" placeholder="1" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono placeholder-gray-600">
+                    <span class="text-gray-500 font-bold">-</span>
+                    <input type="number" id="custom-end" placeholder="50" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono placeholder-gray-600">
+                    <button onclick="quiz.createCustomRound()" class="flex-1 f1-font bg-gray-700 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold uppercase rounded py-2 transition-colors border border-gray-600">
+                        Set Range
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-2">*Enter word numbers to create a custom round.</p>
+            </div>
             <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
                 <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
                 <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono">
@@ -228,605 +219,2035 @@
     </div>
 
     <script>
-// RAW DATA
+// RAW DATA (ここに2000単語を貼り付けろ)
 const rawData = `
-proceed: 進む、続行する
-ensure: 確実にする、保証する
-interpret: 解釈する、通訳する
-cease: やめる、終わる
-ban: 禁止する、禁じる
-obey: 従う、守る
-eliminate: 除去する、削除する
-resist: 抵抗する、耐える
-accompany: 同行する、伴う
-commit: 犯す、委ねる、専心する
-pursue:追求する
-demonstrate: 証明する、実演する
-bet: 賭ける、確信する
-ruin: 台無しにする、破滅させる
-threaten: 脅す、脅かす
-attach: 取り付ける、添付する
-reverse: 逆転させる、反対にする
-restrict: 制限する、限定する
-compose: 構成する、作曲する
-lean: 傾く、もたれる
-substitute: 代わりにする、代用する
-trace: 跡をたどる、突き止める
-interrupt: 邪魔する、中断させる
-confront: 直面する、立ち向かう
-illustrate: 説明する、例証する
-arrest: 逮捕する、拘束する
-stimulate: 刺激する、促す
-assure: 保証する、安心させる
-consult: 相談する、意見を求める
-depress: 意気消沈させる、押し下げる
-crash: 衝突する、墜落する
-inspire: 奮起させる、鼓舞する
-specialize: 専門にする、特化する
-cultivate: 耕す、栽培する、育む
-fulfill: 果たす、実行する
-transmit: 送る、伝える、伝達する
-found: 設立する、基礎を置く
-clap: 手を叩く、拍手する
+follow: ～の後に続く、～に従う
+consider: ～を考慮する
+increase: 増える、～を増やす
+expect: ～を予期する
+decide: ～することを決意する
+develop: 発達する、～を発達させる
+provide: ～を供給する、与える
+continue: 続く、～を続ける
+include: ～を含む、含める
+remain: ままでいる
+reach: ～に着く、～に達する
+allow: ～を許可する
+force: ～を強制する
+offer: ～を申し出る
+realize: ～を悟る
+suggest: ～と提案する、～をほのめかす
+require: ～を必要とする
+worry: 心配する
+wonder: ～かと疑問に思う
+cost: ～を要する
+tend: ～する傾向がある、～しがちである
+depend: ～に依存する、～しだいで決まる
+share: ～を分け合う、共有する
+demand: ～を要求する
+support: ～を支持する
+hire: ～を雇う
+regard: AをBだと思う、みなす
+base: AがBに基づいている
+improve: ～を向上させる
+recognize: ～を認める
+notice: ～に気づく
+suppose: ～だと思う
+raise: ～を上げる、～を育てる
+prefer: ～をより好む
+cheer: ～を励ます
+suffer: ～を経験する、受ける、苦しむ
+describe: ～を描写する、～の特徴を説明する
+prevent: ～をさまたげる
+reduce: ～を減らす
+mistake: ～を誤解する、まちがえる
+prepare: ～の準備をする
+encourage: はげます
+prove: ～だとわかる
+treat: ～をあつかう
+establish: ～を設立する、創立する
+relate: 関係がある
+compare: ～を比較する、～をたとえる
+spread: ～を広げる；広がる
+refer: ～を指示する
+supply: ～を供給する
+gain: ～を得る
+destroy: ～を破壊する
+apply: 当てはまる、申し込む
+seek: ～を求める
+search: ～を捜す
+claim: ～と主張する
+draw: ～を引っぱる
+refuse: ～を断る
+respond: ～に返答する
+mention: ～について述べる
+judge: ～を判断する
+approach: ～に接近する；～に取り組む；方法
+admit: ～を認める
+reflect: ～を反映する、～を反射する
+perform: ～を行う、～を遂行する
+bore: ～をうんざりさせる
+survive: 生き残る
+represent: ～を表す
+argue: ～と主張する
+grant: ～を認める、～を与える
+indicate: ～を指し示す
+belong: 所属している
+acquire: ～を習得する
+reply: 返事をする
+feed: ～にエサをやる
+escape: 逃げる
+replace: ～に取って代わる、～を取り替える
+reveal: ～を明らかにする
+surround: ～を取り囲む
+suit: ～に合う
+estimate: ～を推定する
+aim: ～をねらう
+earn: ～をもうける、かせぐ
+decline: 衰退する、低下する、～を辞退する
+afford: ～をする余裕がある
+confuse: ～を当惑させる
+graduate: ～を卒業する
+vary: 変わる、さまざまである
+remove: ～を移す、取り去る
+insist: ～と主張する、言い張る
+examine: ～を調査する
+remind: ＡにＢを思い出させる
+contribute: ～に貢献する、～の一因となる、AをBに寄付する
+warn: ～に警告する
+connect: ～をつなぐ
+match: ～に匹敵する、～に調和する
+focus: 焦点を合わせる
+reject: ～を断る
+convince: ～を納得させる、確信させる
+associate: AをBに関連づける、AからBを連想する
+rush: 急いで行く
+stress: ～を強調する
+attract: ～を引きつける
+rely: Aに頼る
+regret: ～を後悔する
+adopt: ～を採用する
+shake: ～を振る
+hurt: ～を傷つける
+operate: 作動する、～を操作する、手術する
+extend: ～を広げる、延長する
+blame: ～を非難する、～のせいにする
+consist: Aで構成されている
+persuade: ～を説得する
+admire: ～に感心する
+disappoint: ～を失望させる
+expand: 拡大する
+preserve: ～を保護する
+struggle: 苦闘する、もがく
+arrange: ～の手はずを整える、～を配列する
+disturb: ～を妨げる
+employ: ～を雇う、～を用いる
+engage: Aに従事する、Aを行う
+abandon: ～を捨てる
+display: ～を展示する、～を表す
+encounter: ～に偶然出会う
+amuse: ～を楽しませる
+bother: ～に面倒をかける、困らせる
+concentrate: 集中する
+adapt: ～を適応させる、適応する
+puzzle: ～を当惑させる
+appeal: Aに訴える、～を引きつける
+combine: ～を結合させる
+delay: ～を遅らせる
+repair: ～を修理する
+fascinate: ～を夢中にさせる
+pardon: ～を許す
+import: ～を輸入する
+remark: 述べる
+reserve: ～を予約する、～を取っておく
+amaze: ～を驚嘆させる
+frighten: ～をおびえさせる
+release: ～を解放する、～を発表する
+rent: ～を賃借りする
+recover: Aから回復する
+suspect: ～ではないかと思う、～を疑う
+deliver: ～を配達する、渡す、～をする
+identify: ～の正体をつきとめる、Aと共感する
+locate: 位置する
+manufacture: ～を製造する
+occupy: ～を占める
+own: ～を所有している
+expose: ＡをＢにさらす
+translate: ～を翻訳する
+cure: ～を治療する
+perceive: ～を知覚する
+adjust: ～に慣れる、調節して合わせる
+alarm: ～をぎょっとさせる、おびえさせる
+assist: ～を助ける、～を手伝う
+freeze: 凍りつく
+spoil: ～を台無しにする
+shift: ～を変える
+embarrass: ～を困惑させる、～に恥ずかしい思いをさせる
+approve: 賛成する；～を承認する
+weigh: ～の重さがある、～を比較検討する、よく考える
+stretch: ～を広げる
+participate: Aに参加する
+exhibit: ～を展示する
+owe: AのことはBのおかげだ
+celebrate: ～を祝う
+decorate: ～を装飾する
+forgive: ～を許す
+seat: (be seated)座っている
+injure: ～を傷つける
+sew: ～を縫う
+result: 結果
+feature: 特徴
+society: 社会、協会、団体
+wheel: 車輪、ハンドル
+value: 価値
+effect: 効果、影響、結果
+individual: 個人
+influence: 影響
+fee: 謝礼、料金
+rate: 割合、速度
+sign: 印、兆候
+service: 公共事業、業務
+advance: 前進、進歩
+laughter: 笑い
+material: 物質
+industry: 工業
+attempt: 試み
+trade: 貿易
+progress: 進歩、前進
+excuse: 言い訳
+custom: 習慣、税関
+passage: 一節、経過、通行
+economy: 経済
+track: 小道、足跡
+transportation: 交通機関、輸送
+official: 役人
+sight: 見ること、光景、視力
+taste: 味、好み
+range: 範囲
+appointment: 約束、予約
+patient: 患者、忍耐強い
+project: 計画
+favor: 好意
+appearance: 外見、様子、出現
+risk: 危険
+benefit: 利益
+resident: 住民
+relative: 親族、親戚
+region: 地域
+characteristic: 特徴
+pain: 苦痛
+twin: 双子の一方、双生児
+occasion: 場合、機会
+principle: 原理、原則
+department: 部門、学科
+duty: 義務、関税
+scene: 場面、現場
+jam: 渋滞
+spirit: 精神
+medium: 手段
+mass: 一般大衆、多くの
+audience: 聴衆、観客
+element: 要素、元素
+climate: 気候
+revolution: 革命
+quarter: 4分の1
+furniture: 家具
+brain: 脳
+atmosphere: 大気、雰囲気
+property: 財産
+reward: 報酬
+security: 安全
+delight: 大喜び
+desert: 砂漠
+background: 背景、生い立ち、経歴
+trend: 傾向
+vote: 投票
+impact: 影響、衝撃
+institution: 機関、制度
+interaction: 交流
+alternative: 代わりのもの
+harm: 害
+agency: 機関、代理店
+capacity: 能力
+minister: 大臣
+volunteer: ボランティア
+access: 利用する権利
+quantity: 量
+branch: 枝、支店、支局、部門、分野
+common: 共通の、普通の
+rough: 荒い、大雑把な
+likely: ありそうな、～する可能性が高い
+serious: 深刻な
+particular: ある特定の、特有の
+available: 手に入る、利用できる
+bilingual: 二言語使用の
+ready: 用意ができた
+correct: 正しい
+familiar: 熟知している、くわしい
+physical: 身体の、肉体の
+worth: ～の価値がある
+involved: ～に関係している、参加している
+fantastic: すばらしい
+private: 個人の、私的な
+obvious: 明白な
+native: 母国の
+complex: 複雑な
+willing: ～する気がある、～してもかまわない
+current: 最新の
+male: 男の
+proper: 適切な
+capable: ～する能力がある
+independent: 独立した
+positive: 積極的な
+pleasant: 楽しい
+significant: 重要な
+former: 前の
+chemical: 化学的な
+upset: 動揺している
+previous: 前の
+calm: 冷静な
+specific: 特定の
+conscious: 意識している
+superior: よりすぐれている
+efficient: 効率がいい
+fundamental: 基本的な
+narrow: 狭い
+reasonable: 理にかなった
+nervous: 神経質な、不安な
+alike: 似ている
+domestic: 家庭の、国内の
+negative: 否定の
+moral: 道徳的な
+eager: 熱望している
+remarkable: すばらしい
+evil: 悪い
+awake: 目を覚まして
+aged: 年老いた
+anxious: 心配して、切望して
+tough: たくましい、骨の折れる
+nuclear: 核の、原子力の
+legal: 合法の、法律の
+curious: 好奇心の強い
+civil: 一般市民の
+recent: 最近の
+senior: 上級の、先輩の
+afterward: その後
+nearly: ほとんど
+therefore: それゆえに
+exactly: 正確に
+possibly: ひょっとすると、どうしてもVできない
+contrary: 反対に
+occasionally: 時々
+somehow: どういうわけか、なぜか
+seldom: めったに～ない
+thus: それゆえ、そのように
+throughout: いたる所に
+unlike: ～と違って
+besides: ～に加えて
+beyond: ～の向こうに；～できる範囲をこえて
+within: ～以内で
+nor: ～もない
+unless: ～しない限り
+except: ～を除いて
+ought: ～すべきである
+in spite of: ～にもかかわらず
+whether: ～かどうか、～であろうとなかろうと
+explain: ～を説明する
+accept: ～を受け入れる
+produce: ～を生産する
+exist: 存在する
+express: ～を表現する
+add: ～を加える
+avoid: ～を避ける
+marry: ～と結婚する
+protect: ～を守る
+affect: ～に影響する
+determine: ～を決定する
+solve: ～を解決する
+contain: ～を含んでいる
+discuss: ～を議論する
+ignore: ～を無視する
+guess: ～を推測する
+exchange: 交換する
+satisfy: ～を満たす
+complain: 苦情を言う
+achieve: ～を達成する
+enable: ～を可能にする
+intend: つもりだ
+obtain: ～を得る
+divide: 分割する
+annoy: ～をいらいらさせる
+differ: 異なる
+educate: ～を教育する
+borrow: ～を借りる
+invent: ～を発明する
+promote: ～を促進する
+advise: ～に忠告する
+retire: 辞める
+permit: ～を許す
+recommend: ～を勧める
+apologize: 謝る
+inform: ～に知らせる
+oppose: ～に反対する
+trust: ～を信用する
+select: ～を選ぶ
+praise: ～をほめる
+handle: ～に対処する
+propose: ～を提案する
+breathe: ～を呼吸する
+criticize: ～を非難する
+overcome: ～に打ち勝つ
+possess: ～を持っている
+predict: ～を予言する
+publish: ～を出版する
+floating: 浮かぶ
+recall: ～を思い出す
+explore: ～を探検する
+pretend: ふりをする
+absorb: ～を吸収する
+resemble: ～に似ている
+tear: ～を引き裂く
+consume: ～を消費する
+compete: 競争する
+quit: ～をやめる
+announce: ～を発表する
+react: 反応する
+wander: 歩き回る
+text: メールを送る
+generate: ～を生み出す
+score: ～を取る
+government: 政府
+knowledge: 知識
+nation: 国
+effort: 努力
+period: 時代
+population: 人口
+purpose: 目的
+behavior: 行動
+lack: 不足
+skill: 技術
+quality: 質
+environment: 環境
+role: 役割
+attitude: 態度
+author: 筆者
+research: 研究
+opportunity: 機会
+source: 源
+carbon: 炭素
+shape: 形
+advantage: 利点
+method: 方法
+habit: 習慣
+detail: 細部
+distance: 距離
+crowd: 群衆
+instance: 例
+desire: 願望
+standard: 水準
+task: 仕事
+generation: 世代
+responsibility: 責任
+experiment: 実験
+athlete: 運動選手
+decade: 10年
+loss: 損失
+fever: 熱
+theory: 理論
+statement: 記述
+professor: 教授
+function: 機能
+surface: 表面
+envelope: 封筒
+organization: 組織
+policy: 政策
+resource: 資源
+contrast: 対比
+flood: 洪水
+mate: 連れ合い
+goods: 商品
+creature: 動物
+structure: 構造
+tradition: 伝統
+weight: 体重
+charity: 慈善
+citizen: 市民
+impression: 印象
+cartoon: マンガ
+career: 経歴
+site: 用地
+passenger: 乗客
+violence: 暴力
+income: 所得
+temperature: 気温
+majority: 大多数
+origin: 起源
+literature: 文学
+equipment: 設備
+stranger: 見知らぬ人
+strength: 強さ
+planet: 惑星
+fiction: 小説
+religion: 宗教
+pollution: 汚染
+wealth: 富
+document: 文書
+profit: もうけ
+technique: 技術
+emotion: 感情
+phenomenon: 現象
+horror: 恐怖
+ladder: はしご
+billion: 十億
+status: 地位
+youth: 若者
+confidence: 自信
+edge: 周辺
+household: 家庭
+scholar: 学者
+survey: 調査
+vocabulary: 語彙
+enemy: 敵
+construction: 建設
+lecture: 講義
+instruction: 指示
+crisis: 危機
+instrument: 器具
+crop: 作物
+weapon: 兵器
+device: 装置
+path: 道
+earthquake: 地震
+stream: 小川
+notion: 概念
+yard: 庭
+victim: 犠牲者
+fuel: 燃料
+ancestor: 祖先
+soil: 土壌
+debate: 討論
+crime: 犯罪
+colleague: 同僚
+shelf: 棚
+analysis: 分析
+universe: 宇宙
+electricity: 電気
+insect: 昆虫
+web: 巣
+storm: 嵐
+plenty: 十分な
+agriculture: 農業
+gene: 遺伝子
+evidence: 証拠
+consequence: 結果
+infant: 幼児
+leisure: 暇
+cell: 細胞
+talent: 才能
+advertising: 広告
+extent: 程度
+garbage: ごみ
+general: 一般
+various: さまざまな
+similar: 似ている
+complete: 完全な
+sharp: 急激な
+expensive: 高価な
+political: 政治的な
+aware: 気づいている
+ancient: 古代の
+medical: 医学の
+essential: 不可欠だ
+huge: 巨大な
+terrible: ひどい
+practical: 実用的な
+entire: 全
+favorite: いちばん好きな
+comfortable: 快適な
+minor: 小さい
+typical: 典型的な
+ideal: 理想的な
+principal: 主要な
+appropriate: 適切な
+empty: からの
+rapid: 急速な
+mental: 精神の
+excellent: すばらしい
+convenient: 都合がいい
+potential: 潜在的な
+financial: 財政的な
+enormous: 莫大な
+rare: 珍しい
+artificial: 人工
+tiny: ちっちゃな
+considerable: かなりの
+sensitive: 敏感な
+intellectual: 知的な
+thirsty: のどが渇く
+polite: 礼儀正しい
+accurate: 正確な
+rude: 失礼な
+sufficient: 十分な
+urban: 都会の
+temporary: 一時的な
+primitive: 原始的な
+permanent: 永久
+elderly: 高齢の
+severe: 厳しい
+brief: 簡潔な
+mobile: 流動的な
+latest: 最新の
+military: 軍事的な
+strict: 厳しい
+solid: 固体の
+stupid: ばかな
+biological: 生物
+probably: おそらく
+hardly: ほとんど～ない
+immediately: すぐに
+eventually: ついに
+frequently: しばしば
+extremely: 非常に
+gradually: だんだん
+instantly: すぐに
+nevertheless: それにもかかわらず
+moreover: その上
+relatively: 比較的
+apparently: 一見
+definitely: 絶対
+largely: 主に
+mostly: 大部分は
+approximately: およそ
+overnight: 一晩
+accidentally: 偶然
+despite: にもかかわらず
+proceed: 進む
+ensure: ～を確実にする
+interpret: ～を解釈する
+cease: ～しなくなる
+ban: （公式に）～を禁止する
+obey: ～に従う
+eliminate: (不要なもの)を除去する
+resist: ～に抵抗する
+accompany: 〈人〉に同伴する
+commit: 〈罪など〉を犯す、～をゆだねる、委任する、(本気で)取り組む
+pursue: ～を追求する
+demonstrate: (証明などが)～を明らかに示す
+bet: きっと～だと思う
+ruin: ～を台無しにする、破滅させる
+threaten: ～を脅迫する
+attach: AをBにくっつける
+reverse: ～を反対にする、逆転する
+restrict: ～を制限する
+compose: ～を組み立てる
+lean: よりかかる、もたれる
+substitute: ～を代わりに用いる
+trace: ～の跡をたどる
+interrupt: ～を妨げる
+confront: ～の前に立ちふさがる、～に立ち向かう
+illustrate: ～を（例で）示す
+arrest: ～を逮捕する
+stimulate: ～を刺激する
+assure: （～を）保証する
+consult: ～に相談する、～を参照する
+depress: ～を憂鬱にさせる
+crash: 激突する
+inspire: ～を奮起させる、やる気にさせる
+specialize: Aを専門にする、専攻する
+cultivate: (植物)を栽培する、(感情・能力などを)育む
+fulfill: (約束・夢など)を果たす
+transmit: ～を送る、伝える
+found: ～を創立する、設立する
+clap: (手など)をたたく
 burst: 破裂する、突然～しだす
-bow: お辞儀する、屈する、弓
-dismiss: 解雇する、退ける
-breed: 繁殖させる、生み出す
-prohibit: 禁止する、妨げる
-oblige: 強いる、義務付ける
-qualify: 資格を与える、適格とする
-invest: 投資する、注ぎ込む
-grasp: 掴む、把握する
-collapse: 崩壊する、倒れる
-overlook: 見落とす、見逃す
-accuse: 非難する、告訴する
-frustrate: イライラさせる、挫折させる
-deprive: 奪う、拒む
-astonish: 驚嘆させる、ひどく驚かせる
-register: 登録する、記録する
-correspond: 一致する、連絡を取り合う
-cast: 投げる、役を割り当てる
-attribute: ～のせいにする、属性
-neglect: 怠る、無視する
-starve: 飢える、渇望する
-resolve: 解決する、決心する
-impose: 課す、押しつける
-convert: 変える、転換する
-scare: 怖がらせる、おびえさせる
-constitute: 構成する、～とみなされる
-appoint: 指名する、任命する
-imply: 暗示する、ほのめかす
-assign: 割り当てる、任命する
-nod: 頷く、居眠りする
-elect: 選挙する、選出する
-transfer: 移す、転勤する
-rob: 奪う、強奪する
-capture: 捕らえる、捕獲する
-undertake: 引き受ける、着手する
-drown: 溺れ死ぬ、かき消す
-split: 割る、分裂する
-resort: 訴える、頼る
-descend: 降りる、伝わる
-irritate: イライラさせる、刺激する
-pronounce: 発音する、宣言する
-equip: 装備させる、備えつける
-cheat: 騙す、不正をする
-emerge: 現れる、明らかになる
-devote: 捧げる、委ねる
-heal: 治す、癒やす
-urge: 促す、強く勧める
-envy: 羨む、妬む
-chase: 追いかける、追跡する
-prompt: 促す、迅速な
-withdraw: 撤退させる、引き出す
-detect: 見つけ出す、感知する
-interfere: 邪魔する、干渉する
-kid: 冗談を言う、子供
-laugh: 笑う
-endanger: 危険にさらす
-foster: 育む、養育する
-diminish: 減少する、衰えさせる
-spill: こぼす、流出する
-infect: 感染させる、汚染する
-tap: 軽く叩く、蛇口
-embrace: 抱きしめる、受け入れる
-proportion: 割合、比率
-contract: 契約、収縮する
-chest: 胸、箱
-treasure: 宝物、大事にする
-stock: 在庫、株
-facility: 施設、才能
-sum: 合計、金額
-rank: 階級、順位
-democracy: 民主主義
+bow: おじぎする
+dismiss: (考えなど)を無視する、(人)を解雇する、解散する
+breed: ～を繁殖させる、繁殖する
+prohibit: 〈法・団体が〉～を禁じる
+oblige: ～に強いる
+qualify: Aに適任である
+invest: （金）を投資する
+grasp: ～を理解する
+collapse: 崩壊する
+overlook: ～を見落とす、～を見逃す
+accuse: ～を非難する
+frustrate: 〈人〉を欲求不満にさせる
+deprive: AからBを奪う
+astonish: ～を驚嘆させる
+register: ～を登録する
+correspond: 一致する
+cast: ～を投げる
+attribute: AはBのおかげだと思う
+neglect: ～を無視する、怠る
+starve: 飢える
+resolve: (問題など)を解決する
+impose: AをBに課す、押し付ける
+convert: ～を転換する
+scare: ～をおびえさせる
+constitute: ～を構成する、占める、～である
+appoint: ～を任命する
+imply: ～を(暗に)意味する
+assign: (仕事・物)を割り当てる
+nod: うなずく
+elect: ～を選挙で選ぶ
+transfer: ～を移す
+rob: AからBを奪う
+capture: ～を捕らえる
+undertake: （仕事など）を引き受ける
+drown: おぼれ死ぬ
+split: ～を割る、分裂する
+resort: Aに訴える
+descend: 下る、降りる
+irritate: ～をいらだたせる
+pronounce: 〈単語など〉を発音する
+equip: ～を装備させる
+cheat: いかさまをする
+emerge: 〈隠れていたものが〉現れる
+devote: ～をささげる
+heal: 〈けがなど〉を治す、治る
+urge: ～に強く迫る、～を説得する
+envy: ～をうらやむ
+chase: ～を追いかける
+prompt: ～を促す
+withdraw: ～を引っ込める、引きこもる、退く、(預金など)を引き出す
+detect: ～を探知する、～を発見する
+interfere: Aを邪魔する
+kid: 冗談を言う、からかう
+launch: (ロケットなど)を打ち上げる
+endanger: ～を危険にさらす
+foster: ～を促進する、育成する
+diminish: 減少する、衰える、～を減らす
+spill: ～をこぼす
+infect: 〈人〉に感染する
+stem: Aから生じる、Aに由来する
+tap: ～を軽くたたく
+embrace: 受け入れる、含む
+proportion: 比率
+contract: 契約
+chest: 胸
+treasure: 財宝
+stock: 株(式)
+facility: 設備、施設
+sum: 金額、合計、要約
+rank: 地位
+democracy: 民主主義、民主国家
 emergency: 緊急事態
-protest: 抗議、主張する
+protest: 抗議
 immigrant: 移民
-vehicle: 乗り物、伝達手段
-routine: 決まりきった仕事、習慣
-stuff: 持ち物、材料
-row: 列、漕ぐ
-profile: 横顔、プロフィール
-dawn: 夜明け、始まり
-welfare: 福祉、幸福
-perspective: 視点、見方、遠近法
-enthusiasm: 熱狂、熱意
-faith: 信頼、信仰
+vehicle: 車、乗り物、手段
+routine: 決まりきった仕事、日課
+stuff: 物
+row: 列
+profile: プロフィール、人物紹介、横顔
+dawn: 夜明け
+welfare: 福祉
+perspective: 見方
+enthusiasm: 熱意、情熱
+faith: 信頼
 occupation: 職業、占領
-witness: 目撃者、証人
-kingdom: 王国、界
-equivalent: 同等のもの、相当する
-objective: 目標、客観的な
-pile: 積み重ね、山
-shelter: 避難所、住まい
+witness: 証人、目撃者
+kingdom: 王国
+equivalent: 同等のもの、相当するもの
+objective: 目的、目標、客観的な
+pile: 積み重ね
+shelter: 避難(所)
 trial: 試み、裁判
-honor: 名誉、尊敬
-territory: 領土、縄張り
-frame: 枠組み、骨組み
-border: 境界、国境
-statistics: 統計
+honor: 名誉
+territory: 領土、なわ張り
+frame: わく
+border: 国境地帯
+statistics: 統計(学)
 enterprise: 企業、事業
 context: 文脈、状況
-load: 荷物、重荷
-grain: 穀物、わずか
-review: 再検討、復習、批評
-prejudice: 偏見、先入観
-strain: 負担、緊張
-trap: 罠、閉じ込める
-temper: 気分、気質
+load: 荷物
+grain: 穀物
+review: 再検討
+prejudice: 偏見
+strain: 負担
+trap: わな、閉じ込められる、わなにかける
+temper: 気性
 slave: 奴隷
-wound: 傷、負傷させる
-divorce: 離婚、分離
-tune: 曲、調律する
-height: 高さ、絶頂
-faculty: 能力、学部
-span: 期間、範囲
-dimension: 寸法、次元
-version: 版、翻訳
-parallel: 平行な、類似した
-horizon: 地平線、水平線、視野
-acquaintance: 知人、面識
-burden: 重荷、負担
-basis: 基礎、根拠
+wound: 傷
+divorce: 離婚
+tune: 曲
+height: 高さ、最盛期
+faculty: 学部、能力
+span: 期間
+dimension: 側面、要素、次元
+version: 型、...版、翻訳、説明
+parallel: 類似(物)、匹敵するもの
+horizon: 地平線
+acquaintance: 知人
+burden: 重荷
+basis: 基礎、根拠、方式、やり方
 poison: 毒
 constitution: 憲法
-administration: 管理、行政、政権
-charm: 魅力、お守り
-organ: 臓器、器官、オルガン
-prey: 獲物、餌食
-venture: 冒険的事業、思い切って～する
-mission: 任務、使節団
-inquiry: 問い合わせ、調査
-award: 賞、授与する
-strip: 細長い破片、脱ぐ
-distress: 苦しみ、苦悩
-circulation: 循環、発行部数
-shade: 陰、日よけ
-stereotype: 固定観念、ステレオタイプ
-client: 顧客、依頼人
-output: 出力、生産高
-lord: 貴族、主
-convention: 慣習、会議、大会
-mine: 鉱山、地雷、私のもの
-craft: 工芸、技術、船
-core: 核心、芯
-stroke: 打撃、脳卒中、なでる
-frontier: 国境、辺境、最先端
-peer: 仲間、じっと見る
-vessel: 容器、船、血管
-disability: 障害、無力
-gravity: 重力、重大さ
-ethic: 倫理、道徳
-terminal: 終着駅、端末、末期の
-tide: 潮、潮流
-abuse: 虐待、酷使、乱用
-guilty: 有罪の
-vital: 極めて重要な、生命の
-fellow: 仲間、奴
-contemporary: 現代の、同時代の
-annual: 年に一度の、例年の
-accustomed: 慣れている
-steady: 着実な、安定した
-dull: 退屈な、鈍い
-keen: 鋭い、熱心な
-loose: ゆるい、解き放たれた
-delicate: 繊細な、虚弱な
+administration: 経営、行政
+charm: 魅力
+organ: 臓器、器官
+prey: 獲物、えじき
+venture: 冒険的事業
+mission: 使命、任務
+inquiry: 調査、質問、問い合わせ
+award: 賞
+strip: 細長い一片
+distress: 苦しみ、悲嘆、苦難
+circulation: 循環、流通、発行部数
+shade: 陰、日陰
+stereotype: 典型的なイメージ、類型、固定観念
+client: 依頼人
+output: 生産高
+lord: 神
+convention: 慣習、しきたり、会議、大会
+mine: 鉱山
+craft: 工芸、技術、巧みに作る
+core: 中心、核心
+stroke: 脳卒中、発作、打撃、一撃、なでる
+frontier: 国境
+peer: 同僚、じっと見る
+vessel: 血管、船、器
+disability: 障害
+gravity: 重力
+ethic: 倫理(学)
+terminal: 終点
+tide: 潮流、潮の干満
+abuse: 虐待
+guilty: 有罪の、罪の意識がある
+vital: きわめて重要な、必要な、活気のある
+fellow: 仲間の
+contemporary: 現代の
+annual: 年に１度の、１年間の
+accustomed: 慣れた
+steady: しっかりした
+dull: 退屈させる
+keen: 熱望して、鋭い
+loose: ゆるい
+delicate: 繊細な、微妙で難しい
 internal: 内部の、国内の
-casual: 何気ない、形式ばらない
-mature: 成熟した、熟した
+casual: 形式ばらない、気楽な
+mature: 成熟した
 concrete: 具体的な
-awful: ひどい、恐ろしい
-exhausted: 疲れ果てた、使い果たした
-overall: 全体的な、概して
-tight: きつい、しっかりした
+awful: ひどい
+exhausted: 疲れ切っている
+overall: 全面的な、全体的な
+tight: 引き締まった、きつい
 prime: 最も重要な、主要な
-genuine: 本物の、真実の
-modest: 謙虚な、控えめな
-intimate: 親密な、詳解な
+genuine: 本物の、真の、心からの
+modest: 控えめな、謙虚な、わずかな
+intimate: 親密な
 minimum: 最小限の
-sophisticated: 洗練された、精巧な
+sophisticated: 高度な
 latter: 後者の
-bitter: 苦い、辛辣な
+bitter: 苦い、つらい、腹を立てた
 peculiar: 独特の、固有の
 passive: 受動的な、消極的な
-ethnic: 民族の、人種の
-noble: 高貴な、崇高な
-vain: 無駄な、虚栄心の強い
-innocent: 無実の、無邪気な
-underlying: 根本的な、下にある
-alien: 異質な、外国の、宇宙人
-relevant: 関連のある、適切な
-inclined: ～したいと思う、傾向がある
-awkward: 不器用な、気まずい
-brilliant: 素晴らしい、輝かしい
-desperate: 必死の、絶望的な
+ethnic: 民族的な、民族の
+noble: 高貴な
+vain: むだな
+innocent: 無罪の、罪のない、無邪気な
+underlying: 根本的な
+alien: 外国の、異質な
+relevant: 関連のある
+inclined: Ｖする傾向がある、Ｖしたい気がある
+awkward: 気まずい
+brilliant: すばらしい
+desperate: 必死の
 refreshing: さわやかな
-thrilled: わくわくした、感激した
-inner: 内側の、精神的な
-consistent: 一貫した、矛盾のない
-plain: 明白な、簡素な、平原
-vivid: 鮮やかな、鮮明な
-miserable: 惨めな、不幸な
-substantial: かなりの、実質的な
-fond: 好んで、好きで
-false: 誤った、偽の
-lazy: 怠惰な、だるい
-precisely: 正確に、まさに
-meanwhile: その間に、一方で
-altogether: 完全に、全部で
+thrilled: とてつもなくうれしい
+inner: 内側の
+consistent: 矛盾のない、一致した
+plain: 明白な、わかりやすい
+vivid: 鮮やかな
+miserable: 惨めな
+substantial: 相当な、多大な
+fond: Aが好きだ
+false: まちがいの
+lazy: 怠惰な
+precisely: 正確に、まさに、ちょうど
+meanwhile: その間に
+altogether: 完全に
 lately: 最近
 barely: かろうじて
 scarcely: ほとんど～ない
-accordingly: それに応じて、したがって
-beneath: ～の下に
-whereas: ～である一方で
-declare: 宣言する、申告する
-alter: 変える、修正する
-arise: 生じる、起こる
-transform: 変える、変形させる
-defeat: 打ち負かす、敗北
-investigate: 調査する、研究する
-distinguish: 区別する、見分ける
-bury: 埋める、埋葬する
-cope: 対処する、うまく処理する
-occur: 起こる、心に浮かぶ
-accomplish: 成し遂げる、達成する
-hesitate: 躊躇する、ためらう
-endure: 耐える、持続する
-conclude: 結論づける、締めくくる
-guarantee: 保証する、請け合う
-dominate: 支配する、優位に立つ
-confirm: 確認する、裏付ける
-greet: 挨拶する、迎える
-entertain: 楽しませる、もてなす
-defend: 防御する、守る
-forbid: 禁止する
-broadcast: 放送する、広める
-sacrifice: 犠牲にする、捧げる
-punish: 罰する
-glance: ちらりと見る、一瞥
-retain: 保持する、覚えている
-calculate: 計算する、予測する
-sinking: 沈没、沈むこと
-rescue: 救助する
-beg: 乞う、頼む
-define: 定義する、明確にする
-deceive: 騙す、思い違いをさせる
-convey: 伝える、運ぶ
-sustain: 維持する、支える
-purchase: 購入する
-fade: 消えていく、色あせる
-regulate: 規制する、調整する
-distribute: 分配する、配布する
-enhance: 高める、増す
+accordingly: それ相応に
+deliberately: わざと
+beneath: ～の下で
+whereas: ～だが一方
+declare: ～を宣言する
+alter: ～を変える
+arise: 生じる
+transform: 変える
+defeat: ～を打ち負かす
+investigate: ～を調査する
+distinguish: ～を見分ける
+bury: ～を埋める
+cope: うまく対処する
+occur: 起こる
+accomplish: ～をやりとげる
+hesitate: ためらう
+endure: ～に耐える
+conclude: ～と結論づける
+guarantee: ～を保証する
+dominate: ～を支配する
+confirm: ～を裏付ける
+greet: ～にあいさつする
+entertain: ～を楽しませる
+defend: ～を守る
+forbid: ～を禁じる
+broadcast: ～を放送する
+sacrifice: ～を犠牲にする
+punish: ～を罰する
+glance: ちらりと見る
+retain: ～を保持する
+calculate: ～を計算する
+sinking: 沈む
+rescue: ～を救助する
+beg: ～と乞う
+define: 定義する
+deceive: ～をだます
+convey: ～を伝える
+sustain: ～を維持する
+purchase: ～を購入する
+fade: 薄れる
+regulate: ～を規制する
+distribute: ～を分配する
+enhance: ～を向上させる
 chat: おしゃべりする
-exceed: 超える、上回る
-wipe: 拭く、拭い去る
+exceed: ～を超える
+wipe: ～をふく
 cooperate: 協力する
-inherit: 相続する、受け継ぐ
-unite: 団結させる、結合する
-leap: 跳ぶ、跳躍
-exaggerate: 誇張する
-conquer: 征服する、克服する
+inherit: ～を受け継ぐ
+unite: ～を団結させる
+leap: 跳ぶ
+exaggerate: ～を誇張する
+conquer: ～を征服する
 melt: 溶ける
-invade: 侵入する、侵略する
-modify: 修正する、変更する
-scatter: まき散らす、散退させる
-undergo: 経験する、受ける
-evaluate: 評価する、査定する
-bend: 曲げる、屈服する
-derive: 引き出す、由来する
-screaming: 叫んでいる、絶叫
-gaze: 見つめる、注視
+invade: ～に侵入する
+modify: ～を修正する
+scatter: ～をばらまく
+undergo: ～を経験する
+evaluate: ～を評価する
+bend: 身をかがめる
+derive: 由来する
+screaming: 悲鳴をあげる
+gaze: 見つめる
 pray: 祈る
-polish: 磨く、洗練させる
+polish: ～を磨く
 classify: 分類する
-assert: 断言する、主張する
-grab: 掴む、ひっつかむ
-fold: 畳む、折り重ねる
-sweep: 掃除する、掃く
-whisper: 囁く、小声で話す
-imitate: 模倣する、真似る
-stare: 凝視する、じっと見る
-emphasize: 強調する
-get rid of: 処分する、取り除く
-pour: 注ぐ、流れる
-vanish: 消える、見えなくなる
-restore: 修復する、戻す
-deserve: 値する、ふさわしい
-laboratory: 研究所、実験室
-conference: 会議、協議連盟
+assert: ～と主張する
+grab: ～をつかむ
+fold: ～を折りたたむ
+sweep: ～を掃く
+whisper: ささやく
+imitate: ～をまねる
+stare: じっと見る
+emphasize: ～を強調する
+rid: ～を取り除く
+pour: ～を注ぐ
+vanish: 消える
+restore: ～を修復する
+deserve: 当然だ
+laboratory: 研究所
+conference: 会議
 continent: 大陸
 insurance: 保険
-crew: 乗組員、班
-poverty: 貧困、欠乏
+crew: 乗組員たち
+poverty: 貧乏
 shortage: 不足
-affair: 事件、事柄、事務
+affair: 情勢
 exception: 例外
-low wage: 低賃金
-wisdom: 知恵、学識
+wage: 賃金
+wisdom: 知恵
 tax: 税金
-evolution: 進化、展開
-barrier: 障壁、防壁
-category: 範疇、カテゴリー
-unit: 単位、個体
-reputation: 評判、名声
-virtue: 美徳、長所
+evolution: 進化
+barrier: 壁
+category: 範ちゅう
+unit: 単位
+reputation: 評判
+virtue: 美徳
 courage: 勇気
-sympathy: 同情、共感
-union: 組合、団結、連合
+sympathy: 同情
+union: 組合
 civilization: 文明
-volume: 音量、容積、巻
-blossom: 花、開花する
+volume: 冊
+blossom: 花
 era: 時代
-settle dispute: 紛争を解決する
-tourism: 観光、観光事業
+dispute: 紛争
+tourism: 観光
 mankind: 人類
-murder: 殺人、殺害する
-landscape: 風景、景色
+murder: 殺人
+landscape: 風景
 destination: 目的地
-fairy tale: 童話、おとぎ話
-reform: 改革、改善
-muscle: 筋肉、力
-prospect: 見通し、可能性
-corporation: 法人、株式会社
-colony: 植民地、集団
-quarrel: 口論、喧嘩
-profession: 職業、専門職
-aspect: 側面、様相
-pause: 休止、中断
-conflict: 紛争、対立
-privilege: 特権、特典
+tale: 話
+reform: 改革
+muscle: 筋肉
+prospect: 見通し
+corporation: 企業
+colony: 植民地
+quarrel: 口論
+profession: 職業
+aspect: 側面
+pause: 休止
+conflict: 対立
+privilege: 特権
 prosperity: 繁栄
-genius: 天才、才能
-seed: 種、原因
-symptom: 症状、兆候
-merit: 長所、功績
+genius: 天才
+seed: 種
+symptom: 症状
+merit: 長所
 layer: 層
 clue: 手がかり
-circumstances: 状況、境遇
-district: 地区、行政区
+circumstances: 状況
+district: 地区
 prison: 刑務所
-companion: 仲間、付き添い
-executive: 役員、執行部、実行の
-justice: 正義、裁判
-procedure: 手続き、手順
+companion: 仲間
+executive: 重役
+justice: 正義
+procedure: 手続き
 ray: 光線
-heaven: 天国、空
-luxury: 贅沢、高級品
+heaven: 天国
+luxury: 贅沢
 oxygen: 酸素
-fund: 資金、基金
+fund: 資金
 theme: 主題、テーマ
-boundary: 境界、端
-ambition: 野望、野心
-weather: 天候、気象
-psychology: 心理学、心理
-labor: 労働、苦労
+boundary: 境界
+ambition: 熱望
+forecast: 予報
+psychology: 心理学
+labor: 労働
 committee: 委員会
-physician: 医師、内科医
-philosophy: 哲学、原理
-affection: 愛情、好意
-candidate: 候補者、志望者
+physician: 医者
+philosophy: 哲学
+affection: 愛情
+candidate: 候補
 bomb: 爆弾
-priority: 優先事項
-obstacle: 障害、邪魔
-appetite: 食欲、欲求
-tension: 緊張、不安
-tribe: 部族、種族
+priority: 優先
+obstacle: 障害
+appetite: 食欲
+tension: 緊張
+tribe: 部族
 budget: 予算
-campaign: キャンペーン、運動
-sorrow: 悲しみ、後悔
+campaign: 運動、キャンペーン
+sorrow: 悲しみ
 satellite: 衛星
-insight: 洞察、眼識
-cough: 咳
-fate: 運命、宿命
-scheme: 計画、陰謀
-insult: 侮辱、無礼
-inhabitant: 居住者、住民
+insight: 洞察
+cough: せき
+fate: 運命
+scheme: 計画
+insult: 侮辱
+inhabitant: 住民
 fossil: 化石
-motive: 動機、目的
-instinct: 本能、直感
-legend: 伝説、言い伝え
+motive: 動機
+instinct: 本能
+legend: 伝説
 empire: 帝国
 suburb: 郊外
-architecture: 建築、構造
-passion: 情熱、激情
-cancer: 癌、害毒
-logic: 論理、理屈
-dozen: ダース、12個
-harvest: 収穫、結果
-ingredient: 材料、成分
+architecture: 建築
+passion: 情熱
+cancer: ガン
+logic: 論理
+dozen: ダース
+harvest: 収穫
+ingredient: 材料
 hypothesis: 仮説
-voyage: 航海、船旅
+voyage: 航海
 editor: 編集者
-option: 選択肢、選択
+option: 選択の自由
 hemisphere: 半球
-mechanism: 仕組み、機構
+mechanism: 仕組み
 anthropologist: 人類学者
-tragedy: 悲劇、惨事
+tragedy: 悲劇
 antibiotic: 抗生物質
-fare: 運賃、料金
-debt: 借金、負債
+fare: 運賃
+debt: 借金
 curriculum: 教育課程
-component: 構成要素、部品
+component: 構成要素
 wheat: 小麦
-usage: 語法、慣習、使用法
+usage: 語法
 castle: 城
-famine: 飢饉、欠乏
-extinction: 絶滅、消滅
-purse: 小銭入れ
-folk: 人々、民俗の
-explosion: 爆発、急増
-portion: 部分、分け前
-organism: 有機体、生物
+famine: 飢饉
+extinction: 絶滅
+purse: 財布
+folk: 民族
+explosion: 爆発
+portion: 部分
+organism: 生物
 merchant: 商人
-myth: 神話、作り事
-incident: 出来事、事件
+myth: 神話
+incident: 出来事
 wildlife: 野生生物
-congress: 国会、会議
-bay: 湾、入り江
-penalty: 刑罰、罰金、ペナルティ
-heritage: 遺産、伝統
+congress: 議会
+bay: 湾
+penalty: 刑
+heritage: 遺産
 diversity: 多様性
 thumb: 親指
-geography: 地理学、地形
-factor: 要因、要素
-discrimination: 差別、識別
+geography: 地理
+factor: 要因
+discrimination: 差別
 virus: ウイルス
-statue: 像、彫像
-priest: 聖職者、司祭
-pioneer: 先駆者、開拓者
-trait: 特徴、特性
-bond: 絆、債券、結束
-grocery: 食料雑貨
-secretary: 秘書、長官
+statue: 像
+priest: 神父
+pioneer: 先駆者
+trait: 特徴
+bond: きずな
+grocery: 食料品
+secretary: 秘書
 dialect: 方言
 astronomy: 天文学
-youngster: 若者、子供
-substance: 物質、実体、実質
-finding: 発見、調査結果
+youngster: 子供
+substance: 物質
+finding: 発見
 strategy: 戦略
 lung: 肺
-opponent: 相手、敵対者
-ritual: 儀式、習慣
-outcome: 結果、成果
-conservation: 保存、保護
+opponent: 敵
+ritual: 儀式
+outcome: 結果
+conservation: 環境保護
 mammal: 哺乳類
 telescope: 望遠鏡
 refugee: 難民
-code: 規約、符号、コード
-flavor: 風味、味
-particle: 粒子、微量
-nursing: 看護、育児
+code: 規則
+flavor: 風味
+particle: 粒子
+nursing: 看護
 suicide: 自殺
-habitat: 生息地、住処
+habitat: 生息地
 bullying: いじめ
 dinosaur: 恐竜
-council: 会議、評議会
+council: 議会
 gender: 性別
-surgery: 手術、外科
-innovation: 革新、刷新
+surgery: 手術
+innovation: 革新
 protein: タンパク質
 nutrition: 栄養
-disaster: 災害、惨事
-emission: 排出、放出
+disaster: 災害
+emission: 排出
 ape: 類人猿
 molecule: 分子
 sweat: 汗
 transplant: 移植
 species: 種
-tip: 助言、ヒント、先端、チップ
+tip: 先
 cattle: 牛
-density: 密度、濃度
-concept: 概念、考え
-pale: 青白い、淡い
-precious: 貴重な、高価な
-loyal: 忠実な、誠実な
-isolated: 孤立した、分離された
-generous: 寛大な、気前のよい
-tropical: 熱帯の
-reluctant: 気が進まない、嫌がる
-vague: 曖昧な、漠然とした
-vast: 広大な、膨大な
-numerous: 数多くの
+density: 密度
+concept: 概念
+pale: 青白い
+precious: 貴重な
+loyal: 忠実な
+isolated: 孤立している
+generous: 気前のよい
+tropical: 熱帯
+reluctant: したがらない
+vague: 漠然とした
+vast: 広大な
+numerous: たくさんの
 rural: 田舎の
-widespread: 広範囲にわたる
-visible: 目に見える、明らかな
-raw: 生の、未加工の
-remote: 遠い、人里離れた
-urgent: 緊急の、切羽詰まった
-silly: 愚かな、ばかげた
-striking: 著しい、目立つ
-adequate: 適切な、十分な
-extraordinary: 並外れた、異常な
-odd: 奇妙な、奇数の
+widespread: 広まっている
+complicated: 複雑な
+visible: 目に見える
+raw: 生の
+remote: へんぴな
+urgent: 緊急の
+silly: ばかな
+striking: いちじるしい
+adequate: 十分な
+extraordinary: 並外れた
+odd: おかしな
 abstract: 抽象的な
-mutual: 相互の、共通の
-excessive: 過度の、極端な
-ashamed: 恥じて
-tremendous: 凄まじい、巨大な
+mutual: 相互の
+excessive: 過度の
+ashamed: 恥ずかしい
+tremendous: とてつもない
 inevitable: 避けられない
-pure: 純粋な、潔白な
-stable: 安定した、しっかりした
-indifferent: 無関心な
-aggressive: 攻撃的な、積極的な
-ultimate: 究極の、最後の
-shy: 内気な、恥ずかしがりの
-solar: 太陽の
-profound: 深い、深い知識のある
-subtle: 微妙な、鋭い
-conservative: 保守的な
+pure: 純
+stable: 安定した
+indifferent: 無関心だ
+aggressive: 攻撃的な
+ultimate: 究極の
+shy: 内気な
+solar: 太陽
+profound: 深い
+subtle: 微妙な
+conservative: 保守
 brave: 勇敢な
-intense: 激しい、強烈な
+intense: 強烈な
 alcoholic: アルコールの
-manual: 手動の、説明書
+manual: 手を使う
 cruel: 残酷な
-rational: 理性的な、合理的な
-initial: 初期の、頭文字
-immune: 免疫のある、免除された
+rational: 理性的な
+initial: 最初の
+immune: 免疫
 linguistic: 言語の
-crucial: 重要な、決定的な
-verbal: 言葉による、口頭の
+crucial: 重大な
+verbal: 言葉による
 optimistic: 楽観的な
-flexible: 柔軟な、曲げやすい
+flexible: 柔軟な
 grateful: 感謝している
-lively: 元気な、活発な
+lively: 生き生きとした
 overwhelming: 圧倒的な
 abundant: 豊富な
 selfish: 利己的な
-ugly: 醜い、不快な
+ugly: みにくい
 racial: 人種の
-prominent: 卓越した、目立つ
-controversial: 論争を呼ぶ
+prominent: 有名な
+controversial: 物議を呼ぶ
 federal: 連邦の
 ridiculous: ばかげた
-imaginary: 想像上の
-harsh: 厳しい、ざらざらした
-random: 無作為な、手当たり次第の
-adolescent: 思春期の、若者
+imaginary: 架空の
+harsh: 厳しい
+random: 無作為な
+adolescent: 思春期の
 up-to-date: 最新の
-liberal: 自由主義の、寛大な
-prior: 前の、優先的な
-moderate: 適度な、穏健な
-fluent: 流暢な
-elaborate: 精巧な、詳しく述べる
+liberal: 自由主義の
+prior: 前の
+moderate: 適度な
+fluent: 流ちょうな
+elaborate: 手の込んだ
 incredible: 信じられない
-radical: 急進的な
-acid: 酸性の、辛辣な
-deaf: 耳が聞こえない
+radical: 根本的な
+acid: 酸性の
+deaf: 耳が不自由な
 medieval: 中世の
-ecological: 生態学的な
-slight: わずかな、軽視する
+ecological: 生態
+slight: 少しの
 ignorant: 無知な
-cognitive: 認知の
-absolutely: 絶対に、完全に
-virtually: 事実上、ほとんど
-somewhat: いくぶん、多少
-merely: 単に、たった
+cognitive: 認知
+absolutely: 絶対に
+virtually: ほとんど
+somewhat: 多少
+merely: 単に
 literally: 文字通り
-seemingly: 見たところ、外見上は
-regardless: かかわらず
-thoroughly: 徹底的に、完全に
+seemingly: 一見
+regardless: 関係なく
+thoroughly: 徹底的に
+submit: Aに服従する、提出する
+tempt: 誘惑する、する気にさせる
+resign: 辞職する
+conform: 従う
+confine: 限定する
+assemble: 組み立てる
+dedicate: ささげる
+advocate: 主張する
+thrive: 繁栄する
+provoke: 引き起こす
+dictate: 命じる、要求する、決定する
+exploit: 利用する、開発する
+surrender: 降伏する
+reproduce: 再生する、複製する、繁殖する[させる]
+acknowledge: 認める
+swell: ふくらむ
+shed: 落とす
+wind: 曲がる
+cite: 引き合いに出す
+digest: 消化する
+skip: とばす、抜かす
+bind: 縛る、束縛する
+dissolve: 溶解する
+implement: 実行する
+steer: 操縦する
+congratulate: 祝福する
+designate: 指定する
+violate: 破る、違反する
+presume: 推定する、思う
+recruit: （新人を）入れる
+coincide: 同時に起きる、重なる
+enforce: 施行する
+displace: とってかわる、故郷から追い出す
+shrink: 縮む、縮ませる、減る
+betray: 裏切る、もらす
+comprise: 構成される、構成する、占める
+indulge: ふける
+penetrate: 入り込む
+devastate: 壊滅させる
+plunge: 突っ込む
+bounce: はね返る
+contradict: 矛盾する
+prescribe: 処方する
+oppress: しいたげる
+cherish: 胸に抱く
+illuminate: 照らす、解明する
+trigger: きっかけになる
+commute: 通勤する、通学する
+induce: 誘う
+utilize: 利用する
+snap: ポキンと折れる、ポキンと折る
+donate: 提供する
+hatch: （卵?ヒナ）かえす、かえる
+enclose: 囲む
+prevail: 普及している、広まる
+sigh: ため息をつく
+leak: 漏れる、漏らす
+compel: 強制する
+crush: 押しつぶす
+comprehend: 理解する
+negotiate: 交渉する
+persist: 持続する、残る
+multiply: 増やす、増える、掛ける
+conceive: 想像する
+compensate: 埋め合わせる
+suspend: 中止する、つるす
+stir: かきたてる
+soak: 浸す、びしょぬれにする、吸収する
+refine: 洗練する、磨きをかける
+arouse: 刺激する、かき立てる
+precede: 先行する
+render: OをCにする、変える
+mount: すえつける、乗る
+retreat: 退く
+startle: 驚かせる
+dare: する勇気がある
+sphere: 領域、範囲
+sequence: 連続、順番、順序
+deposit: 預金、頭金、堆積物
+poll: 世論調査、投票
+caution: 用心
+rage: 激怒、怒り
+formula: 式、公式、方法、秘訣、解決策
+plot: 筋、たくらみ、陰謀
+scope: 範囲
+norm: 規範
+disgust: 嫌悪
+compromise: 妥協
+supervisor: 監督者
+paradox: 逆説
+tissue: （生物の）組織；ティッシュペーパー
+breakdown: 崩壊
+initiative: 構想、主導権、
+fabric: 織物、布
+publicity: 宣伝、広告
+summit: 頂上、頂点、首脳会議
+flock: 群れ
+plague: 疫病
+haste: 急ぐこと
+nap: うたた寝
+ally: 同盟国
+draft: 下書き、草稿
+spectacle: 光景
+premise: 前提
+asset: 財産
+lag: 遅れ
+therapy: 療法、治療法
+reception: もてなし
+compound: 化合物
+blessing: ありがたいもの、恵み
+sensation: 感覚、感じ
+recession: 不景気、不況
+pole: 棒、極
+outlook: 態度、考え方、見通し、見込み
+endeavor: 活動
+mercy: 慈悲、情け
+counterpart: 相当するもの
+session: 期間、討論
+spectrum: 変動範囲、領域
+junk: くず、がらくた
+worship: 崇拝
+apt: しがちである、する傾向がある
+humble: 謙虚な、粗末な
+entitled: 得る権利がある、題された
+valid: 妥当な、正当な
+faint: かすかな
+stiff: 堅い
+obscure: わかりにくい
+fierce: 激しい
+acute: （問題が）深刻な、（感覚・痛みが）鋭い
+idle: （仕事がなくて）何もしていない
+crude: 粗末な、粗野な
+jealous: 嫉妬深い、羨ましい
+pregnant: 妊娠している
+liable: しがちである、可能性が高い
+stubborn: 頑固な
+decent: まともな
+marvelous: 驚くべき
+misleading: 誤解を招く
+synthetic: 合成の
+classical: クラシックの
+Muslim: イスラム教の
+anticipate: 予想する
+rub: こする
+dispose: 処理する
+refrain: 控える
+accumulate: 蓄積する
+boost: 活気づける
+drag: 引きずる
+revise: 修正する
+scratch: かく
+roar: ほえる
+quote: 引用する
+bloom: 咲く
+insert: 差し込む
+awaiting: 待つ
+dread: 恐れる
+conceal: 隠す
+enrich: 豊かにする
+cling: 固執する
+surpass: まさる
+suppress: 抑える
+portray: 描く
+soaring: 急上昇する
+drain: 排出する
+glow: ボーッと光る
+migrate: 移住する
+exclaim: 叫ぶ
+exert: 及ぼす
+disguise: 隠す
+accelerate: 加速する
+dwell: 住む
+integrate: 融けこませる
+weep: 泣く
+reassure: 安心させる
+crawl: はって進む
+restrain: 抑制する
+resent: 腹を立てる
+yell: 大声で叫ぶ
+assess: 評価する
+carve: 彫る
+halt: 止める
+inspect: 検査する
+tackle: 取り組む
+omit: 省く
+chew: かむ
+resume: 再開する
+mold: 作る
+accommodate: 収容できる
+erase: 消す
+inferred: 推量する
+revive: 生き返らせる
+contemplate: 考える
+rotate: 回転する
+disrupt: かき乱す
+navigate: 進路を決める
+ache: 痛む
+discard: 捨てる
+incorporate: 取り入れる
+overtake: 追い越す
+supplement: 補う
+manipulate: 操作する
+nourish: 養う
+squeeze: しぼる
+depict: 描く
+distract: そらす
+disclose: 暴露する
+enroll: 入学する
+nurture: 育てる
+speculate: 推測する
+prolong: 延ばす
+execute: 処刑する
+uncover: 明らかにする
+tremble: 震える
+seize: つかむ
+abolish: 廃止する
+scold: しかる
+attain: 達成する
+utter: 発する
+flee: 逃げる
+offending: 怒らせる
+confess: 告白する
+postpone: 延期する
+drift: 漂う
+weave: 織る
+install: 備えつける
+twist: ねじ曲げる
+extract: 取り出す
+bump: ぶつかる
+despise: 軽蔑する
+tolerate: 我慢する
+boast: 自慢する
+flourishing: 栄えている
+disregard: 無視する
+tease: からかう
+reinforce: 強める
+strive: 努力する
+coordinate: 合わせる
+yawn: あくびをする
+hug: 抱きしめる
+combat: 戦う
+knit: 編む
+fatigue: 疲労
+fame: 名声
+mess: めちゃくちゃ
+dignity: 尊厳
+canal: 運河
+drought: 干ばつ
+despair: 絶望
+interval: 間隔
+luggage: 荷物
+behalf: 代表して
+impulse: 衝動
+debris: 破片
+beast: 野獣
+superstition: 迷信
+illusion: 幻想、錯覚
+thread: 糸
+intake: 摂取量
+feast: 宴会
+transition: 移り変わり
+misery: 悲惨さ
+radiation: 放射線
+log: 丸太
+consensus: 合意
+deed: 行い
+proverb: ことわざ
+compliment: ほめ言葉
+flame: 炎
+anniversary: 記念日
+conscience: 良心
+expedition: 探検
+offspring: 子孫
+allowance: こづかい
+headline: 大見出し
+treaty: 条約
+monument: 記念碑
+worm: 虫
+remedy: 治療法
+encyclopedia: 百科事典
+glimpse: ちらり
+personnel: 職員
+triumph: 勝利
+arithmetic: 算数
+self-esteem: 自尊心
+microbe: 微生物
+odds: 可能性
+chaos: 混沌
+destiny: 運命
+diameter: 直径
+lottery: 宝くじ
+souvenir: みやげ物
+trail: 小道
+ratio: 比率
+sword: 剣
+whistle: 笛
+sentiment: 感情
+chore: 雑用
+courtesy: 礼儀
+mayor: 市長
+surveillance: 監視、見張り
+trash: ごみ
+prestige: 名声
+headquarters: 本部、本社
+wilderness: 荒野
+orbit: 軌道
+bias: 偏見
+republic: 共和国
+bargain: 掘り出し物
+domain: 領域
+fragment: 破片
+galaxy: 星雲
+lap: ひざ
+deadline: 締め切り
+bullet: 弾丸
+pedestrian: 歩行者
+wit: 機知
+nuisance: 迷惑
+criteria: 基準
+hardship: 苦難
+glory: 栄光
+pavement: 歩道
+navy: 海軍
+script: 台本
+pension: 年金
+province: 州
+surplus: 余剰
+moisture: 水分
+patch: あて布
+altitude: 高度、標高
+thermometer: 温度計
+tuition: 授業料
+troop: 軍隊
+primate: 霊長類
+flaw: 欠陥
+nephew: 甥
+garment: 衣服、衣類
+diagnosis: 診断
+commerce: 商業
+antiquity: 古代、古物
+fraction: ほんの一部
+irony: 皮肉
+nightmare: 悪夢
+defect: 欠陥
+certificate: 証明書
+decay: 腐敗
+erosion: 浸食
+recipe: 秘けつ
+skeleton: 骨格
+grace: 優雅さ
+landmark: 名所
+dementia: 認知症
+flesh: 肉
+collision: 衝突、対立
+hazard: 危険なもの
+tomb: 墓
+injection: 注射
+breakthrough: 飛躍的進歩
+leather: 革
+jewelry: 宝石
+cue: 合図
+ambulance: 救急車
+estate: 不動産
+commodity: 商品
+departure: 出発
+phase: 段階
+thief: 泥棒
+saint: 聖
+sculpture: 彫刻
+grief: 悲しみ
+lane: 車線
+predator: 捕食動物
+fluid: 流体
+incentive: はげみ
+bride: 花嫁
+intervention: 介入
+margin: 差
+biography: 伝記
+consent: 同意
+volcano: 火山
+rebel: 反逆者
+metaphor: 比喩
+legislation: 法律
+lightning: 雷
+pesticide: 殺虫剤
+column: コラム
+rumor: うわさ
+dust: ほこり
+dialogue: 対話
+kindergarten: 幼稚園
+diabetes: 糖尿病
+obesity: 肥満
+patent: 特許
+chapter: 章
+palace: 宮殿
+laundry: 洗濯
+ward: 病棟
+outbreak: ぼっ発
+equation: 方程式
+archaeologist: 考古学者
+corruption: 腐敗
+germ: 細菌
+revenue: 収入
+spouse: 配偶者
+epidemic: 流行
+mortality: 死亡
+syndrome: 症候群
+retail: 小売り
+dose: 量
+beverage: 飲み物
+metabolism: 新陳代謝
+hybrid: 交配種
+scent: 香り
+inflammation: 炎症
+pill: 薬
+grave: 重大な
+fertile: 肥えた
+hostile: 反感を持つ
+indispensable: 不可欠な
+oriented: 志向の
+splendid: すばらしい
+competent: 有能な
+supreme: 最高の
+straightforward: わかりやすい
+sacred: 聖
+bold: 大胆な
+uneasy: 不安な
+neat: きちんとした
+shallow: 浅い
+fake: 偽物の
+superficial: 表面的な
+absurd: ばかげた
+fragile: 壊れやすい
+respectable: ちゃんとした
+magnificent: すばらしい
+infinite: 無限の
+comprehensive: 包括的な
+steep: 険しい
+gross: 総
+subsequent: 次に起こる
+sincere: 心からの
+toxic: 有毒な
+neutral: 中立の
+diligent: 勤勉な
+sore: 痛い
+contaminated: 汚染された
+ambiguous: あいまいな
+oral: 口述の
+restless: 落ち着かない
+rotten: 腐った
+vigorous: 精力的な
+immense: 莫大な
+metropolitan: 大都市の
+punctual: 時間をきっちり守る
+solitary: 孤独な
+collective: 集団
+diplomatic: 外交の
+nasty: 不快な
+helpless: 無力な
+explicit: 明確な、はっきりした
+bankrupt: 破産した
+eternal: 永遠の
+sole: 唯一の
+sour: すっぱい
+notable: 注目すべき
+affluent: 裕福な
+naked: 裸の
+vocal: 発声
+feminine: 女性の
+vacant: 空いている
+exotic: 外来の
+rigid: 厳格な
+humid: 蒸し暑い
+outstanding: 傑出した
+addicted: 中毒である
+vulnerable: 受けやすい
+spontaneous: 自然に起こる
+greedy: 貪欲な
+trivial: ささいな
+per capita: 一人当たりの
+inherent: 元から伴う
+promising: 前途有望な
+physiological: 生理的な
+clinical: 臨床
+chronic: 慢性の
+geological: 地質学的な
+countless: 無数の
+innate: 先天的な
+alert: 用心する
+autonomous: 自動運転
+simultaneously: 同時に
+utterly: まったく
+drastically: 劇的に
+necessarily: 必ずしも
+thereby: そうすることで
+frankly: 率直に
+namely: すなわち
+hence: だから
+via: 経由で
+owing: のために
+clarify: 明らかにする
+smash: 粉々に砕く
+mourn: 悲しむ
+summon: 呼ぶ
+shatter: 粉々にする
+linger: 残る
+lament: 嘆く
+endowed: 恵まれる
+rejoice: 喜ぶ
+allocate: 配分する
+slap: ピシャリと打つ
+contend: 主張する
+swear: 誓う
+discern: 識別する
+degrade: 悪化させる
+erect: 築く
+testify: 証言する
+spur: 駆りたてる
+roam: 歩き回る
+frown: まゆをひそめる
+lure: 呼び込む
+defy: 逆らう
+stroll: ぶらつく
+rattle: がたがた鳴らす
+reconcile: 調和させる
+blur: ぼやかす
+soothe: なだめる
+impair: 低下させる
+comply: 従う
+pierce: 穴をあける
+stumble: つまずく
+hinder: さまたげる
+mock: あざける
+embody: 具現する
+stalk: 忍び寄る
+proclaim: 宣言する
+applaud: 拍手する
+inflict: 与える
+merge: 合併する
+evacuated: 避難した
+undone: 元に戻る
+poke: 突く
+haunted: つきまとわれる
+adhere: 固く守る
+compile: まとめる
+wither: しぼむ
+stun: びっくりさせる
+choke: のどがつまる
+deteriorate: 悪化する
+dump: 捨てる
+murmur: つぶやく
+delete: 削除する
+inhibit: 阻害する
+divert: そらす
+tame: 飼いならす
+reap: 手に入れる
+affirm: 断言する
+immersed: 浸る
+expire: 期限が切れる
+embark: 乗り出す
+vow: 誓う
+foresee: 予知する
+adore: 崇拝する
+yearn: 切望する
+undermine: 弱める
+suck: 吸う
+pledge: 誓う
+intrude: 立ち入る
+sue: 訴える
+distort: 歪曲する
+extinguish: 消す
+preach: 説教する
+curb: 抑制する
+withstand: 耐える
+dip: 浸す
+recite: 暗唱する
+thrust: 押し込む
+plead: 嘆願する
+humiliate: 恥をかかせる
+discharge: 放出する
+condemn: 非難する
+retrieve: 検索する
+shrug: 肩をすくめる
+evoke: 呼び起こす
+fetch: 取ってくる
+flatter: お世辞を言う
+prose: 散文
+textile: 織物
+timber: 材木
+masterpiece: 傑作
+riot: 暴動
+carriage: 車両
+apparatus: 装置
+fuss: 大騒ぎ
+deficiency: 欠乏
+heir: 相続人
+equator: 赤道
+petroleum: 石油
+witch: 魔女
+vapor: 蒸気
+probe: 探査機
+expertise: 専門知識
+scorn: 軽蔑
+prophet: 預言者
+breeze: そよ風
+sin: 罪
+surge: 急増
+complement: 補うもの
+queue: 列
+stake: 賭け金
+ambassador: 大使
+jury: 陪審員
+cluster: 集団
+lump: こぶ
+meadow: 牧草地
+feat: 偉業
+temperament: 気質
+chill: 寒気
+appliance: 器具
+predecessor: 前任者
+entity: 存在
+hospitality: もてなし
+narrative: 話
+segment: 部分、区分
+catastrophe: 大災害
+monarch: 君主、皇帝
+constraint: 制約
+amendment: 改正、修正
+cosmos: 宇宙
+aisle: 通路
+hierarchy: 階級制度
+toll: 通行料
+transaction: 取引
+burglar: 強盗
+tyranny: 圧政
+parasite: 寄生生物
+intuition: 直感
+communist: 共産主義の
+legacy: 遺産
+vein: 静脈
+discourse: 論説
+dairy: 乳製品、酪農
+artifact: 工芸品
+outlet: はけ口
+apprehension: 不安
+melancholy: 憂うつ
+novelty: 目新しさ
+specimen: 標本
+hygiene: 衛生
+tactics: 戦術
+monopoly: 独占
+token: 印
+aristocracy: 貴族階級
+revenge: 復讐
+activist: 活動家
+rhetoric: 美辞麗句
+entrepreneur: 起業家
+census: 国勢調査
+verge: 瀬戸際
+advent: 出現、到来
+analogy: 類似点
+irrigation: 灌漑
+coverage: 報道
+cuisine: 料理
+menace: 脅威
+peril: 危険
+limb: 手足
+assault: 攻撃
+hatred: 憎しみ
+autonomy: 自主性
+cram: 塾
+subsidy: 補助金
+empathy: 共感
+slang: 俗語
+posture: 姿勢
+ideology: イデオロギー
+curse: 災いのもと
+tumor: 腫瘍
+intersection: 交差点
+duration: 期間
+deforestation: 森林破壊
+precaution: 用心
+bunch: ひとたばの
+shortcoming: 欠点
+aspiration: 熱望
+psychiatrist: 精神科医
+shipping: 発送
+senator: 上院議員
+statesman: 政治家
+subordinate: 部下
+vacuum: 空白
+quest: 探究
+meditation: 瞑想
+subscriber: 加入者
+riddle: 謎
+rag: ぼろ
+rust: さび
+sanitation: 衛生
+midst: まっただ中
+mischief: いたずら
+proficiency: 検定
+recollection: 記憶
+latitude: 緯
+friction: 摩擦
+botanist: 植物学者
+heredity: 遺伝
+contempt: 軽蔑
+anatomy: 構造
+integrity: 誠実
+cargo: 貨物
+bribe: わいろ
+eruption: 噴火
+funeral: 葬式
+deficit: 赤字
+bulk: 大部分
+millionaire: 百万長者
+ash: 灰
+realm: 領域
+plantation: 農園
+plow: すき
+vending: 販売
+orphan: 孤児
+neuron: 神経細胞
+vegetation: 植生
+warrior: 戦士
+mutation: 突然変異
+sewage: 下水
+paradigm: 理論的枠組
+protocol: 議定書
+skyscraper: 高層ビル
+accord: 一致
+bureaucrat: 官僚
+array: 多彩
+clash: 衝突
+torture: 拷問
+reign: 統治
+thesis: 論文
+digit: 桁
+agenda: 課題
+onset: 発症
+peasant: 小作農
+ultraviolet: 紫外
+renowned: 有名な
+transparent: 透き通った
+dim: 薄暗い
+legitimate: 正当な
+adverse: 悪
+swift: すばやい
+naive: 世間知らずの
+dumb: ばか
+gloomy: 暗い
+furious: 激怒した
+earnest: まじめな
+terrific: すばらしい
+vertical: 垂直な
+wicked: 邪悪な
+subjective: 主観的な
+enlightened: 進んだ考えの
+authentic: 本物の
+brutal: 残忍な
+dizzy: めまい
+sheer: まったくの
+naughty: いたずらな
+damp: 湿った
+static: 静的な
+doomed: 運命にある
+respiratory: 呼吸器に関する、呼吸の
+innumerable: 無数の
+clumsy: 不器用な
+aesthetic: 美的
+obsessed: とりつかれている
+detached: 切り離された
+wrecked: 難破した
+reckless: 無謀な
+arrogant: 傲慢な
+preoccupied: 頭がいっぱいだ
+gigantic: 巨大な
+conspicuous: 顕著な
+slender: すらりとした
+manifest: 明らかな
+tidy: きちんと
+skeptical: 懐疑的な
+notorious: 悪名高い
+anonymous: 匿名の
+monotonous: 単調な
+ample: 豊富に
+trim: こぎれいな
+savage: 野蛮な
+coherent: 一貫した
+eloquent: 雄弁な
+foul: 不快な
+juvenile: 青少年の
+compulsory: 義務的な
+prone: やすい
+arbitrary: 勝手な
+ingenious: 独創的な
+divine: 神聖なる
+tender: やさしい
+outraged: 憤慨している
+intrinsic: 本来の
+paralyzed: 麻痺している
+compatible: 適合する
+patriotic: 愛国的な
+eminent: 名高い
+potent: 強力な
+insane: 正気を失っている
+staple: 主要な
+secondhand: 間接
+indigenous: 先住
+utmost: 最も
+integral: 不可欠な
+intricate: 複雑な
+demographic: 人口統計の
+mighty: 強力な
+intact: 無傷の
+intent: 決意をしている
+intriguing: 興味深い
+merry: 陽気な
+perpetual: 永続する
+spinal: 脊椎の
+susceptible: かかりやすい
+mandatory: 義務的な
+upright: まっすぐに
+abruptly: 不意に
+conversely: 逆に
+predominantly: 主に
+lest: ～しないように
 `;
 
         class VocabularyQuiz {
@@ -849,7 +2270,12 @@ thoroughly: 徹底的に、完全に
 
                 this.parseData();
                 this.generateRounds();
+                
+                // ★Init UI logic only updates the selector
                 this.initUI();
+                
+                // ★Check for existing license ONLY ONCE on load
+                this.checkLicense();
             }
 
             // === 新機能: 外部(Firebase)から記録をロードする ===
@@ -867,6 +2293,15 @@ thoroughly: 徹底的に、完全に
                 }
             }
             // ===============================================
+
+            // ★NEW: Check License separately
+            checkLicense() {
+                const savedPass = localStorage.getItem('PASS');
+                if (savedPass) {
+                    document.getElementById('start-screen').classList.add('hidden');
+                    document.getElementById('champion-screen').classList.remove('hidden');
+                }
+            }
 
             parseData() {
                 const lines = rawData.split('\n')
@@ -901,6 +2336,42 @@ thoroughly: 徹底的に、完全に
                 }
             }
 
+            // ★NEW: カスタムラウンド作成機能
+            createCustomRound() {
+                const startInput = document.getElementById('custom-start');
+                const endInput = document.getElementById('custom-end');
+                
+                // ユーザーは1始まりで入力するが、配列は0始まり
+                const start = parseInt(startInput.value) - 1; 
+                const end = parseInt(endInput.value);
+
+                if (isNaN(start) || isNaN(end) || start < 0 || end > this.masterList.length || start >= end) {
+                    alert(`Invalid Range! Please enter numbers between 1 and ${this.masterList.length}`);
+                    return;
+                }
+
+                const customWords = this.masterList.slice(start, end);
+                
+                // カスタムラウンドを作成して先頭に追加
+                const customRound = {
+                    id: 'custom',
+                    name: `TEST: #${start + 1}-${end}`,
+                    words: customWords
+                };
+
+                // 既存のラウンドリストの先頭に追加 (unshift)
+                this.rounds.unshift(customRound);
+                
+                // UI更新
+                this.initUI();
+                
+                // 作成したカスタムラウンドを自動選択
+                document.getElementById('round-selector').value = 0; // 先頭に追加したので0
+                
+                alert(`Custom Round Set: Words ${start + 1} to ${end} loaded.`);
+            }
+
+            // ★Modified: Only updates UI, no redirection
             initUI() {
                 const selector = document.getElementById('round-selector');
                 selector.innerHTML = '';
@@ -910,12 +2381,6 @@ thoroughly: 徹底的に、完全に
                     opt.text = `${round.name} (${round.words.length} words)`;
                     selector.appendChild(opt);
                 });
-
-                const savedPass = localStorage.getItem('PASS');
-                if (savedPass) {
-                    document.getElementById('start-screen').classList.add('hidden');
-                    document.getElementById('champion-screen').classList.remove('hidden');
-                }
             }
 
             copyToClipboard(text, btnElement) {
