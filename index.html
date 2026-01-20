@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vocabulary GP - 2026 Season</title>
-    <a href="chat.html" style="display:inline-block; margin:10px; padding:10px; background:#eee; border-radius:5px; text-decoration:none;">💬 チャットへ</a>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* === TUNING: Chakra Petch (High Visibility & Tech Look) === */
@@ -63,9 +62,30 @@
             color: #000;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
+        .chat-fab {
+            position: fixed; 
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #1a1a1a; /* 黒ベースでクールに */
+            color: #fff;
+            border: 1px solid #ff0000; /* 攻撃的な赤のアクセント */
+            padding: 12px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            font-family: sans-serif; /* フォント崩れ防止 */
+        }
+
+        .chat-fab:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
+     <a href="chat.html" class="chat-fab">💬 Chat</a>
 
     <div id="app" class="w-full max-w-2xl">
         
