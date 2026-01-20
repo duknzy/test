@@ -6,7 +6,8 @@
     <title>Vocabulary GP - 2026 Season</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        /* === TUNING: Chakra Petch (High Visibility & Tech Look) === */
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
         
         body {
             background-color: #0b0e14;
@@ -15,7 +16,7 @@
         }
 
         .f1-font {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Chakra Petch', sans-serif;
         }
 
         .race-card {
@@ -169,7 +170,7 @@
 
             <div class="mb-10 text-center relative">
                 <p class="text-gray-400 text-sm uppercase tracking-widest mb-2">Meaning of:</p>
-                <h2 id="target-word" class="f1-font text-3xl md:text-6xl font-bold text-white mb-4 tracking-wide drop-shadow-lg break-words px-2">word</h2>
+                <h2 id="target-word" class="f1-font text-4xl md:text-6xl font-bold text-white mb-4 tracking-wide drop-shadow-lg break-words px-2">word</h2>
             </div>
 
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -959,15 +960,40 @@ thoroughly: 徹底的に、完全に
                 }, 50);
             }
 
+            // === 修正箇所: 選択肢を隠す (VISUALIZE MEANING) ===
             showQuestion() {
                 const q = this.questions[this.currentIndex];
                 document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
+                
+                // Font Tuning applied
                 document.getElementById('target-word').innerText = q.w;
+                
                 document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
                 document.getElementById('feedback').innerText = '';
 
                 const container = document.getElementById('options-container');
-                container.innerHTML = '';
+                container.innerHTML = ''; // Clear previous contents
+
+                // ★いきなり選択肢を出さず、「思考フェーズ」ボタンを表示
+                const revealBtn = document.createElement('button');
+                revealBtn.className = 'col-span-1 md:col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
+                revealBtn.innerHTML = `
+                    <span class="text-3xl">🤔</span>
+                    <span>VISUALIZE MEANING</span>
+                    <span class="text-xs text-gray-500 font-mono">TAP TO UNLOCK DRS</span>
+                `;
+                
+                // クリックで選択肢を展開 (Reveal Options)
+                revealBtn.onclick = () => {
+                    this.renderOptions(q, container);
+                };
+                
+                container.appendChild(revealBtn);
+            }
+
+            // ★追加: 実際の選択肢を描画する関数 (Reveals options)
+            renderOptions(q, container) {
+                container.innerHTML = ''; // Revealボタンを消す
 
                 q.o.forEach(option => {
                     const btn = document.createElement('button');
@@ -977,6 +1003,7 @@ thoroughly: 徹底的に、完全に
                     container.appendChild(btn);
                 });
             }
+            // ==========================================================
 
             handleAnswer(selected, questionObj) {
                 const feedback = document.getElementById('feedback');
