@@ -6,6 +6,7 @@
     <title>Vocabulary GP - 2026 Season</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* === TUNING: Chakra Petch (High Visibility & Tech Look) === */
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
         
         body {
@@ -140,6 +141,11 @@
                 </select>
             </div>
 
+            <div class="bg-red-900/30 border border-red-500 p-3 rounded mb-8">
+                <p class="text-red-500 font-bold text-sm">LICENSE CRITERIA: Accuracy 90%+</p>
+                <p class="text-xs text-gray-400">Total Words: <span id="total-words-count">0</span> | Rounds: 30</p>
+            </div>
+
             <button onclick="quiz.start()" class="f1-font bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50">
                 Start Engine
             </button>
@@ -227,6 +233,10 @@
                 <button id="copy-pass-btn" class="bg-black text-white text-xs px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform">
                     COPY LICENSE ID
                 </button>
+            </div>
+
+            <div id="login-warning" class="hidden mb-6 p-3 bg-yellow-900/50 border border-yellow-500 text-yellow-200 text-xs rounded uppercase tracking-widest font-bold">
+                ⚠️ DATA NOT SAVED: DRIVER NOT LOGGED IN
             </div>
 
             <div id="fail-message" class="hidden mb-8 p-4 border border-red-500 bg-red-900/20 text-red-500 font-bold">
@@ -2305,6 +2315,7 @@ lest: ～しないように
                 // Audio Setup
                 this.synth = window.speechSynthesis;
                 this.englishVoices = [];
+                
                 if (this.synth.onvoiceschanged !== undefined) {
                     this.synth.onvoiceschanged = () => this.loadVoices();
                 }
@@ -2314,7 +2325,7 @@ lest: ～しないように
                 this.generateRounds();
                 
                 this.initUI();
-                this.updatePitStopButton(); // Check on load
+                this.updatePitStopButton();
             }
 
             loadVoices() {
@@ -2387,7 +2398,6 @@ lest: ～しないように
                 }
             }
 
-            // === PIT STOP FEATURES ===
             updatePitStopButton() {
                 const count = this.storedMistakes.length;
                 const container = document.getElementById('pit-stop-container');
@@ -2404,10 +2414,8 @@ lest: ～しないように
                 if (this.storedMistakes.length === 0) return;
                 
                 this.isPitStopMode = true;
-                this.storedMistakes = JSON.parse(localStorage.getItem('MISTAKES')) || []; // Refresh
+                this.storedMistakes = JSON.parse(localStorage.getItem('MISTAKES')) || []; 
 
-                // 間違えた単語オブジェクトを再構築
-                // ※マスタリストから検索してもいいが、保存データだけで完結させる
                 this.questions = this.storedMistakes.map(item => {
                     const targetWord = { w: item.w, m: item.m };
                     const distractors = this.getDistractors(targetWord);
@@ -2415,12 +2423,11 @@ lest: ～しないように
                     return { w: targetWord.w, m: targetWord.m, o: options };
                 });
                 
-                // Shuffle Pit Stop Questions
                 this.questions.sort(() => Math.random() - 0.5);
 
                 this.currentIndex = 0;
                 this.missCount = 0;
-                this.missedWordsLog = []; // Reset for this session
+                this.missedWordsLog = [];
                 
                 document.getElementById('circuit-name').innerText = "PIT STOP (REVIEW)";
                 document.getElementById('start-screen').classList.add('hidden');
@@ -2434,7 +2441,6 @@ lest: ～しないように
             }
 
             addToMistakes(wordObj) {
-                // 重複チェック
                 const exists = this.storedMistakes.find(i => i.w === wordObj.w);
                 if (!exists) {
                     this.storedMistakes.push({ w: wordObj.w, m: wordObj.m });
@@ -2448,7 +2454,6 @@ lest: ～しないように
                 localStorage.setItem('MISTAKES', JSON.stringify(this.storedMistakes));
                 this.updatePitStopButton();
             }
-            // =========================
 
             createCustomRound() {
                 const startInput = document.getElementById('custom-start');
@@ -2489,7 +2494,11 @@ lest: ～しないように
                 navigator.clipboard.writeText(text).then(() => {
                     const originalText = btnElement.innerText;
                     btnElement.innerText = "COPIED!";
-                    setTimeout(() => { btnElement.innerText = originalText; }, 2000);
+                    btnElement.classList.add("bg-green-600", "text-white");
+                    setTimeout(() => {
+                        btnElement.innerText = originalText;
+                        btnElement.classList.remove("bg-green-600", "text-white");
+                    }, 2000);
                 });
             }
 
@@ -2517,7 +2526,7 @@ lest: ～しないように
             }
 
             start() {
-                this.isPitStopMode = false; // Normal mode
+                this.isPitStopMode = false;
                 const selector = document.getElementById('round-selector');
                 this.currentRoundIndex = parseInt(selector.value);
                 const selectedRound = this.rounds[this.currentRoundIndex];
@@ -2603,7 +2612,6 @@ lest: ～しないように
                 const streakDisp = document.getElementById('streak-display');
                 
                 if (selected === questionObj.m) {
-                    // === CORRECT ===
                     this.currentStreak++;
                     if (this.currentStreak > this.roundMaxStreak) this.roundMaxStreak = this.currentStreak;
                     if (this.currentStreak > this.userMaxStreak) this.userMaxStreak = this.currentStreak;
@@ -2616,7 +2624,6 @@ lest: ～しないように
                         streakDisp.classList.add('animate-pulse');
                     }
 
-                    // ★PIT STOP LOGIC: 正解したらリストから消す
                     if (this.isPitStopMode) {
                         this.removeFromMistakes(questionObj.w);
                     }
@@ -2628,15 +2635,12 @@ lest: ～しないように
                         this.finish();
                     }
                 } else {
-                    // === WRONG ===
                     this.currentStreak = 0;
                     streakDisp.classList.add('hidden');
                     if (window.saveUserStreak) window.saveUserStreak(0, this.userMaxStreak);
 
                     this.missCount++;
                     
-                    // ★PIT STOP LOGIC: 間違えたらリストに追加（通常モード時）
-                    // 復習モードで間違えた場合は、既にリストにあるので何もしない（残る）
                     if (!this.isPitStopMode) {
                         this.addToMistakes(questionObj);
                     }
@@ -2663,28 +2667,31 @@ lest: ～しないように
                 document.getElementById('result-screen').classList.remove('hidden');
 
                 const totalTime = (Date.now() - this.startTime) / 1000;
-                const roundLen = this.isPitStopMode ? this.questions.length : this.rounds[this.currentRoundIndex].words.length; 
-                // PitStopの場合は全問数（間違いを含む）で計算しないと分母がおかしくなるが、
-                // 簡易的に「解いた数」ベースにするか、元の数にするか。
-                // ここではシンプルに結果表示。
                 
                 const accuracy = (1 - (this.missCount / (this.questions.length))) * 100;
-                // ※注: pushされた分も含めて計算するとややこしいので、簡易計算
                 
                 document.getElementById('accuracy-display').innerText = this.isPitStopMode ? "PIT CLEAR" : `${accuracy.toFixed(1)}%`;
                 
                 const passArea = document.getElementById('pass-issue-area');
                 const failMsg = document.getElementById('fail-message');
+                const loginWarning = document.getElementById('login-warning');
 
-                // Firebase
-                if (window.recordLapTime && !this.isPitStopMode) { // PitStopはランキング除外
-                    const roundName = this.rounds[this.currentRoundIndex].name;
-                    const correctCount = this.rounds[this.currentRoundIndex].words.length - this.missCount;
-                    const scoreString = `${correctCount}/${this.rounds[this.currentRoundIndex].words.length}`;
-                    window.recordLapTime(accuracy, totalTime, roundName, scoreString, this.roundMaxStreak);
+                // Firebase Save & Warning Logic
+                if (!window.currentUser) {
+                    loginWarning.classList.remove('hidden');
+                } else {
+                    loginWarning.classList.add('hidden');
+                    if (window.recordLapTime && !this.isPitStopMode) {
+                        const roundName = this.rounds[this.currentRoundIndex].name;
+                        // Score Correction: Avoid negative score
+                        const totalWords = this.rounds[this.currentRoundIndex].words.length;
+                        const correctCount = Math.max(0, totalWords - this.missCount);
+                        const scoreString = `${correctCount}/${totalWords}`;
+                        window.recordLapTime(accuracy, totalTime, roundName, scoreString, this.roundMaxStreak);
+                    }
+                    if (window.saveUserStreak) window.saveUserStreak(this.currentStreak, this.userMaxStreak);
+                    if (window.incrementDailyLaps) window.incrementDailyLaps();
                 }
-                if (window.saveUserStreak) window.saveUserStreak(this.currentStreak, this.userMaxStreak);
-                if (window.incrementDailyLaps) window.incrementDailyLaps();
 
                 if (!this.isPitStopMode) {
                     if (accuracy >= 90) {
@@ -2697,7 +2704,6 @@ lest: ～しないように
                         failMsg.classList.remove('hidden');
                     }
                 } else {
-                    // Pit Stop Result
                     passArea.classList.add('hidden');
                     failMsg.classList.add('hidden');
                     document.getElementById('accuracy-display').style.color = "#fbbf24"; 
@@ -2705,7 +2711,6 @@ lest: ～しないように
 
                 document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
                 
-                // Update Pit Stop Button on Result Screen if needed
                 this.updatePitStopButton();
 
                 const review = document.getElementById('review-list');
@@ -2719,7 +2724,6 @@ lest: ～しないように
                 review.innerHTML = summaryHtml;
 
                 const nextBtn = document.getElementById('next-round-btn');
-                // PitStopモードの時はNextボタン出さない
                 if (!this.isPitStopMode && this.rounds[this.currentRoundIndex].id !== 'custom' && this.currentRoundIndex + 1 < this.rounds.length) {
                     nextBtn.classList.remove('hidden');
                     nextBtn.onclick = () => {
@@ -2735,7 +2739,7 @@ lest: ～しないように
                 document.getElementById('result-screen').classList.add('hidden');
                 document.getElementById('champion-screen').classList.add('hidden');
                 document.getElementById('start-screen').classList.remove('hidden');
-                this.updatePitStopButton(); // Refresh count
+                this.updatePitStopButton(); 
             }
             revokePass() {
                 localStorage.removeItem('PASS');
@@ -2772,7 +2776,8 @@ lest: ～しないように
       const rankingBody = document.getElementById('ranking-tbody');
       const dailyLapsDisplay = document.getElementById('daily-laps-display'); 
 
-      let currentUser = null;
+      // Global User variable
+      window.currentUser = null;
 
       loginBtn.addEventListener('click', async () => {
         const provider = new GoogleAuthProvider();
@@ -2784,7 +2789,7 @@ lest: ～しないように
 
       onAuthStateChanged(auth, async (user) => {
         if (user) {
-            currentUser = user;
+            window.currentUser = user; // Set Global
             loginBtn.classList.add('hidden');
             userSection.classList.remove('hidden');
             userNameSpan.textContent = user.displayName || "Unknown Driver";
@@ -2799,7 +2804,7 @@ lest: ～しないように
             } catch (e) { console.error("Stats Load Error", e); }
             updateLeaderboard(); 
         } else {
-            currentUser = null;
+            window.currentUser = null;
             loginBtn.classList.remove('hidden');
             userSection.classList.add('hidden');
             window.quiz.restoreStats(0, 0);
@@ -2808,11 +2813,11 @@ lest: ～しないように
       });
 
       window.recordLapTime = async (accuracy, time, roundName, scoreString, roundMaxStreak) => {
-        if (!currentUser) return; 
+        if (!window.currentUser) return; 
         try {
             await addDoc(collection(db, "leaderboard"), {
-                uid: currentUser.uid,
-                driver: currentUser.displayName,
+                uid: window.currentUser.uid,
+                driver: window.currentUser.displayName,
                 accuracy: parseFloat(accuracy.toFixed(1)),
                 time: parseFloat(time.toFixed(2)),
                 round: roundName,
@@ -2825,9 +2830,9 @@ lest: ～しないように
       };
 
       window.saveUserStreak = async (current, max) => {
-        if (!currentUser) return;
+        if (!window.currentUser) return;
         try {
-            await setDoc(doc(db, "users", currentUser.uid), {
+            await setDoc(doc(db, "users", window.currentUser.uid), {
                 currentStreak: current,
                 maxStreak: max,
                 lastActive: new Date()
@@ -2890,7 +2895,7 @@ lest: ～しないように
             let rank = 1;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                const isMe = currentUser && data.uid === currentUser.uid;
+                const isMe = window.currentUser && data.uid === window.currentUser.uid;
                 const rowClass = isMe ? "bg-red-900/30 text-white font-bold" : "border-b border-gray-800";
                 const streakDisplay = data.streak ? `🔥${data.streak}` : "-"; 
 
