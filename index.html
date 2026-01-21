@@ -2359,12 +2359,23 @@ lest: ～しないように
                 const lines = rawData.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('[source'));
                 this.masterList = [];
                 lines.forEach(line => {
-                    let sep = line.indexOf(':');
-                    if (sep === -1) sep = line.indexOf(' ');
-                    if (sep === -1) sep = line.indexOf('　');
-                    if (sep !== -1) this.masterList.push({ w: line.substring(0, sep).trim(), m: line.substring(sep + 1).trim() });
+                    let sep = -1;
+                    // Priority Check: Tab > Colon > Full-width Colon > Space
+                    if (line.indexOf('\t') !== -1) sep = line.indexOf('\t');
+                    else if (line.indexOf(':') !== -1) sep = line.indexOf(':');
+                    else if (line.indexOf('：') !== -1) sep = line.indexOf('：');
+                    else if (line.indexOf('  ') !== -1) sep = line.indexOf('  '); // Double space
+                    else if (line.indexOf(' ') !== -1) sep = line.indexOf(' ');
+
+                    if (sep !== -1) {
+                        const w = line.substring(0, sep).trim();
+                        const m = line.substring(sep + 1).trim();
+                        if(w && m) this.masterList.push({ w, m });
+                    }
                 });
-                document.getElementById('total-words-count').innerText = this.masterList.length;
+                const countDisplay = document.getElementById('total-words-count');
+                if(countDisplay) countDisplay.innerText = this.masterList.length;
+                console.log("Telemetry: Loaded " + this.masterList.length + " words.");
             }
 
             generateRounds() {
@@ -2683,16 +2694,20 @@ lest: ～しないように
         const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
         const now = new Date();
 
+        // ★ID生成ロジック修正版
+        const safeWordId = btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
+        const docRef = doc(mistakesRef, safeWordId);
+
         if (!isCorrect) {
-            const docId = btoa(encodeURIComponent(questionObj.w)).substring(0, 20);
-            await setDoc(doc(mistakesRef, docId), {
+            await setDoc(docRef, {
                 word: questionObj.w,
                 meaning: questionObj.meaning || questionObj.m,
                 level: 1,
                 nextReview: Timestamp.fromDate(now)
             }, { merge: true });
         } else if (isCorrect && window.quiz.isPitStopMode) {
-            if (!questionObj.docId) return;
+            const targetRef = questionObj.docId ? doc(mistakesRef, questionObj.docId) : docRef;
+
             const currentLevel = questionObj.currentLevel || 1;
             const newLevel = currentLevel + 1;
             let nextDate = new Date();
@@ -2702,9 +2717,9 @@ lest: ～しないように
             else if (newLevel === 5) nextDate.setDate(now.getDate() + 14);
             
             if (newLevel >= 6) {
-                await updateDoc(doc(mistakesRef, questionObj.docId), { level: 6, nextReview: Timestamp.fromDate(new Date("2099-01-01")) });
+                await updateDoc(targetRef, { level: 6, nextReview: Timestamp.fromDate(new Date("2099-01-01")) });
             } else {
-                await updateDoc(doc(mistakesRef, questionObj.docId), { level: newLevel, nextReview: Timestamp.fromDate(nextDate) });
+                await updateDoc(targetRef, { level: newLevel, nextReview: Timestamp.fromDate(nextDate) });
             }
         }
       };
