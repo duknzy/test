@@ -6,7 +6,6 @@
     <title>Vocabulary GP - 2026 Season</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* === TUNING: Chakra Petch (High Visibility & Tech Look) === */
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
         
         body {
@@ -63,7 +62,6 @@
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
         
-        /* Speaker Button Animation */
         .speaking {
             color: #e10600;
             transform: scale(1.1);
@@ -233,9 +231,6 @@
     </div>
 
     <script>
-// ==========================================
-// PASTE YOUR 2000 WORDS HERE
-// ==========================================
 const rawData = `
 follow: ～の後に続く、～に従う
 consider: ～を考慮する
@@ -2265,7 +2260,6 @@ conversely: 逆に
 predominantly: 主に
 lest: ～しないように
 `;
-// ==========================================
 
         class VocabularyQuiz {
             constructor() {
@@ -2281,11 +2275,9 @@ lest: ～しないように
                 this.startTime = 0;
                 this.timerInterval = null;
 
-                // ストリーク管理用
                 this.currentStreak = 0;
                 this.userMaxStreak = 0; 
 
-                // 音声エンジンの準備
                 this.synth = window.speechSynthesis;
 
                 this.parseData();
@@ -2399,19 +2391,16 @@ lest: ～しないように
                 });
             }
 
-            // === ★NEW: 音声再生機能 (Radio Communication) ===
             speak(text) {
                 if (!this.synth) return;
                 
-                // 既存の音声をキャンセル（連打対応）
                 this.synth.cancel();
 
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US'; // 英語設定
-                utterance.rate = 1.0;     // 速度
-                utterance.pitch = 1.0;    // 高さ
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
 
-                // アイコンのアニメーション用
                 const btn = document.getElementById('speak-btn');
                 btn.classList.add('speaking');
                 utterance.onend = () => {
@@ -2420,7 +2409,6 @@ lest: ～しないように
 
                 this.synth.speak(utterance);
             }
-            // ============================================
 
             start() {
                 const selector = document.getElementById('round-selector');
@@ -2477,20 +2465,16 @@ lest: ～しないように
                 document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
                 document.getElementById('feedback').innerText = '';
 
-                // ★音声ボタンの設定
                 const speakBtn = document.getElementById('speak-btn');
                 speakBtn.onclick = () => this.speak(q.w);
 
-                // ★自動再生 (Auto Radio)
-                // ※ブラウザのポリシーで初回は鳴らない場合があるが、Startボタンを押した直後なら大抵いける
                 setTimeout(() => {
                     this.speak(q.w);
-                }, 300); // 画面切り替えの少し後に再生
+                }, 300);
 
                 const container = document.getElementById('options-container');
                 container.innerHTML = ''; 
 
-                // Blind Mode
                 const revealBtn = document.createElement('button');
                 revealBtn.className = 'col-span-1 md:col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
                 revealBtn.innerHTML = `
