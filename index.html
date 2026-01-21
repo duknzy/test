@@ -62,6 +62,12 @@
             color: #000;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
+        
+        /* Speaker Button Animation */
+        .speaking {
+            color: #e10600;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -183,7 +189,14 @@
 
             <div class="mb-10 text-center relative">
                 <p class="text-gray-400 text-sm uppercase tracking-widest mb-2">Meaning of:</p>
-                <h2 id="target-word" class="f1-font text-4xl md:text-6xl font-bold text-white mb-4 tracking-wide drop-shadow-lg break-words px-2">word</h2>
+                <div class="flex items-center justify-center gap-3">
+                    <h2 id="target-word" class="f1-font text-4xl md:text-6xl font-bold text-white tracking-wide drop-shadow-lg break-words px-2">word</h2>
+                    <button id="speak-btn" class="text-gray-500 hover:text-white transition-colors p-2 rounded-full border border-gray-700 bg-gray-900/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -2272,10 +2285,12 @@ lest: ～しないように
                 this.currentStreak = 0;
                 this.userMaxStreak = 0; 
 
+                // 音声エンジンの準備
+                this.synth = window.speechSynthesis;
+
                 this.parseData();
                 this.generateRounds();
                 
-                // UI初期化
                 this.initUI();
             }
 
@@ -2312,27 +2327,20 @@ lest: ～しないように
                 document.getElementById('total-words-count').innerText = this.masterList.length;
             }
 
-            // ★Option A: Hybrid Spec Implementation
             generateRounds() {
                 const wordCopy = [...this.masterList]; 
                 this.rounds = [];
                 let roundNum = 1;
-                
-                // 元の配列のインデックスを追跡するためのカウンター
                 let currentWordIndex = 1; 
 
                 while (wordCopy.length > 0) {
-                    // スライスする前の長さを保存
                     const startNum = currentWordIndex;
-                    
                     const chunk = wordCopy.splice(0, this.wordsPerRound);
-                    
                     const endNum = startNum + chunk.length - 1;
                     
                     if (chunk.length > 0) {
                         this.rounds.push({
                             id: roundNum,
-                            // ここで番号を表示: ROUND 1 [No.1 - 20]
                             name: `ROUND ${roundNum} [No.${startNum} - ${endNum}]`,
                             words: chunk
                         });
@@ -2356,7 +2364,6 @@ lest: ～しないように
 
                 const customWords = this.masterList.slice(start, end);
                 
-                // カスタムラウンドも表記を合わせる: CUSTOM [No.1 - 50]
                 const customRound = {
                     id: 'custom',
                     name: `CUSTOM [No.${start + 1} - ${end}]`,
@@ -2392,6 +2399,29 @@ lest: ～しないように
                 });
             }
 
+            // === ★NEW: 音声再生機能 (Radio Communication) ===
+            speak(text) {
+                if (!this.synth) return;
+                
+                // 既存の音声をキャンセル（連打対応）
+                this.synth.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US'; // 英語設定
+                utterance.rate = 1.0;     // 速度
+                utterance.pitch = 1.0;    // 高さ
+
+                // アイコンのアニメーション用
+                const btn = document.getElementById('speak-btn');
+                btn.classList.add('speaking');
+                utterance.onend = () => {
+                    btn.classList.remove('speaking');
+                };
+
+                this.synth.speak(utterance);
+            }
+            // ============================================
+
             start() {
                 const selector = document.getElementById('round-selector');
                 this.currentRoundIndex = parseInt(selector.value);
@@ -2409,7 +2439,6 @@ lest: ～しないように
                 this.missedWordsLog = [];
                 this.roundMaxStreak = this.currentStreak; 
 
-                // ラウンド名が長くても表示崩れしないよう設定済み
                 document.getElementById('circuit-name').innerText = selectedRound.name;
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('champion-screen').classList.add('hidden');
@@ -2444,14 +2473,24 @@ lest: ～しないように
             showQuestion() {
                 const q = this.questions[this.currentIndex];
                 document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
-                
                 document.getElementById('target-word').innerText = q.w;
                 document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
                 document.getElementById('feedback').innerText = '';
 
+                // ★音声ボタンの設定
+                const speakBtn = document.getElementById('speak-btn');
+                speakBtn.onclick = () => this.speak(q.w);
+
+                // ★自動再生 (Auto Radio)
+                // ※ブラウザのポリシーで初回は鳴らない場合があるが、Startボタンを押した直後なら大抵いける
+                setTimeout(() => {
+                    this.speak(q.w);
+                }, 300); // 画面切り替えの少し後に再生
+
                 const container = document.getElementById('options-container');
                 container.innerHTML = ''; 
 
+                // Blind Mode
                 const revealBtn = document.createElement('button');
                 revealBtn.className = 'col-span-1 md:col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
                 revealBtn.innerHTML = `
