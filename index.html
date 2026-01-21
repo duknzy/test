@@ -2260,6 +2260,7 @@ conversely: 逆に
 predominantly: 主に
 lest: ～しないように
 `;
+// ==========================================
 
         class VocabularyQuiz {
             constructor() {
@@ -2278,12 +2279,22 @@ lest: ～しないように
                 this.currentStreak = 0;
                 this.userMaxStreak = 0; 
 
+                // Audio Setup
                 this.synth = window.speechSynthesis;
+                this.voices = [];
+                this.loadVoices();
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = () => this.loadVoices();
+                }
 
                 this.parseData();
                 this.generateRounds();
                 
                 this.initUI();
+            }
+
+            loadVoices() {
+                this.voices = this.synth.getVoices();
             }
 
             restoreStats(current, max) {
@@ -2397,9 +2408,23 @@ lest: ～しないように
                 this.synth.cancel();
 
                 const utterance = new SpeechSynthesisUtterance(text);
+                
+                // === VOICE TUNING: Force Native English ===
+                // 1. Google US English (Chrome)
+                // 2. Microsoft Zira (Windows)
+                // 3. Samantha (Mac)
+                // 4. Any 'en-US'
+                let selectedVoice = this.voices.find(v => v.name.includes('Google US English')) ||
+                                    this.voices.find(v => v.name.includes('Zira')) || 
+                                    this.voices.find(v => v.name.includes('Samantha')) ||
+                                    this.voices.find(v => v.lang === 'en-US');
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                
                 utterance.lang = 'en-US';
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
+                utterance.rate = 1.0; 
 
                 const btn = document.getElementById('speak-btn');
                 btn.classList.add('speaking');
