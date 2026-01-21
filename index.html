@@ -6,6 +6,7 @@
     <title>Vocabulary GP - 2026 Season</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* === TUNING: Chakra Petch (High Visibility & Tech Look) === */
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
         
         body {
@@ -2284,14 +2285,12 @@ lest: ～しないように
 
                 // Audio Setup
                 this.synth = window.speechSynthesis;
-                this.englishVoices = []; // 英語ボイス専用リスト
+                this.englishVoices = [];
                 
-                // ボイス読み込み待機
-                // ※Chromeなどは非同期でボイスをロードするため、イベントを待つ
                 if (this.synth.onvoiceschanged !== undefined) {
                     this.synth.onvoiceschanged = () => this.loadVoices();
                 }
-                this.loadVoices(); // 初回実行
+                this.loadVoices(); 
 
                 this.parseData();
                 this.generateRounds();
@@ -2303,11 +2302,6 @@ lest: ～しないように
                 const allVoices = this.synth.getVoices();
                 
                 // 英語(en)で始まるボイスだけを抽出して、優先順位をつける
-                // 1. Google US English (Chromeの最高品質)
-                // 2. Samantha (Mac/iOSの高音質)
-                // 3. Zira (Windowsの高音質)
-                // 4. その他の en-US
-                // 5. その他の en 系
                 this.englishVoices = allVoices.filter(v => v.lang.startsWith('en'));
                 
                 this.englishVoices.sort((a, b) => {
@@ -2318,7 +2312,7 @@ lest: ～しないように
                         if (voice.lang === 'en-US') return 70;
                         return 0;
                     };
-                    return getScore(b) - getScore(a); // スコア高い順
+                    return getScore(b) - getScore(a); 
                 });
 
                 console.log("English Voices Loaded:", this.englishVoices);
@@ -2431,10 +2425,8 @@ lest: ～しないように
 
             speak(text) {
                 if (!this.synth) return;
-                
                 this.synth.cancel();
 
-                // ロードが間に合ってない場合の保険
                 if (this.englishVoices.length === 0) {
                     this.loadVoices();
                 }
@@ -2446,20 +2438,19 @@ lest: ～しないように
                     utterance.voice = this.englishVoices[0];
                     utterance.lang = this.englishVoices[0].lang;
                 } else {
-                    // 見つからない場合は言語設定だけでも変える
                     utterance.lang = 'en-US';
                 }
 
-                utterance.rate = 1.3;
-                
-                // iOSなどで音量が小さい場合があるため明示的に指定
+                utterance.rate = 1.3; // Speed
                 utterance.volume = 1.0; 
 
                 const btn = document.getElementById('speak-btn');
-                btn.classList.add('speaking');
-                utterance.onend = () => {
-                    btn.classList.remove('speaking');
-                };
+                if(btn) {
+                    btn.classList.add('speaking');
+                    utterance.onend = () => {
+                        btn.classList.remove('speaking');
+                    };
+                }
 
                 this.synth.speak(utterance);
             }
@@ -2671,6 +2662,180 @@ lest: ～しないように
         }
 
         window.quiz = new VocabularyQuiz();
+    </script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+      import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, doc, getDoc, setDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
+        authDomain: "english-test-8ad4a.firebaseapp.com",
+        projectId: "english-test-8ad4a",
+        storageBucket: "english-test-8ad4a.firebasestorage.app",
+        messagingSenderId: "998730699699",
+        appId: "1:998730699699:web:8245c7259cec7dd20231c6",
+        measurementId: "G-FC2LRFVFGF"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      const loginBtn = document.getElementById('login-btn');
+      const logoutBtn = document.getElementById('logout-btn');
+      const userSection = document.getElementById('user-info');
+      const userNameSpan = document.getElementById('user-name');
+      const rankingBody = document.getElementById('ranking-tbody');
+      const dailyLapsDisplay = document.getElementById('daily-laps-display'); 
+
+      let currentUser = null;
+
+      loginBtn.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try { await signInWithPopup(auth, provider); } 
+        catch (error) { console.error("Login Error:", error); }
+      });
+
+      logoutBtn.addEventListener('click', () => signOut(auth));
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            loginBtn.classList.add('hidden');
+            userSection.classList.remove('hidden');
+            userNameSpan.textContent = user.displayName || "Unknown Driver";
+            
+            try {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    window.quiz.restoreStats(data.currentStreak || 0, data.maxStreak || 0);
+                } else {
+                    window.quiz.restoreStats(0, 0);
+                }
+            } catch (e) { console.error("Stats Load Error", e); }
+            
+            updateLeaderboard(); 
+        } else {
+            currentUser = null;
+            loginBtn.classList.remove('hidden');
+            userSection.classList.add('hidden');
+            window.quiz.restoreStats(0, 0);
+            updateLeaderboard(); 
+        }
+      });
+
+      window.recordLapTime = async (accuracy, time, roundName, scoreString, roundMaxStreak) => {
+        if (!currentUser) return; 
+        try {
+            await addDoc(collection(db, "leaderboard"), {
+                uid: currentUser.uid,
+                driver: currentUser.displayName,
+                accuracy: parseFloat(accuracy.toFixed(1)),
+                time: parseFloat(time.toFixed(2)),
+                round: roundName,
+                score: scoreString,
+                streak: roundMaxStreak || 0,
+                date: new Date()
+            });
+            updateLeaderboard(); 
+        } catch (e) { console.error("Telemetry Error: ", e); }
+      };
+
+      window.saveUserStreak = async (current, max) => {
+        if (!currentUser) return;
+        try {
+            await setDoc(doc(db, "users", currentUser.uid), {
+                currentStreak: current,
+                maxStreak: max,
+                lastActive: new Date()
+            }, { merge: true });
+        } catch (e) { console.error("Save Error:", e); }
+      }
+
+      const getTodayStr = () => new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
+
+      window.incrementDailyLaps = async () => {
+        const statsRef = doc(db, "stats", "daily_global");
+        const todayStr = getTodayStr();
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const sfDoc = await transaction.get(statsRef);
+                if (!sfDoc.exists()) {
+                    transaction.set(statsRef, { date: todayStr, count: 1 });
+                } else {
+                    const data = sfDoc.data();
+                    if (data.date !== todayStr) {
+                        transaction.update(statsRef, { date: todayStr, count: 1 });
+                    } else {
+                        transaction.update(statsRef, { count: data.count + 1 });
+                    }
+                }
+            });
+            console.log("Track Activity Updated.");
+        } catch (e) {
+            console.error("Counter Error:", e);
+        }
+      };
+
+      const statsRef = doc(db, "stats", "daily_global");
+      onSnapshot(statsRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            const todayStr = getTodayStr();
+            if (data.date === todayStr) {
+                dailyLapsDisplay.textContent = data.count;
+            } else {
+                dailyLapsDisplay.textContent = 0;
+            }
+        }
+      });
+
+      async function updateLeaderboard() {
+        rankingBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-xs opacity-50">Updating Telemetry...</td></tr>';
+        try {
+            const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), orderBy("time", "asc"), limit(10));
+            const querySnapshot = await getDocs(q);
+            rankingBody.innerHTML = "";
+            
+            const headerRow = document.querySelector('thead tr');
+            if(headerRow) {
+                headerRow.innerHTML = `<th class="p-2">Pos</th><th class="p-2">Driver</th><th class="p-2">Round</th><th class="p-2">Score</th><th class="p-2">Streak</th><th class="p-2">Acc</th><th class="p-2">Time</th>`;
+            }
+
+            if (querySnapshot.empty) {
+                rankingBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-xs">No Data Yet.</td></tr>';
+                return;
+            }
+
+            let rank = 1;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const isMe = currentUser && data.uid === currentUser.uid;
+                const rowClass = isMe ? "bg-red-900/30 text-white font-bold" : "border-b border-gray-800";
+                const streakDisplay = data.streak ? `🔥${data.streak}` : "-"; 
+
+                const row = `
+                    <tr class="${rowClass}">
+                        <td class="p-2 text-yellow-500">${rank}</td>
+                        <td class="p-2 truncate max-w-[80px] md:max-w-[150px]">${data.driver}</td>
+                        <td class="p-2 text-xs text-gray-400">${data.round || "-"}</td>
+                        <td class="p-2 font-mono text-xs">${data.score || "-"}</td>
+                        <td class="p-2 font-bold text-orange-500">${streakDisplay}</td>
+                        <td class="p-2 text-green-400">${data.accuracy}%</td>
+                        <td class="p-2 text-gray-500">${data.time}s</td>
+                    </tr>
+                `;
+                rankingBody.innerHTML += row;
+                rank++;
+            });
+        } catch (error) { console.error("Data Fetch Error:", error); }
+      }
+
+      updateLeaderboard();
     </script>
 </body>
 </html>
