@@ -2445,7 +2445,18 @@ lest: ～しないように
                     selector.appendChild(opt);
                 });
             }
-
+// ★追加: コピー機能のパーツ
+            copyToClipboard(text, btnElement) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btnElement.innerText;
+                    btnElement.innerText = "COPIED!";
+                    btnElement.classList.add("bg-green-600", "border-green-600"); 
+                    setTimeout(() => { 
+                        btnElement.innerText = originalText; 
+                        btnElement.classList.remove("bg-green-600", "border-green-600");
+                    }, 2000);
+                });
+            }
             speak(text) {
                 if (!this.synth) return;
                 this.synth.cancel();
@@ -2555,19 +2566,70 @@ lest: ～しないように
                 clearInterval(this.timerInterval);
                 document.getElementById('quiz-screen').classList.add('hidden');
                 document.getElementById('result-screen').classList.remove('hidden');
+
                 const totalTime = (Date.now() - this.startTime) / 1000;
                 const accuracy = (1 - (this.missCount / this.questions.length)) * 100;
-                document.getElementById('accuracy-display').innerText = this.isPitStopMode ? "SRS UPDATED" : `${accuracy.toFixed(1)}%`;
                 
+                // --- 1. UI 表示更新 ---
+                const accDisplay = document.getElementById('accuracy-display');
+                accDisplay.innerText = this.isPitStopMode ? "SRS UPDATED" : `${accuracy.toFixed(1)}%`;
+                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
+
+                // --- 2. Telemetry (保存処理) ---
                 if (!this.isPitStopMode && window.recordLapTime && window.currentUser) {
                     const roundName = this.rounds[this.currentRoundIndex].name;
                     const correct = Math.max(0, this.rounds[this.currentRoundIndex].words.length - this.missCount);
                     window.recordLapTime(accuracy, totalTime, roundName, `${correct}/${this.rounds[this.currentRoundIndex].words.length}`, this.roundMaxStreak);
                 }
+                
                 if (window.fetchSRSItems) window.fetchSRSItems();
                 if (window.incrementDailyLaps && !this.isPitStopMode) window.incrementDailyLaps();
 
-                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
+                // --- 3. Pass & Auto Copy Logic ---
+                const passArea = document.getElementById('pass-issue-area');
+                const failMsg = document.getElementById('fail-message');
+
+                if (!this.isPitStopMode) {
+                    if (accuracy >= 90) {
+                        // === PASSED (合格) ===
+                        accDisplay.style.color = "#4ade80"; 
+                        passArea.classList.remove('hidden');
+                        failMsg.classList.add('hidden');
+                        
+                        // ID生成
+                        const licenseId = `perfect`;
+                        const passBtn = document.getElementById('copy-pass-btn');
+
+                        // A. 手動コピー設定 (Backup)
+                        passBtn.onclick = () => this.copyToClipboard(licenseId, passBtn);
+                        passBtn.innerText = "COPY LICENSE ID"; // Reset text
+                        passBtn.className = "bg-black text-white text-xs px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform";
+
+                        // B. 自動コピー試行 (Auto-Copy Attempt)
+                        navigator.clipboard.writeText(licenseId).then(() => {
+                            // 成功したらボタンを緑にして通知
+                            passBtn.innerText = "AUTO-COPIED!";
+                            passBtn.classList.remove("bg-black", "text-white");
+                            passBtn.classList.add("bg-green-500", "text-black", "border", "border-green-400");
+                        }).catch(err => {
+                            // ブラウザにブロックされたらログだけ出す（ボタンは手動用として機能する）
+                            console.log("Auto-copy blocked by FIA (Browser) rules. Use manual button.");
+                        });
+
+                    } else {
+                        // === FAILED ===
+                        accDisplay.style.color = "#ef4444"; 
+                        passArea.classList.add('hidden');
+                        failMsg.classList.remove('hidden');
+                    }
+                } else {
+                    // === PIT STOP MODE ===
+                    passArea.classList.add('hidden');
+                    failMsg.classList.add('hidden');
+                    accDisplay.style.color = "#fbbf24"; 
+                }
+                
+                // Review List
                 const review = document.getElementById('review-list');
                 let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Technical Telemetry</div>`;
                 if (this.missedWordsLog.length > 0) {
@@ -2576,6 +2638,7 @@ lest: ～しないように
                 } else { summaryHtml += '<p class="text-green-500 font-bold">Perfect Lap.</p>'; }
                 review.innerHTML = summaryHtml;
 
+                // Next Button
                 const nextBtn = document.getElementById('next-round-btn');
                 if (!this.isPitStopMode && this.rounds[this.currentRoundIndex].id !== 'custom' && this.currentRoundIndex + 1 < this.rounds.length) {
                     nextBtn.classList.remove('hidden');
