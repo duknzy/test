@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vocabulary GP - 2026 SRS Spec</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -127,6 +127,7 @@
         </div>
 
         <div id="start-screen" class="hidden race-card p-8 rounded-lg shadow-2xl text-center">
+            
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <div class="text-left">
                     <p class="text-[10px] text-gray-500 uppercase tracking-widest">Driver</p>
@@ -156,27 +157,39 @@
                 <p class="text-[10px] text-red-400 mt-1 uppercase tracking-wider">Mechanical Failures Detected</p>
             </div>
 
-            <div class="mb-6 bg-gray-800/50 p-4 rounded border border-gray-600 text-left">
-                <label class="text-xs text-gray-400 uppercase tracking-widest block mb-2">CUSTOM TEST RANGE (WORD #)</label>
-                <div class="flex gap-2 items-center">
-                    <input type="number" id="custom-start" placeholder="1" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono placeholder-gray-600">
-                    <span class="text-gray-500 font-bold">-</span>
-                    <input type="number" id="custom-end" placeholder="50" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono placeholder-gray-600">
-                    <button onclick="quiz.createCustomRound()" class="flex-1 f1-font bg-gray-700 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold uppercase rounded py-2 transition-colors border border-gray-600">
-                        Set Range
-                    </button>
-                </div>
-            </div>
-            
             <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
                 <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
-                <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono text-sm">
+                <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono text-base">
                 </select>
             </div>
 
-            <button onclick="quiz.start()" class="f1-font bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50">
+            <button onclick="quiz.start()" class="f1-font bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50 mb-8">
                 Start Engine
             </button>
+
+            <div class="border-t border-gray-700 pt-6 mb-6">
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Garage Tools</p>
+                
+                <div class="mb-4 bg-gray-800/50 p-3 rounded border border-gray-600 text-left relative group">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">QUICK SEARCH (WORD / MEANING)</label>
+                    <div class="flex items-center relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 absolute left-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <input type="text" id="search-input" placeholder="Type to scan database..." class="w-full bg-black text-white py-2 pl-9 pr-2 rounded border border-gray-700 focus:border-red-500 outline-none font-mono text-base placeholder-gray-700 transition-colors">
+                    <div id="search-results" class="hidden absolute z-50 left-0 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-2xl max-h-60 overflow-y-auto"></div>
+                </div>
+
+                <div class="bg-gray-800/50 p-4 rounded border border-gray-600 text-left">
+                    <label class="text-xs text-gray-400 uppercase tracking-widest block mb-2">CUSTOM TEST RANGE (WORD #)</label>
+                    <div class="flex gap-2 items-center">
+                       <input type="number" id="custom-start" placeholder="1" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono text-base placeholder-gray-600">
+                        <span class="text-gray-500 font-bold">-</span>
+                        <input type="number" id="custom-end" placeholder="50" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono text-base placeholder-gray-600">
+                        <button onclick="quiz.createCustomRound()" class="flex-1 f1-font bg-gray-700 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold uppercase rounded py-2 transition-colors border border-gray-600">
+                            Set Range
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div class="mt-8 pt-8 border-t border-gray-700">
                 <div class="bg-black/40 rounded p-4 border border-gray-800">
@@ -201,7 +214,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex flex-col text-left max-w-[60%]">
@@ -2329,6 +2342,7 @@ lest: ～しないように
                 this.parseData();
                 this.generateRounds();
                 this.initUI();
+                this.initSearch(); 
             }
 
             loadVoices() {
@@ -2445,7 +2459,51 @@ lest: ～しないように
                     selector.appendChild(opt);
                 });
             }
-// ★追加: コピー機能のパーツ
+            initSearch() {
+                const input = document.getElementById('search-input');
+                const results = document.getElementById('search-results');
+
+                input.addEventListener('input', (e) => {
+                    const q = e.target.value.toLowerCase().trim();
+                    if (!q) { 
+                        results.classList.add('hidden'); 
+                        return; 
+                    }
+
+                    // Scan Master List (Limit to 100 hits for speed)
+                    // ★修正: 元の番号(index + 1)を保持したまま検索する
+                    const hits = this.masterList
+                        .map((item, index) => ({ ...item, i: index + 1 })) // カーナンバー(i)を付与
+                        .filter(item => item.w.toLowerCase().includes(q) || item.m.toLowerCase().includes(q))
+                        .slice(0, 100);
+
+                    if (hits.length > 0) {
+                        results.classList.remove('hidden');
+                        results.innerHTML = hits.map(h => `
+                            <div onclick="quiz.speak('${h.w.replace(/'/g, "\\'")}')" class="p-3 border-b border-gray-800 hover:bg-gray-800 cursor-pointer flex justify-between items-center group transition-colors">
+                                <div class="flex flex-col text-left">
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-[10px] text-yellow-500 font-mono opacity-70">No.${h.i}</span>
+                                        <span class="text-red-400 font-bold text-sm f1-font">${h.w}</span>
+                                    </div>
+                                    <span class="text-gray-400 text-xs pl-1">${h.m}</span>
+                                </div>
+                                <button class="text-[10px] bg-gray-700 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity uppercase font-bold">Listen</button>
+                            </div>
+                        `).join('');
+                    } else {
+                        results.classList.remove('hidden');
+                        results.innerHTML = `<div class="p-3 text-gray-500 text-xs text-center font-mono">NO DATA FOUND</div>`;
+                    }
+                });
+ // Hide results when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !results.contains(e.target)) {
+                        results.classList.add('hidden');
+                    }
+                });
+            }
+            
             copyToClipboard(text, btnElement) {
                 navigator.clipboard.writeText(text).then(() => {
                     const originalText = btnElement.innerText;
