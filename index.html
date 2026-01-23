@@ -2,9 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocabulary GP - 2026 SRS Spec (Auto-Copy)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Vocabulary GP - 2026 Telemetry + SM2 Spec</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
         
@@ -12,41 +14,37 @@
             background-color: #0b0e14;
             color: #e2e8f0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* Safe Area for Mobile */
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
             overflow-x: hidden;
         }
 
-        .f1-font {
-            font-family: 'Chakra Petch', sans-serif;
-        }
+        .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
         .race-card {
             background: linear-gradient(145deg, #1a1f2e, #111521);
             border-left: 4px solid #e10600;
         }
 
-        .option-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        /* Scrollbar styling for Telemetry */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
+        .option-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .option-btn:hover {
             transform: translateX(10px);
             background-color: #e10600;
             color: white;
             border-color: #e10600;
         }
+        .option-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .progress-bar {
-            height: 4px;
-            background-color: #333;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background-color: #e10600;
-            transition: width 0.3s ease;
-        }
+        .progress-bar { height: 4px; background-color: #333; width: 100%; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: #e10600; transition: width 0.3s ease; }
 
         .checkered-pattern {
             background-image: linear-gradient(45deg, #222 25%, transparent 25%), 
@@ -64,13 +62,7 @@
         }
         
         .pit-btn {
-            background: repeating-linear-gradient(
-              45deg,
-              #e10600,
-              #e10600 10px,
-              #b91c1c 10px,
-              #b91c1c 20px
-            );
+            background: repeating-linear-gradient(45deg, #e10600, #e10600 10px, #b91c1c 10px, #b91c1c 20px);
             animation: pit-pulse 2s infinite;
         }
         @keyframes pit-pulse {
@@ -80,23 +72,20 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+<body class="min-h-screen flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
 
-    <div id="app" class="w-full max-w-2xl relative">
+    <div id="app" class="w-full max-w-2xl relative p-2">
         
         <div id="gate-screen" class="race-card p-10 rounded-lg shadow-2xl text-center border border-gray-700 relative overflow-hidden">
             <h1 class="f1-font text-4xl mb-2 font-bold text-white tracking-widest">PADDOCK CLUB</h1>
             <p class="text-red-500 font-bold mb-8 text-xs uppercase tracking-[0.3em]">Restricted Access Area</p>
-            
             <div class="mb-8 p-6 bg-black/40 border border-gray-800 rounded">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <p class="text-sm text-gray-400">Identity Verification Required</p>
             </div>
-
             <button id="gate-login-btn" class="w-full f1-font bg-white hover:bg-gray-200 text-black px-8 py-4 rounded font-bold tracking-widest uppercase transition-all shadow-lg flex items-center justify-center gap-3">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
                 Sign In with Google
             </button>
             <p id="login-status" class="mt-4 text-xs text-gray-600 font-mono">Waiting for connection...</p>
@@ -112,7 +101,7 @@
             <button onclick="quiz.returnToGrid()" class="f1-font bg-white text-black px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95">Select Round</button>
         </div>
 
-        <div id="start-screen" class="hidden race-card p-8 rounded-lg shadow-2xl text-center relative z-10">
+        <div id="start-screen" class="hidden race-card p-6 md:p-8 rounded-lg shadow-2xl text-center relative z-10">
             
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <div class="text-left">
@@ -143,13 +132,18 @@
                 <p class="text-[10px] text-red-400 mt-1 uppercase tracking-wider">Mechanical Failures Detected</p>
             </div>
 
+            <button onclick="quiz.openTelemetry()" class="w-full mb-6 border border-blue-900/50 bg-blue-900/10 hover:bg-blue-900/30 text-blue-400 py-3 rounded font-bold f1-font uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Telemetry Data
+            </button>
+
             <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
                 <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
                 <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono text-base">
                 </select>
             </div>
 
-            <button onclick="quiz.start()" class="f1-font bg-red-600 hover:bg-red-700 text-white px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50 mb-8">
+            <button onclick="quiz.start()" class="w-full f1-font bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-bold tracking-widest uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50 mb-8 text-xl">
                 Start Engine
             </button>
 
@@ -159,7 +153,7 @@
                 <div class="mb-4 bg-gray-800/50 p-3 rounded border border-gray-600 text-left relative group">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">QUICK SEARCH</label>
                     <div class="flex items-center relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 absolute left-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <svg class="h-4 w-4 text-gray-500 absolute left-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         <input type="text" id="search-input" placeholder="Type to scan database..." class="w-full bg-black text-white py-2 pl-9 pr-2 rounded border border-gray-700 focus:border-red-500 outline-none font-mono text-base placeholder-gray-700 transition-colors">
                     </div>
                     <div id="search-results" class="hidden absolute z-[9999] left-0 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-2xl max-h-60 overflow-y-auto"></div>
@@ -184,13 +178,7 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead class="text-gray-500 border-b border-gray-700 text-xs uppercase">
-                                <tr>
-                                    <th class="p-2">Pos</th>
-                                    <th class="p-2">Driver</th>
-                                    <th class="p-2">Round</th>
-                                    <th class="p-2">Acc</th>
-                                    <th class="p-2">Time</th>
-                                </tr>
+                                <tr><th class="p-2">Pos</th><th class="p-2">Driver</th><th class="p-2">Rd</th><th class="p-2">Acc</th><th class="p-2">Time</th></tr>
                             </thead>
                             <tbody id="ranking-tbody" class="font-mono text-gray-300">
                                 <tr><td colspan="5" class="p-4 text-center text-xs opacity-50">Loading Telemetry...</td></tr>
@@ -201,6 +189,31 @@
             </div>
         </div>
         
+        <div id="telemetry-screen" class="hidden race-card p-6 md:p-8 rounded-lg shadow-2xl text-center border-t-4 border-blue-500">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="f1-font text-2xl md:text-3xl font-bold text-blue-400 tracking-widest">RACE TELEMETRY</h2>
+                <button onclick="quiz.closeTelemetry()" class="text-gray-400 hover:text-white text-2xl">×</button>
+            </div>
+            
+            <p class="text-xs text-gray-500 mb-4 uppercase tracking-widest text-left">Tire Wear (Memory Retention)</p>
+            <div class="bg-black/50 p-2 rounded mb-6 border border-gray-800 relative h-64 w-full">
+                <canvas id="weaknessRadarChart"></canvas>
+            </div>
+
+            <div class="text-left mb-6">
+                <div class="flex justify-between items-end mb-3 border-b border-red-900/50 pb-1">
+                    <h3 class="text-xs text-red-500 font-bold uppercase tracking-widest">High Risk Corners</h3>
+                    <span class="text-[10px] text-gray-500">Sorted by Ease Factor (Difficulity)</span>
+                </div>
+                <div id="worst-words-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    </div>
+            </div>
+
+            <button onclick="quiz.closeTelemetry()" class="w-full f1-font border border-gray-600 hover:bg-white hover:text-black text-gray-300 px-6 py-3 rounded uppercase font-bold tracking-widest transition-colors">
+                Return to Garage
+            </button>
+        </div>
+
         <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex flex-col text-left max-w-[60%]">
@@ -2299,6 +2312,7 @@ conversely: 逆に
 predominantly: 主に
 lest: ～しないように
 `;
+// ==========================================
 
         class VocabularyQuiz {
             constructor() {
@@ -2316,7 +2330,9 @@ lest: ～しないように
                 this.userMaxStreak = 0;
                 this.roundMaxStreak = 0;
                 this.dueMistakes = [];
+                this.allMistakes = []; // Store ALL SRS items for Telemetry
                 this.isPitStopMode = false;
+                this.telemetryChart = null;
 
                 // Audio
                 this.synth = window.speechSynthesis;
@@ -2349,23 +2365,21 @@ lest: ～しないように
             }
 
             parseData() {
+                if(!rawData.trim()) { console.warn("No Data"); return; }
                 const lines = rawData.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('[source'));
                 this.masterList = [];
-                
                 lines.forEach(line => {
                     let sep = -1;
                     if (line.indexOf('\t') !== -1) sep = line.indexOf('\t');
                     else if (line.indexOf(':') !== -1) sep = line.indexOf(':');
                     else if (line.indexOf('：') !== -1) sep = line.indexOf('：');
                     else if (line.indexOf('  ') !== -1) sep = line.indexOf('  ');
-
                     if (sep !== -1) {
                         const w = line.substring(0, sep).trim();
                         const m = line.substring(sep + 1).trim();
                         if(w && m) this.masterList.push({ w, m });
                     }
                 });
-                console.log("Telemetry: Loaded " + this.masterList.length + " words.");
             }
 
             generateRounds() {
@@ -2393,6 +2407,113 @@ lest: ～しないように
                     container.classList.add('hidden');
                 }
             }
+
+            // === TELEMETRY & CHART LOGIC (SM-2 ADAPTED) ===
+            openTelemetry() {
+                if (!window.currentUser) { alert("Please Sign In first."); return; }
+                
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('telemetry-screen').classList.remove('hidden');
+
+                // Use allMistakes (Full History) instead of just dueMistakes
+                const mistakes = this.allMistakes || [];
+                
+                // 1. Worst Words List (Sort by Ease Factor ASC = Hardest)
+                const worstWords = [...mistakes]
+                    .sort((a, b) => (a.easeFactor || 2.5) - (b.easeFactor || 2.5))
+                    .slice(0, 20);
+
+                const listContainer = document.getElementById('worst-words-list');
+                
+                if (worstWords.length === 0) {
+                    listContainer.innerHTML = `<div class="text-gray-500 text-sm italic p-2">No failures detected. System optimal.</div>`;
+                } else {
+                    listContainer.innerHTML = worstWords.map(item => {
+                        // Calculate color based on Ease Factor (Lower is redder)
+                        const ef = item.easeFactor || 2.5;
+                        const borderColor = ef < 1.5 ? 'border-red-500' : (ef < 2.0 ? 'border-yellow-500' : 'border-blue-500');
+                        return `
+                        <div class="flex justify-between items-center bg-gray-900/40 p-3 rounded border-l-2 ${borderColor} mb-1">
+                            <div class="flex flex-col text-left">
+                                <span class="font-bold text-gray-200 f1-font text-base">${item.word}</span>
+                                <span class="text-xs text-gray-400">${item.meaning}</span>
+                            </div>
+                            <div class="flex flex-col items-end text-xs font-mono text-gray-500">
+                                <span>EF: <span class="text-white">${ef.toFixed(2)}</span></span>
+                                <span>INT: <span class="text-white">${item.interval || 0}d</span></span>
+                            </div>
+                        </div>
+                    `}).join('');
+                }
+
+                // 2. Bar Chart based on Interval (Retention Buckets)
+                const ctx = document.getElementById('weaknessRadarChart').getContext('2d');
+                if (this.telemetryChart) this.telemetryChart.destroy();
+
+                // Buckets: 1d (Danger), 2-6d (Soft), 7-14d (Med), 15-30d (Hard), 30d+ (Master)
+                const buckets = [0, 0, 0, 0, 0];
+                mistakes.forEach(m => {
+                    const int = m.interval || 0;
+                    if (int <= 1) buckets[0]++;
+                    else if (int <= 6) buckets[1]++;
+                    else if (int <= 14) buckets[2]++;
+                    else if (int <= 30) buckets[3]++;
+                    else buckets[4]++;
+                });
+
+                this.telemetryChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['1 Day (Danger)', '2-6 Days (Soft)', '1-2 Wks (Med)', '1 Mo (Hard)', 'Mastered'],
+                        datasets: [{
+                            label: 'Words in Memory',
+                            data: buckets,
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.8)',   // Red
+                                'rgba(249, 115, 22, 0.7)',  // Orange
+                                'rgba(234, 179, 8, 0.6)',   // Yellow
+                                'rgba(34, 197, 94, 0.5)',   // Green
+                                'rgba(59, 130, 246, 0.4)'   // Blue
+                            ],
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.raw} words`
+                                },
+                                backgroundColor: 'rgba(0,0,0,0.9)',
+                                titleFont: { family: 'Chakra Petch' },
+                                bodyFont: { family: 'monospace' }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                ticks: { color: '#94a3b8', font: { family: 'monospace' } }
+                            },
+                            x: { 
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8', font: { size: 10, family: 'Chakra Petch' } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            closeTelemetry() {
+                document.getElementById('telemetry-screen').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+            }
+            // ============================================
 
             startPitStop() {
                 if (!this.dueMistakes || this.dueMistakes.length === 0) return;
@@ -2458,10 +2579,7 @@ lest: ～しないように
 
                 input.addEventListener('input', (e) => {
                     const q = e.target.value.toLowerCase().trim();
-                    if (!q) { 
-                        results.classList.add('hidden'); 
-                        return; 
-                    }
+                    if (!q) { results.classList.add('hidden'); return; }
                     const hits = this.masterList
                         .map((item, index) => ({ ...item, i: index + 1 }))
                         .filter(item => item.w.toLowerCase().includes(q) || item.m.toLowerCase().includes(q))
@@ -2486,21 +2604,14 @@ lest: ～しないように
                         results.innerHTML = `<div class="p-3 text-gray-500 text-xs text-center font-mono">NO DATA FOUND</div>`;
                     }
                 });
-
                 document.addEventListener('click', (e) => {
-                    if (!input.contains(e.target) && !results.contains(e.target)) {
-                        results.classList.add('hidden');
-                    }
+                    if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden');
                 });
             }
             
             copyToClipboard(text, btnElement) {
-                // 手動コピー用の関数
-                navigator.clipboard.writeText(text).then(() => {
-                    this.showCopySuccess(btnElement);
-                }).catch(err => {
-                    console.error('Failed to copy: ', err);
-                });
+                navigator.clipboard.writeText(text).then(() => { this.showCopySuccess(btnElement); })
+                .catch(err => { console.error('Failed to copy: ', err); });
             }
 
             showCopySuccess(btnElement) {
@@ -2522,11 +2633,8 @@ lest: ～しないように
                 if (this.englishVoices.length > 0) { 
                     utterance.voice = this.englishVoices[0]; 
                     utterance.lang = this.englishVoices[0].lang; 
-                } else { 
-                    utterance.lang = 'en-US'; 
                 }
                 utterance.rate = 1.3; 
-                utterance.volume = 1.0; 
                 this.synth.speak(utterance);
             }
 
@@ -2618,10 +2726,7 @@ lest: ～しないように
                         streakDisp.innerText = `COMBO: ${this.currentStreak}`; 
                         streakDisp.classList.remove('hidden'); 
                     }
-                    
-                    if (window.handleSRSUpdate) {
-                        if (this.isPitStopMode) window.handleSRSUpdate(questionObj, true);
-                    }
+                    if (window.handleSRSUpdate && this.isPitStopMode) window.handleSRSUpdate(questionObj, true);
                     
                     this.currentIndex++;
                     if (this.currentIndex < this.questions.length) this.showQuestion();
@@ -2630,7 +2735,6 @@ lest: ～しないように
                     this.currentStreak = 0; 
                     streakDisp.classList.add('hidden');
                     this.missCount++;
-                    
                     feedback.innerText = `WRONG: ${questionObj.w} = ${questionObj.m}`;
                     feedback.className = "mt-4 text-center h-6 font-bold text-red-500 animate-pulse";
                     
@@ -2643,10 +2747,7 @@ lest: ～しないように
                     
                     const btns = document.querySelectorAll('.option-btn');
                     btns.forEach(b => b.disabled = true);
-                    setTimeout(() => { 
-                        this.currentIndex++; 
-                        this.showQuestion(); 
-                    }, 1200);
+                    setTimeout(() => { this.currentIndex++; this.showQuestion(); }, 1200);
                 }
             }
 
@@ -2680,32 +2781,18 @@ lest: ～しないように
                         accDisplay.style.color = "#4ade80"; 
                         passArea.classList.remove('hidden');
                         failMsg.classList.add('hidden');
-                        
-                        // ID生成
-                        const licenseId = `perfect`;
-                        
-                        // ★自動コピーの復活（エラーハンドリング付き）
+                        const licenseId = `perfect-${Date.now()}`;
                         navigator.clipboard.writeText(licenseId).then(() => {
-                            // 成功したらボタンを緑に
                             passBtn.innerText = "AUTO-COPIED!";
                             passBtn.classList.remove("bg-black", "text-white");
                             passBtn.classList.add("bg-green-500", "text-black", "border", "border-green-400");
-                            
-                            // 3秒後に通常状態に戻す
                             setTimeout(() => {
                                 passBtn.innerText = "COPY LICENSE ID";
                                 passBtn.classList.add("bg-black", "text-white");
                                 passBtn.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
                             }, 3000);
-                        }).catch(() => {
-                            // 失敗（ブロック）した場合は、標準のボタン状態のままにしておく
-                            console.log("Auto-copy blocked. Manual copy required.");
-                            passBtn.innerText = "COPY LICENSE ID";
-                        });
-
-                        // 手動クリックイベントは常に設定（バックアップ）
+                        }).catch(() => { passBtn.innerText = "COPY LICENSE ID"; });
                         passBtn.onclick = () => this.copyToClipboard(licenseId, passBtn);
-
                     } else {
                         accDisplay.style.color = "#ef4444"; 
                         passArea.classList.add('hidden');
@@ -2720,7 +2807,7 @@ lest: ～しないように
                 const review = document.getElementById('review-list');
                 let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Technical Telemetry</div>`;
                 if (this.missedWordsLog.length > 0) {
-                    summaryHtml += '<h3 class="text-red-500 mb-2 font-bold uppercase text-xs">SRS Algorithm: Interval Shortened</h3>' + 
+                    summaryHtml += '<h3 class="text-red-500 mb-2 font-bold uppercase text-xs">SRS: Interval Reset</h3>' + 
                         this.missedWordsLog.map(item => `<div class="mb-2 text-sm p-2 bg-red-900/10 border border-red-900/30 rounded"><span class="font-bold text-white block">${item.w}</span><span class="text-gray-400">${item.m}</span></div>`).join('');
                 } else { 
                     summaryHtml += '<p class="text-green-500 font-bold">Perfect Lap. Intervals Extended.</p>'; 
@@ -2730,13 +2817,8 @@ lest: ～しないように
                 const nextBtn = document.getElementById('next-round-btn');
                 if (!this.isPitStopMode && this.rounds[this.currentRoundIndex].id !== 'custom' && this.currentRoundIndex + 1 < this.rounds.length) {
                     nextBtn.classList.remove('hidden');
-                    nextBtn.onclick = () => { 
-                        document.getElementById('round-selector').value = this.currentRoundIndex + 1; 
-                        this.start(); 
-                    };
-                } else { 
-                    nextBtn.classList.add('hidden'); 
-                }
+                    nextBtn.onclick = () => { document.getElementById('round-selector').value = this.currentRoundIndex + 1; this.start(); };
+                } else { nextBtn.classList.add('hidden'); }
             }
 
             returnToGrid() {
@@ -2806,6 +2888,7 @@ lest: ～しないように
             document.getElementById('quiz-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.add('hidden');
             document.getElementById('champion-screen').classList.add('hidden');
+            document.getElementById('telemetry-screen').classList.add('hidden');
             loginStatus.innerText = "Waiting for connection...";
             window.quiz.dueMistakes = [];
             window.quiz.updatePitStopButton(0);
@@ -2816,10 +2899,24 @@ lest: ～しないように
         if (!window.currentUser) return;
         try {
             const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
-            const q = query(mistakesRef, where("nextReview", "<=", Timestamp.now()));
-            const snapshot = await getDocs(q);
+            // Telemetry requires ALL items to visualize garage status
+            const snapshot = await getDocs(mistakesRef);
+            
+            const allItems = [];
             const dueItems = [];
-            snapshot.forEach(doc => { dueItems.push({ id: doc.id, ...doc.data() }); });
+            const now = Timestamp.now();
+            
+            snapshot.forEach(doc => { 
+                const d = doc.data();
+                const item = { id: doc.id, ...d };
+                allItems.push(item);
+                if (d.nextReview <= now) dueItems.push(item);
+            });
+
+            // Store for Telemetry Graph
+            window.quiz.allMistakes = allItems;
+            
+            // Store for Pit Stop Queue
             window.quiz.dueMistakes = dueItems;
             window.quiz.updatePitStopButton(dueItems.length);
         } catch (e) { console.error("SRS Fetch Error:", e); }
@@ -2847,14 +2944,9 @@ lest: ～しないように
             nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2);
         } else {
             nextRepetitions = currentParams.repetitions + 1;
-            
-            if (nextRepetitions === 1) {
-                nextInterval = 1;
-            } else if (nextRepetitions === 2) {
-                nextInterval = 6;
-            } else {
-                nextInterval = Math.round(currentParams.interval * currentParams.easeFactor);
-            }
+            if (nextRepetitions === 1) nextInterval = 1;
+            else if (nextRepetitions === 2) nextInterval = 6;
+            else nextInterval = Math.round(currentParams.interval * currentParams.easeFactor);
             nextEaseFactor = currentParams.easeFactor + 0.1;
         }
 
