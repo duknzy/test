@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocabulary GP - 2026 SRS Spec (SM-2 Edition)</title>
+    <title>Vocabulary GP - 2026 SRS Spec (Auto-Copy)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
@@ -12,7 +12,7 @@
             background-color: #0b0e14;
             color: #e2e8f0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow-x: hidden; /* 横スクロール防止 */
+            overflow-x: hidden;
         }
 
         .f1-font {
@@ -268,7 +268,7 @@
 
     <script>
 // ==========================================
-// ★重要★ ここにあなたの2000語を貼り付けてください
+// ★重要★ ここに 2000語のデータ を貼り付けてください
 // ==========================================
 const rawData = `
 follow: ～の後に続く、～に従う
@@ -2336,7 +2336,6 @@ lest: ～しないように
                 if(!this.synth) return;
                 const allVoices = this.synth.getVoices();
                 this.englishVoices = allVoices.filter(v => v.lang.startsWith('en'));
-                // 優先順位: Google US > Samantha > Zira > その他
                 this.englishVoices.sort((a, b) => {
                     const getScore = (voice) => {
                         if (voice.name.includes('Google US')) return 100;
@@ -2350,18 +2349,15 @@ lest: ～しないように
             }
 
             parseData() {
-                // 安全なデータパース処理 (タブ、コロン、全角コロン、スペース2つ以上に対応)
                 const lines = rawData.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('[source'));
                 this.masterList = [];
                 
                 lines.forEach(line => {
                     let sep = -1;
-                    // セパレーターの優先順位: タブ > コロン > 全角コロン
                     if (line.indexOf('\t') !== -1) sep = line.indexOf('\t');
                     else if (line.indexOf(':') !== -1) sep = line.indexOf(':');
                     else if (line.indexOf('：') !== -1) sep = line.indexOf('：');
-                    // 誤爆を防ぐため、単純なシングルスペースでの分割は行わない
-                    else if (line.indexOf('  ') !== -1) sep = line.indexOf('  '); // ダブルスペースは許容
+                    else if (line.indexOf('  ') !== -1) sep = line.indexOf('  ');
 
                     if (sep !== -1) {
                         const w = line.substring(0, sep).trim();
@@ -2402,12 +2398,10 @@ lest: ～しないように
                 if (!this.dueMistakes || this.dueMistakes.length === 0) return;
                 this.isPitStopMode = true;
                 
-                // SM-2用データを含んだオブジェクトを作成
                 this.questions = this.dueMistakes.map(item => {
                     const targetWord = { w: item.word, m: item.meaning };
                     const distractors = this.getDistractors(targetWord);
                     const options = [targetWord.m, ...distractors].sort(() => Math.random() - 0.5);
-                    // 既存のSM-2パラメータを保持
                     return { 
                         w: targetWord.w, 
                         m: targetWord.m, 
@@ -2441,7 +2435,6 @@ lest: ～しないように
                 if (isNaN(start) || isNaN(end) || start < 0 || end > this.masterList.length || start >= end) { alert(`Invalid Range!`); return; }
                 const customWords = this.masterList.slice(start, end);
                 const customRound = { id: 'custom', name: `CUSTOM [No.${start + 1} - ${end}]`, words: customWords };
-                // カスタムラウンドを先頭に追加
                 this.rounds.unshift(customRound);
                 this.initUI();
                 document.getElementById('round-selector').value = 0; 
@@ -2469,8 +2462,6 @@ lest: ～しないように
                         results.classList.add('hidden'); 
                         return; 
                     }
-
-                    // Scan Master List (Limit 100) - 元のIndexを付与して検索
                     const hits = this.masterList
                         .map((item, index) => ({ ...item, i: index + 1 }))
                         .filter(item => item.w.toLowerCase().includes(q) || item.m.toLowerCase().includes(q))
@@ -2504,19 +2495,24 @@ lest: ～しないように
             }
             
             copyToClipboard(text, btnElement) {
+                // 手動コピー用の関数
                 navigator.clipboard.writeText(text).then(() => {
-                    const originalText = btnElement.innerText;
-                    btnElement.innerText = "COPIED!";
-                    btnElement.classList.add("bg-green-600", "border-green-600");
-                    btnElement.classList.remove("bg-black");
-                    setTimeout(() => { 
-                        btnElement.innerText = originalText; 
-                        btnElement.classList.remove("bg-green-600", "border-green-600");
-                        btnElement.classList.add("bg-black");
-                    }, 2000);
+                    this.showCopySuccess(btnElement);
                 }).catch(err => {
                     console.error('Failed to copy: ', err);
                 });
+            }
+
+            showCopySuccess(btnElement) {
+                const originalText = "COPY LICENSE ID";
+                btnElement.innerText = "COPIED!";
+                btnElement.classList.add("bg-green-600", "border-green-600");
+                btnElement.classList.remove("bg-black");
+                setTimeout(() => { 
+                    btnElement.innerText = originalText; 
+                    btnElement.classList.remove("bg-green-600", "border-green-600");
+                    btnElement.classList.add("bg-black");
+                }, 2000);
             }
 
             speak(text) {
@@ -2592,7 +2588,6 @@ lest: ～しないように
                 const container = document.getElementById('options-container');
                 container.innerHTML = ''; 
                 
-                // DRS Button (Reveal)
                 const revealBtn = document.createElement('button');
                 revealBtn.className = 'col-span-1 md:col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
                 revealBtn.innerHTML = `<span class="text-3xl">🤔</span><span>VISUALIZE MEANING</span><span class="text-xs text-gray-500 font-mono">TAP TO UNLOCK DRS</span>`;
@@ -2616,7 +2611,6 @@ lest: ～しないように
                 const streakDisp = document.getElementById('streak-display');
                 
                 if (selected === questionObj.m) {
-                    // Correct
                     this.currentStreak++;
                     if (this.currentStreak > this.roundMaxStreak) this.roundMaxStreak = this.currentStreak;
                     if (this.currentStreak > this.userMaxStreak) this.userMaxStreak = this.currentStreak;
@@ -2633,7 +2627,6 @@ lest: ～しないように
                     if (this.currentIndex < this.questions.length) this.showQuestion();
                     else this.finish();
                 } else {
-                    // Wrong
                     this.currentStreak = 0; 
                     streakDisp.classList.add('hidden');
                     this.missCount++;
@@ -2646,8 +2639,6 @@ lest: ～しないように
                     }
                     
                     if (window.handleSRSUpdate) window.handleSRSUpdate(questionObj, false);
-                    
-                    // 間違えた問題を最後に追加（再挑戦）
                     this.questions.push(questionObj);
                     
                     const btns = document.querySelectorAll('.option-btn');
@@ -2671,18 +2662,15 @@ lest: ～しないように
                 accDisplay.innerText = this.isPitStopMode ? "SRS UPDATED" : `${accuracy.toFixed(1)}%`;
                 document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
 
-                // Telemetry (Log to Firestore)
                 if (!this.isPitStopMode && window.recordLapTime && window.currentUser) {
                     const roundName = this.rounds[this.currentRoundIndex].name;
                     const correct = Math.max(0, this.rounds[this.currentRoundIndex].words.length - this.missCount);
                     window.recordLapTime(accuracy, totalTime, roundName, `${correct}/${this.rounds[this.currentRoundIndex].words.length}`, this.roundMaxStreak);
                 }
                 
-                // Fetch new SRS data
                 if (window.fetchSRSItems) window.fetchSRSItems();
                 if (window.incrementDailyLaps && !this.isPitStopMode) window.incrementDailyLaps();
 
-                // Pass UI
                 const passArea = document.getElementById('pass-issue-area');
                 const failMsg = document.getElementById('fail-message');
                 const passBtn = document.getElementById('copy-pass-btn');
@@ -2693,10 +2681,31 @@ lest: ～しないように
                         passArea.classList.remove('hidden');
                         failMsg.classList.add('hidden');
                         
+                        // ID生成
                         const licenseId = `perfect-${Date.now()}`;
+                        
+                        // ★自動コピーの復活（エラーハンドリング付き）
+                        navigator.clipboard.writeText(licenseId).then(() => {
+                            // 成功したらボタンを緑に
+                            passBtn.innerText = "AUTO-COPIED!";
+                            passBtn.classList.remove("bg-black", "text-white");
+                            passBtn.classList.add("bg-green-500", "text-black", "border", "border-green-400");
+                            
+                            // 3秒後に通常状態に戻す
+                            setTimeout(() => {
+                                passBtn.innerText = "COPY LICENSE ID";
+                                passBtn.classList.add("bg-black", "text-white");
+                                passBtn.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
+                            }, 3000);
+                        }).catch(() => {
+                            // 失敗（ブロック）した場合は、標準のボタン状態のままにしておく
+                            console.log("Auto-copy blocked. Manual copy required.");
+                            passBtn.innerText = "COPY LICENSE ID";
+                        });
+
+                        // 手動クリックイベントは常に設定（バックアップ）
                         passBtn.onclick = () => this.copyToClipboard(licenseId, passBtn);
-                        passBtn.innerText = "COPY LICENSE ID";
-                        passBtn.className = "bg-black text-white text-xs px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform";
+
                     } else {
                         accDisplay.style.color = "#ef4444"; 
                         passArea.classList.add('hidden');
@@ -2708,7 +2717,6 @@ lest: ～しないように
                     accDisplay.style.color = "#fbbf24"; 
                 }
                 
-                // Review List Render
                 const review = document.getElementById('review-list');
                 let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Technical Telemetry</div>`;
                 if (this.missedWordsLog.length > 0) {
@@ -2719,7 +2727,6 @@ lest: ～しないように
                 }
                 review.innerHTML = summaryHtml;
 
-                // Next Button
                 const nextBtn = document.getElementById('next-round-btn');
                 if (!this.isPitStopMode && this.rounds[this.currentRoundIndex].id !== 'custom' && this.currentRoundIndex + 1 < this.rounds.length) {
                     nextBtn.classList.remove('hidden');
@@ -2805,7 +2812,6 @@ lest: ～しないように
         }
       });
 
-      // --- SRS & DB LOGIC (SM-2 ALGORITHM) ---
       window.fetchSRSItems = async () => {
         if (!window.currentUser) return;
         try {
@@ -2827,7 +2833,6 @@ lest: ～しないように
         const safeWordId = btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
         const targetRef = questionObj.docId ? doc(mistakesRef, questionObj.docId) : doc(mistakesRef, safeWordId);
 
-        // 現在のパラメータ（無ければ初期値）
         const currentParams = {
             interval: questionObj.interval || 0,
             repetitions: questionObj.repetitions || 0,
@@ -2837,12 +2842,10 @@ lest: ～しないように
         let nextInterval, nextRepetitions, nextEaseFactor;
 
         if (!isCorrect) {
-            // === 不正解: リセット ===
             nextRepetitions = 0;
-            nextInterval = 1; // 翌日復習
+            nextInterval = 1; 
             nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2);
         } else {
-            // === 正解: SM-2 計算 ===
             nextRepetitions = currentParams.repetitions + 1;
             
             if (nextRepetitions === 1) {
@@ -2852,14 +2855,12 @@ lest: ～しないように
             } else {
                 nextInterval = Math.round(currentParams.interval * currentParams.easeFactor);
             }
-            // Ease Factor 微増 (簡単だと判断)
             nextEaseFactor = currentParams.easeFactor + 0.1;
         }
 
         const nextDate = new Date();
         nextDate.setDate(now.getDate() + nextInterval);
 
-        // Firestore保存
         await setDoc(targetRef, {
             word: questionObj.w,
             meaning: questionObj.meaning || questionObj.m,
@@ -2871,7 +2872,6 @@ lest: ～しないように
         }, { merge: true });
       };
 
-      // --- LEADERBOARD & STATS ---
       window.recordLapTime = async (acc, time, round, score, streak) => {
         if (!window.currentUser) return;
         await addDoc(collection(db, "leaderboard"), {
