@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Vocabulary GP - 2026 Telemetry + SM2 Spec</title>
+    <title>Vocabulary GP - 2026 Telemetry Spec (PC Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -11,14 +11,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap');
         
         body {
+            /* PC画面全体をカバーし、スクロールバーをカスタマイズ */
             background-color: #0b0e14;
             color: #e2e8f0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Safe Area for Mobile */
-            padding-top: max(1rem, env(safe-area-inset-top));
-            padding-bottom: max(1rem, env(safe-area-inset-bottom));
-            padding-left: max(1rem, env(safe-area-inset-left));
-            padding-right: max(1rem, env(safe-area-inset-right));
             overflow-x: hidden;
         }
 
@@ -26,25 +22,25 @@
 
         .race-card {
             background: linear-gradient(145deg, #1a1f2e, #111521);
-            border-left: 4px solid #e10600;
+            border: 1px solid #374151;
         }
 
-        /* Scrollbar styling for Telemetry */
-        ::-webkit-scrollbar { width: 6px; }
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 
         .option-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .option-btn:hover {
-            transform: translateX(10px);
+        .option-btn:hover:not(:disabled) {
+            transform: translateX(5px);
             background-color: #e10600;
             color: white;
             border-color: #e10600;
         }
         .option-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        .progress-bar { height: 4px; background-color: #333; width: 100%; overflow: hidden; }
-        .progress-fill { height: 100%; background-color: #e10600; transition: width 0.3s ease; }
 
         .checkered-pattern {
             background-image: linear-gradient(45deg, #222 25%, transparent 25%), 
@@ -58,7 +54,7 @@
         .pass-card {
             background: linear-gradient(135deg, #ffd700, #ff8c00);
             color: #000;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
         }
         
         .pit-btn {
@@ -72,216 +68,219 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+<body class="min-h-screen bg-[#0b0e14] text-slate-200 font-sans flex flex-col items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
 
-    <div id="app" class="w-full max-w-2xl relative p-2">
+    <div id="app" class="w-full max-w-[1600px] grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative min-h-[85vh]">
         
-        <div id="gate-screen" class="race-card p-10 rounded-lg shadow-2xl text-center border border-gray-700 relative overflow-hidden">
-            <h1 class="f1-font text-4xl mb-2 font-bold text-white tracking-widest">PADDOCK CLUB</h1>
-            <p class="text-red-500 font-bold mb-8 text-xs uppercase tracking-[0.3em]">Restricted Access Area</p>
-            <div class="mb-8 p-6 bg-black/40 border border-gray-800 rounded">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <p class="text-sm text-gray-400">Identity Verification Required</p>
-            </div>
-            <button id="gate-login-btn" class="w-full f1-font bg-white hover:bg-gray-200 text-black px-8 py-4 rounded font-bold tracking-widest uppercase transition-all shadow-lg flex items-center justify-center gap-3">
-                Sign In with Google
-            </button>
-            <p id="login-status" class="mt-4 text-xs text-gray-600 font-mono">Waiting for connection...</p>
-        </div>
-
-        <div id="champion-screen" class="hidden race-card p-10 rounded-lg shadow-2xl text-center border-4 border-yellow-500">
-            <h1 class="f1-font text-3xl md:text-5xl mb-6 font-bold text-yellow-500 tracking-wider md:tracking-widest break-words">SEASON CHAMPION</h1>
-            <div class="pass-card p-6 rounded-lg mb-8">
-                <p class="f1-font text-sm uppercase font-bold mb-2">Access Granted</p>
-                <h2 class="text-3xl font-black">SUPER LICENSE PASS</h2>
-                <p class="mt-4 font-mono text-xs opacity-75">VALID FOR 2026 SEASON</p>
-            </div>
-            <button onclick="quiz.returnToGrid()" class="f1-font bg-white text-black px-12 py-4 rounded-full font-bold tracking-tighter uppercase transition-transform active:scale-95">Select Round</button>
-        </div>
-
-        <div id="start-screen" class="hidden race-card p-6 md:p-8 rounded-lg shadow-2xl text-center relative z-10">
-            
-            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-                <div class="text-left">
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Driver</p>
-                    <p id="user-name" class="f1-font text-white font-bold truncate max-w-[150px]">Unknown</p>
+        <div class="lg:col-span-3 space-y-4">
+            <div class="race-card p-6 rounded-lg shadow-lg border-t-4 border-red-600">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Driver Profile</p>
+                        <p id="user-name" class="f1-font text-2xl text-white font-bold truncate">Guest</p>
+                    </div>
+                    <div id="daily-laps-wrapper" class="text-right">
+                        <span class="f1-font text-xl text-white font-mono font-bold" id="daily-laps-display">0</span>
+                        <p class="text-[10px] text-gray-500 uppercase">LAPS</p>
+                    </div>
                 </div>
-                <button id="logout-btn" class="text-xs text-red-500 hover:text-red-400 border border-red-900/50 px-3 py-1 rounded hover:bg-red-900/20 transition-colors">Sign Out</button>
+                <button id="logout-btn" class="w-full text-xs text-red-500 hover:text-white border border-red-900 hover:bg-red-600 px-3 py-2 rounded transition-colors uppercase tracking-wider">Sign Out</button>
             </div>
 
-            <h1 class="f1-font text-3xl md:text-5xl mb-4 font-bold text-white tracking-wider md:tracking-widest break-words leading-tight">
-                VOCABULARY<br class="block md:hidden"/>GP
-            </h1>
-            <p class="f1-font text-red-500 font-bold mb-6">SRS CLOUD SPEC (SM-2)</p>
-
-            <div class="mb-6 bg-gray-900/50 p-2 px-4 rounded border border-gray-700 inline-block">
-                <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Today's Track Activity</p>
-                <div class="flex items-center justify-center gap-2">
-                    <span class="animate-pulse text-red-500">●</span>
-                    <span id="daily-laps-display" class="f1-font text-2xl text-white font-mono font-bold">0</span>
-                    <span class="text-xs text-gray-500 uppercase">LAPS</span>
-                </div>
-            </div>
-
-            <div id="pit-stop-container" class="hidden mb-6">
-                <button onclick="quiz.startPitStop()" class="w-full pit-btn text-white p-4 rounded-lg font-bold f1-font uppercase tracking-widest shadow-lg hover:scale-105 transition-transform border-2 border-white/20">
-                    ⚠️ REVIEW DUE: <span id="mistake-count">0</span> WORDS
+            <div id="pit-stop-container" class="hidden">
+                <button onclick="quiz.startPitStop()" class="w-full pit-btn text-white p-4 rounded-lg font-bold f1-font uppercase tracking-widest shadow-lg hover:scale-105 transition-transform border-2 border-white/20 text-sm">
+                    ⚠️ REVIEW: <span id="mistake-count">0</span> WORDS
                 </button>
-                <p class="text-[10px] text-red-400 mt-1 uppercase tracking-wider">Mechanical Failures Detected</p>
             </div>
 
-            <button onclick="quiz.openTelemetry()" class="w-full mb-6 border border-blue-900/50 bg-blue-900/10 hover:bg-blue-900/30 text-blue-400 py-3 rounded font-bold f1-font uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <button onclick="quiz.openTelemetry()" class="w-full border border-blue-900/50 bg-blue-900/10 hover:bg-blue-900/30 text-blue-400 py-4 rounded font-bold f1-font uppercase tracking-widest transition-colors flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                 Telemetry Data
             </button>
+        </div>
 
-            <div class="bg-black/30 p-4 rounded mb-6 text-left border border-gray-700">
-                <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
-                <select id="round-selector" class="w-full bg-gray-800 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono text-base">
-                </select>
+        <div class="lg:col-span-6 relative h-full min-h-[600px]">
+            
+            <div id="gate-screen" class="race-card p-12 rounded-lg shadow-2xl text-center border border-gray-700 relative overflow-hidden h-full flex flex-col justify-center">
+                <h1 class="f1-font text-5xl mb-2 font-bold text-white tracking-widest">PADDOCK CLUB</h1>
+                <p class="text-red-500 font-bold mb-10 text-sm uppercase tracking-[0.5em]">Restricted Access Area</p>
+                <div class="mb-8 p-6 bg-black/40 border border-gray-800 rounded mx-auto max-w-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <p class="text-sm text-gray-400">Identity Verification Required</p>
+                </div>
+                <button id="gate-login-btn" class="mx-auto max-w-md w-full f1-font bg-white hover:bg-gray-200 text-black px-8 py-4 rounded font-bold tracking-widest uppercase transition-all shadow-lg flex items-center justify-center gap-3">
+                    Sign In with Google
+                </button>
+                <p id="login-status" class="mt-4 text-xs text-gray-600 font-mono">Waiting for connection...</p>
             </div>
 
-            <button onclick="quiz.start()" class="w-full f1-font bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-bold tracking-widest uppercase transition-transform active:scale-95 shadow-lg shadow-red-900/50 mb-8 text-xl">
-                Start Engine
-            </button>
+            <div id="start-screen" class="hidden race-card p-8 rounded-lg shadow-2xl text-center relative z-10 h-full flex flex-col justify-center">
+                <h1 class="f1-font text-5xl md:text-7xl mb-2 font-bold text-white tracking-tighter italic">VOCABULARY<span class="text-red-600">GP</span></h1>
+                <p class="f1-font text-gray-400 font-bold mb-10 tracking-[0.2em]">SRS CLOUD SPEC (SM-2)</p>
 
-            <div class="border-t border-gray-700 pt-6 mb-6">
+                <div class="bg-black/30 p-6 rounded-lg mb-6 text-left border border-gray-700 max-w-lg mx-auto w-full">
+                    <label class="text-gray-400 text-xs uppercase tracking-widest block mb-2">Select Circuit (Round)</label>
+                    <select id="round-selector" class="w-full bg-gray-900 text-white p-3 rounded border border-gray-600 focus:border-red-500 outline-none font-mono text-lg transition-colors cursor-pointer hover:border-gray-500">
+                    </select>
+                </div>
+
+                <div class="flex justify-center">
+                    <button onclick="quiz.start()" class="w-full max-w-lg f1-font bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white py-5 rounded-lg font-bold tracking-[0.2em] uppercase transition-all transform hover:-translate-y-1 shadow-[0_10px_20px_rgba(220,38,38,0.3)] text-2xl">
+                        Start Engine
+                    </button>
+                </div>
+            </div>
+
+            <div id="quiz-screen" class="hidden race-card p-8 rounded-lg shadow-2xl h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                    <div class="flex flex-col text-left">
+                        <span id="circuit-name" class="f1-font text-xs text-gray-500 uppercase tracking-widest">ROUND 1</span>
+                        <span id="question-number" class="f1-font text-red-500 font-bold text-2xl">LAP 1 / 20</span>
+                    </div>
+                    
+                    <div class="text-right">
+                        <div id="timer" class="f1-font text-3xl text-yellow-400 font-mono">0.00s</div>
+                        <div id="streak-display" class="f1-font text-sm text-red-500 font-bold uppercase tracking-widest hidden animate-pulse">COMBO: 0</div>
+                    </div>
+                </div>
+
+                <div class="w-full bg-gray-900 h-1 mb-8">
+                    <div id="progress-fill" class="h-full bg-red-600 transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div class="flex-grow flex flex-col justify-center mb-8">
+                    <p class="text-gray-500 text-sm uppercase tracking-widest mb-4 text-center">Meaning of:</p>
+                    <div class="flex items-center justify-center gap-4">
+                        <h2 id="target-word" class="f1-font text-6xl md:text-7xl font-bold text-white tracking-wide drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] px-4">word</h2>
+                        <button id="speak-btn" class="text-gray-600 hover:text-white transition-colors p-3 rounded-full border border-gray-800 bg-gray-900 hover:bg-gray-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="options-container" class="grid grid-cols-2 gap-4"></div>
+                <div id="feedback" class="mt-4 text-center h-8 font-bold text-lg"></div>
+            </div>
+
+            <div id="result-screen" class="hidden race-card p-10 rounded-lg shadow-2xl text-center h-full flex flex-col justify-center items-center">
+                <h2 class="f1-font text-4xl mb-6 font-bold text-white tracking-widest">RACE FINISHED</h2>
+                <div class="checkered-pattern h-8 w-full max-w-lg mb-8 rounded opacity-50"></div>
+                
+                <div id="accuracy-display" class="f1-font text-8xl font-bold mb-4 drop-shadow-xl">95.0%</div>
+                <p id="rank-text" class="f1-font text-lg mb-8 text-gray-300">P1: WORLD CHAMPION</p>
+
+                <div id="pass-issue-area" class="hidden mb-8 p-6 rounded-lg pass-card max-w-sm w-full mx-auto transform hover:scale-105 transition-transform cursor-pointer">
+                    <h3 class="font-black text-2xl mb-1">PASS GRANTED!</h3>
+                    <p class="text-sm mb-3">SUPER LICENSE ISSUED</p>
+                    <button id="copy-pass-btn" class="bg-black text-white text-xs px-6 py-2 rounded-full font-bold hover:bg-gray-800 transition-colors w-full">
+                        COPY LICENSE ID
+                    </button>
+                </div>
+
+                <div id="fail-message" class="hidden mb-8 p-4 border border-red-500 bg-red-900/20 text-red-500 font-bold max-w-sm w-full mx-auto">
+                    LICENSE DENIED: Accuracy below 90%
+                </div>
+
+                <div class="bg-black/30 p-4 rounded mb-8 text-left h-48 w-full max-w-lg overflow-y-auto border border-gray-800 custom-scrollbar" id="review-list"></div>
+
+                <div class="flex gap-4 justify-center w-full max-w-lg">
+                    <button id="next-round-btn" class="hidden flex-1 f1-font bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg font-bold transition-all shadow-lg shadow-red-900/50">
+                        NEXT ROUND
+                    </button>
+                    <button onclick="quiz.returnToGrid()" class="flex-1 f1-font border-2 border-gray-600 hover:border-white hover:bg-white hover:text-black text-gray-300 px-8 py-4 rounded-lg font-bold transition-all uppercase">
+                        Return to Garage
+                    </button>
+                </div>
+            </div>
+
+            <div id="telemetry-screen" class="hidden absolute inset-0 z-50 race-card p-8 rounded-lg shadow-2xl text-center border-t-4 border-blue-500 bg-[#111521] flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="f1-font text-3xl font-bold text-blue-400 tracking-widest">RACE TELEMETRY</h2>
+                    <button onclick="quiz.closeTelemetry()" class="text-gray-400 hover:text-white text-3xl hover:rotate-90 transition-transform">×</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6 flex-grow overflow-hidden">
+                    <div class="flex flex-col">
+                        <p class="text-xs text-gray-500 mb-2 uppercase tracking-widest text-left">Memory Retention (Tire Wear)</p>
+                        <div class="bg-black/50 p-4 rounded border border-gray-800 flex-grow relative">
+                            <canvas id="weaknessRadarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex justify-between items-end mb-3 border-b border-red-900/50 pb-1">
+                            <h3 class="text-xs text-red-500 font-bold uppercase tracking-widest">High Risk Corners</h3>
+                            <span class="text-[10px] text-gray-500">Sorted by Difficulty</span>
+                        </div>
+                        <div id="worst-words-list" class="space-y-2 flex-grow overflow-y-auto pr-2 custom-scrollbar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="champion-screen" class="hidden race-card p-10 rounded-lg shadow-2xl text-center border-4 border-yellow-500 h-full flex flex-col justify-center items-center absolute inset-0 z-50 bg-[#0b0e14]">
+                <h1 class="f1-font text-6xl mb-8 font-bold text-yellow-500 tracking-widest">SEASON CHAMPION</h1>
+                <div class="pass-card p-10 rounded-lg mb-12 transform scale-125">
+                    <p class="f1-font text-sm uppercase font-bold mb-2">Access Granted</p>
+                    <h2 class="text-4xl font-black">SUPER LICENSE PASS</h2>
+                    <p class="mt-4 font-mono text-sm opacity-75">VALID FOR 2026 SEASON</p>
+                </div>
+                <button onclick="quiz.returnToGrid()" class="f1-font bg-white text-black px-12 py-4 rounded-full font-bold tracking-widest uppercase hover:scale-105 transition-transform">Select Round</button>
+            </div>
+
+        </div>
+
+        <div class="lg:col-span-3 space-y-6">
+            
+            <div class="bg-gray-900/50 p-4 rounded border border-gray-700">
                 <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Garage Tools</p>
                 
-                <div class="mb-4 bg-gray-800/50 p-3 rounded border border-gray-600 text-left relative group">
+                <div class="mb-4 text-left relative group">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">QUICK SEARCH</label>
                     <div class="flex items-center relative">
                         <svg class="h-4 w-4 text-gray-500 absolute left-3 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        <input type="text" id="search-input" placeholder="Type to scan database..." class="w-full bg-black text-white py-2 pl-9 pr-2 rounded border border-gray-700 focus:border-red-500 outline-none font-mono text-base placeholder-gray-700 transition-colors">
+                        <input type="text" id="search-input" placeholder="Scan Database..." class="w-full bg-black text-white py-2 pl-9 pr-2 rounded border border-gray-700 focus:border-red-500 outline-none font-mono text-sm placeholder-gray-700 transition-colors">
                     </div>
                     <div id="search-results" class="hidden absolute z-[9999] left-0 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-2xl max-h-60 overflow-y-auto"></div>
                 </div>
 
-                <div class="bg-gray-800/50 p-4 rounded border border-gray-600 text-left">
-                    <label class="text-xs text-gray-400 uppercase tracking-widest block mb-2">CUSTOM RANGE</label>
+                <div class="text-left">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">CUSTOM RANGE</label>
                     <div class="flex gap-2 items-center">
-                       <input type="number" id="custom-start" placeholder="1" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono text-base">
+                       <input type="number" id="custom-start" placeholder="1" class="w-1/3 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono text-sm">
                         <span class="text-gray-500 font-bold">-</span>
-                        <input type="number" id="custom-end" placeholder="50" class="w-1/4 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono text-base">
+                        <input type="number" id="custom-end" placeholder="50" class="w-1/3 bg-black text-white p-2 rounded border border-gray-700 focus:border-red-500 outline-none text-center font-mono text-sm">
                         <button onclick="quiz.createCustomRound()" class="flex-1 f1-font bg-gray-700 hover:bg-yellow-500 hover:text-black text-white text-xs font-bold uppercase rounded py-2 transition-colors border border-gray-600">
-                            Set
+                            SET
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-8 pt-8 border-t border-gray-700">
-                <div class="bg-black/40 rounded p-4 border border-gray-800">
-                    <h3 class="f1-font text-xl text-yellow-500 mb-4 tracking-wider">CHAMPIONSHIP STANDINGS</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="text-gray-500 border-b border-gray-700 text-xs uppercase">
-                                <tr><th class="p-2">Pos</th><th class="p-2">Driver</th><th class="p-2">Rd</th><th class="p-2">Acc</th><th class="p-2">Time</th></tr>
-                            </thead>
-                            <tbody id="ranking-tbody" class="font-mono text-gray-300">
-                                <tr><td colspan="5" class="p-4 text-center text-xs opacity-50">Loading Telemetry...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="telemetry-screen" class="hidden race-card p-6 md:p-8 rounded-lg shadow-2xl text-center border-t-4 border-blue-500">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="f1-font text-2xl md:text-3xl font-bold text-blue-400 tracking-widest">RACE TELEMETRY</h2>
-                <button onclick="quiz.closeTelemetry()" class="text-gray-400 hover:text-white text-2xl">×</button>
-            </div>
-            
-            <p class="text-xs text-gray-500 mb-4 uppercase tracking-widest text-left">Tire Wear (Memory Retention)</p>
-            <div class="bg-black/50 p-2 rounded mb-6 border border-gray-800 relative h-64 w-full">
-                <canvas id="weaknessRadarChart"></canvas>
-            </div>
-
-            <div class="text-left mb-6">
-                <div class="flex justify-between items-end mb-3 border-b border-red-900/50 pb-1">
-                    <h3 class="text-xs text-red-500 font-bold uppercase tracking-widest">High Risk Corners</h3>
-                    <span class="text-[10px] text-gray-500">Sorted by Ease Factor (Difficulity)</span>
-                </div>
-                <div id="worst-words-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
-                    </div>
-            </div>
-
-            <button onclick="quiz.closeTelemetry()" class="w-full f1-font border border-gray-600 hover:bg-white hover:text-black text-gray-300 px-6 py-3 rounded uppercase font-bold tracking-widest transition-colors">
-                Return to Garage
-            </button>
-        </div>
-
-        <div id="quiz-screen" class="hidden race-card p-6 rounded-lg shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex flex-col text-left max-w-[60%]">
-                    <span id="circuit-name" class="f1-font text-xs text-gray-500 uppercase tracking-widest break-words leading-tight">ROUND 1</span>
-                    <span id="question-number" class="f1-font text-red-500 font-bold text-xl">LAP 1 / 20</span>
-                </div>
-                
-                <div class="text-right">
-                    <div id="timer" class="f1-font text-2xl text-yellow-400 font-mono">0.00s</div>
-                    <div id="streak-display" class="f1-font text-xs text-red-500 font-bold uppercase tracking-widest hidden">COMBO: 0</div>
+            <div class="bg-black/40 rounded p-4 border border-gray-800">
+                <h3 class="f1-font text-lg text-yellow-500 mb-4 tracking-wider flex items-center gap-2">
+                    <span class="text-xs bg-yellow-500 text-black px-1 rounded font-bold">LIVE</span> STANDINGS
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="text-gray-500 border-b border-gray-700 uppercase">
+                            <tr><th class="p-2">Pos</th><th class="p-2">Driver</th><th class="p-2 text-right">Acc</th></tr>
+                        </thead>
+                        <tbody id="ranking-tbody" class="font-mono text-gray-300">
+                            <tr><td colspan="3" class="p-4 text-center text-xs opacity-50">Connecting...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="progress-bar mb-8">
-                <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
-            </div>
-
-            <div class="mb-10 text-center relative">
-                <p class="text-gray-400 text-sm uppercase tracking-widest mb-2">Meaning of:</p>
-                <div class="flex items-center justify-center gap-3">
-                    <h2 id="target-word" class="f1-font text-4xl md:text-6xl font-bold text-white tracking-wide drop-shadow-lg break-words px-2">word</h2>
-                    <button id="speak-btn" class="text-gray-500 hover:text-white transition-colors p-2 rounded-full border border-gray-700 bg-gray-900/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            <div id="feedback" class="mt-4 text-center h-6 font-bold"></div>
-        </div>
-
-        <div id="result-screen" class="hidden race-card p-8 rounded-lg shadow-2xl text-center">
-            <h2 class="f1-font text-3xl mb-4 font-bold text-white">RACE FINISHED</h2>
-            <div class="checkered-pattern h-8 w-full mb-6 rounded opacity-50"></div>
-            
-            <div id="accuracy-display" class="f1-font text-6xl font-bold mb-2">95.0%</div>
-            <p id="rank-text" class="f1-font text-sm mb-6 text-gray-300">P1: WORLD CHAMPION</p>
-
-            <div id="pass-issue-area" class="hidden mb-8 p-6 rounded-lg pass-card">
-                <h3 class="font-black text-2xl mb-1">PASS GRANTED!</h3>
-                <p class="text-sm mb-3">SUPER LICENSE ISSUED</p>
-                <button id="copy-pass-btn" class="bg-black text-white text-xs px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform">
-                    COPY LICENSE ID
-                </button>
-            </div>
-
-            <div id="fail-message" class="hidden mb-8 p-4 border border-red-500 bg-red-900/20 text-red-500 font-bold">
-                LICENSE DENIED: Accuracy below 90%
-            </div>
-
-            <div class="bg-black/30 p-4 rounded mb-8 text-left max-h-48 overflow-y-auto border border-gray-800" id="review-list"></div>
-
-            <div class="flex gap-4 justify-center">
-                <button id="next-round-btn" class="hidden f1-font bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg shadow-red-900/50">
-                    NEXT ROUND
-                </button>
-                <button onclick="quiz.returnToGrid()" class="f1-font border-2 border-white hover:bg-white hover:text-black text-white px-8 py-3 rounded-full font-bold transition-all">
-                    Back to Garage
-                </button>
-            </div>
         </div>
     </div>
 
     <script>
 // ==========================================
-// ★重要★ ここに 2000語のデータ を貼り付けてください
+// ★重要★ ここに2000語のデータを貼り付けてください
 // ==========================================
 const rawData = `
 follow: ～の後に続く、～に従う
@@ -2311,7 +2310,8 @@ abruptly: 不意に
 conversely: 逆に
 predominantly: 主に
 lest: ～しないように
-`;
+`; 
+// ↑ここにデータを貼り付ける (backtickの中に)
 // ==========================================
 
         class VocabularyQuiz {
@@ -2330,11 +2330,10 @@ lest: ～しないように
                 this.userMaxStreak = 0;
                 this.roundMaxStreak = 0;
                 this.dueMistakes = [];
-                this.allMistakes = []; // Store ALL SRS items for Telemetry
+                this.allMistakes = [];
                 this.isPitStopMode = false;
                 this.telemetryChart = null;
 
-                // Audio
                 this.synth = window.speechSynthesis;
                 this.englishVoices = [];
                 if (this.synth && this.synth.onvoiceschanged !== undefined) {
@@ -2408,17 +2407,14 @@ lest: ～しないように
                 }
             }
 
-            // === TELEMETRY & CHART LOGIC (SM-2 ADAPTED) ===
             openTelemetry() {
                 if (!window.currentUser) { alert("Please Sign In first."); return; }
                 
                 document.getElementById('start-screen').classList.add('hidden');
                 document.getElementById('telemetry-screen').classList.remove('hidden');
 
-                // Use allMistakes (Full History) instead of just dueMistakes
                 const mistakes = this.allMistakes || [];
                 
-                // 1. Worst Words List (Sort by Ease Factor ASC = Hardest)
                 const worstWords = [...mistakes]
                     .sort((a, b) => (a.easeFactor || 2.5) - (b.easeFactor || 2.5))
                     .slice(0, 20);
@@ -2429,7 +2425,6 @@ lest: ～しないように
                     listContainer.innerHTML = `<div class="text-gray-500 text-sm italic p-2">No failures detected. System optimal.</div>`;
                 } else {
                     listContainer.innerHTML = worstWords.map(item => {
-                        // Calculate color based on Ease Factor (Lower is redder)
                         const ef = item.easeFactor || 2.5;
                         const borderColor = ef < 1.5 ? 'border-red-500' : (ef < 2.0 ? 'border-yellow-500' : 'border-blue-500');
                         return `
@@ -2446,11 +2441,9 @@ lest: ～しないように
                     `}).join('');
                 }
 
-                // 2. Bar Chart based on Interval (Retention Buckets)
                 const ctx = document.getElementById('weaknessRadarChart').getContext('2d');
                 if (this.telemetryChart) this.telemetryChart.destroy();
 
-                // Buckets: 1d (Danger), 2-6d (Soft), 7-14d (Med), 15-30d (Hard), 30d+ (Master)
                 const buckets = [0, 0, 0, 0, 0];
                 mistakes.forEach(m => {
                     const int = m.interval || 0;
@@ -2469,11 +2462,11 @@ lest: ～しないように
                             label: 'Words in Memory',
                             data: buckets,
                             backgroundColor: [
-                                'rgba(239, 68, 68, 0.8)',   // Red
-                                'rgba(249, 115, 22, 0.7)',  // Orange
-                                'rgba(234, 179, 8, 0.6)',   // Yellow
-                                'rgba(34, 197, 94, 0.5)',   // Green
-                                'rgba(59, 130, 246, 0.4)'   // Blue
+                                'rgba(239, 68, 68, 0.8)',
+                                'rgba(249, 115, 22, 0.7)',
+                                'rgba(234, 179, 8, 0.6)',
+                                'rgba(34, 197, 94, 0.5)',
+                                'rgba(59, 130, 246, 0.4)'
                             ],
                             borderColor: '#333',
                             borderWidth: 1,
@@ -2513,7 +2506,6 @@ lest: ～しないように
                 document.getElementById('telemetry-screen').classList.add('hidden');
                 document.getElementById('start-screen').classList.remove('hidden');
             }
-            // ============================================
 
             startPitStop() {
                 if (!this.dueMistakes || this.dueMistakes.length === 0) return;
@@ -2697,7 +2689,7 @@ lest: ～しないように
                 container.innerHTML = ''; 
                 
                 const revealBtn = document.createElement('button');
-                revealBtn.className = 'col-span-1 md:col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
+                revealBtn.className = 'col-span-2 w-full h-32 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded text-gray-400 f1-font text-xl uppercase tracking-widest hover:border-yellow-500 hover:text-yellow-500 transition-all flex flex-col items-center justify-center gap-2 animate-pulse';
                 revealBtn.innerHTML = `<span class="text-3xl">🤔</span><span>VISUALIZE MEANING</span><span class="text-xs text-gray-500 font-mono">TAP TO UNLOCK DRS</span>`;
                 revealBtn.onclick = () => { this.renderOptions(q, container); };
                 container.appendChild(revealBtn);
@@ -2899,7 +2891,6 @@ lest: ～しないように
         if (!window.currentUser) return;
         try {
             const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
-            // Telemetry requires ALL items to visualize garage status
             const snapshot = await getDocs(mistakesRef);
             
             const allItems = [];
@@ -2913,10 +2904,7 @@ lest: ～しないように
                 if (d.nextReview <= now) dueItems.push(item);
             });
 
-            // Store for Telemetry Graph
             window.quiz.allMistakes = allItems;
-            
-            // Store for Pit Stop Queue
             window.quiz.dueMistakes = dueItems;
             window.quiz.updatePitStopButton(dueItems.length);
         } catch (e) { console.error("SRS Fetch Error:", e); }
@@ -3005,18 +2993,18 @@ lest: ～しないように
 
       async function updateLeaderboard() {
         const rankingBody = document.getElementById('ranking-tbody');
-        rankingBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-xs opacity-50">Loading Telemetry...</td></tr>';
+        rankingBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-xs opacity-50">Loading Telemetry...</td></tr>';
         try {
             const q = query(collection(db, "leaderboard"), orderBy("accuracy", "desc"), orderBy("time", "asc"), limit(10));
             const querySnapshot = await getDocs(q);
             rankingBody.innerHTML = "";
-            if (querySnapshot.empty) { rankingBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-xs">No Data Yet.</td></tr>'; return; }
+            if (querySnapshot.empty) { rankingBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-xs">No Data Yet.</td></tr>'; return; }
             let rank = 1;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 const isMe = window.currentUser && data.uid === window.currentUser.uid;
                 const rowClass = isMe ? "bg-red-900/30 text-white font-bold" : "border-b border-gray-800";
-                const row = `<tr class="${rowClass}"><td class="p-2 text-yellow-500">${rank}</td><td class="p-2 truncate max-w-[80px]">${data.driver}</td><td class="p-2 text-xs text-gray-400">${data.round||"-"}</td><td class="p-2 text-green-400">${data.accuracy}%</td><td class="p-2 text-gray-500">${data.time}s</td></tr>`;
+                const row = `<tr class="${rowClass}"><td class="p-2 text-yellow-500">${rank}</td><td class="p-2 truncate max-w-[80px]">${data.driver}</td><td class="p-2 text-right text-green-400">${data.accuracy}%</td></tr>`;
                 rankingBody.innerHTML += row;
                 rank++;
             });
