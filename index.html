@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Vocabulary GP - 2026 Hybrid Spec (Cached)</title>
+    <title>Vocabulary GP - 2026 Hybrid Spec (Stealth)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -14,6 +14,7 @@
             background-color: #0b0e14;
             color: #e2e8f0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* Safe Area for Mobile */
             padding-top: max(1rem, env(safe-area-inset-top));
             padding-bottom: max(1rem, env(safe-area-inset-bottom));
             padding-left: max(1rem, env(safe-area-inset-left));
@@ -28,6 +29,7 @@
             border-left: 4px solid #e10600;
         }
 
+        /* Scrollbar styling for Telemetry */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -112,7 +114,7 @@
             <h1 class="f1-font text-3xl md:text-5xl mb-4 font-bold text-white tracking-wider md:tracking-widest break-words leading-tight">
                 VOCABULARY<br class="block md:hidden"/>GP
             </h1>
-            <p class="f1-font text-red-500 font-bold mb-6">HYBRID SPEC (CACHED)</p>
+            <p class="f1-font text-red-500 font-bold mb-6">HYBRID SPEC (STEALTH)</p>
 
             <div class="mb-6 bg-gray-900/50 p-2 px-4 rounded border border-gray-700 inline-block">
                 <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Today's Track Activity</p>
@@ -148,6 +150,16 @@
             <div class="border-t border-gray-700 pt-6 mb-6">
                 <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Garage Tools</p>
                 
+                <div class="mb-4 bg-gray-800/50 p-3 rounded border border-gray-600 flex justify-between items-center">
+                    <label class="text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                        RACE ENGINEER (AUTO-AUDIO)
+                    </label>
+                    <button id="audio-toggle-btn" onclick="quiz.toggleAutoAudio()" class="f1-font text-xs font-bold px-4 py-1 rounded border transition-colors bg-green-900/30 text-green-400 border-green-600">
+                        ON
+                    </button>
+                </div>
+
                 <div class="mb-4 bg-gray-800/50 p-3 rounded border border-gray-600 text-left relative group">
                     <label class="text-[10px] text-gray-500 uppercase tracking-widest block mb-1">QUICK SEARCH</label>
                     <div class="flex items-center relative">
@@ -279,7 +291,7 @@
 
     <script>
 // ==========================================
-// ★重要★ ここに 2000語のデータ を貼り付けてください
+// PASTE YOUR 2000 WORDS HERE
 // ==========================================
 const rawData = `
 follow: ～の後に続く、～に従う
@@ -2332,6 +2344,9 @@ lest: ～しないように
                 this.isPitStopMode = false;
                 this.telemetryChart = null;
 
+                // Audio Settings
+                this.isAutoAudio = localStorage.getItem('vocab_auto_audio') !== 'false'; // Default to True
+                
                 // Audio
                 this.synth = window.speechSynthesis;
                 this.englishVoices = [];
@@ -2343,7 +2358,26 @@ lest: ～しないように
                 this.parseData();
                 this.generateRounds();
                 this.initUI();
+                this.updateAudioToggleUI(); // Initialize UI based on saved setting
                 this.initSearch(); 
+            }
+
+            toggleAutoAudio() {
+                this.isAutoAudio = !this.isAutoAudio;
+                localStorage.setItem('vocab_auto_audio', this.isAutoAudio);
+                this.updateAudioToggleUI();
+            }
+
+            updateAudioToggleUI() {
+                const btn = document.getElementById('audio-toggle-btn');
+                if (!btn) return;
+                if (this.isAutoAudio) {
+                    btn.innerText = "ON";
+                    btn.className = "f1-font text-xs font-bold px-4 py-1 rounded border transition-colors bg-green-900/30 text-green-400 border-green-600";
+                } else {
+                    btn.innerText = "OFF";
+                    btn.className = "f1-font text-xs font-bold px-4 py-1 rounded border transition-colors bg-red-900/30 text-red-400 border-red-600";
+                }
             }
 
             loadVoices() {
@@ -2689,7 +2723,11 @@ lest: ～しないように
                 
                 const speakBtn = document.getElementById('speak-btn');
                 speakBtn.onclick = () => this.speak(q.w);
-                setTimeout(() => { this.speak(q.w); }, 300);
+                
+                // ★ Auto Audio Check (Stealth Mode)
+                if (this.isAutoAudio) {
+                    setTimeout(() => { this.speak(q.w); }, 300);
+                }
                 
                 const container = document.getElementById('options-container');
                 container.innerHTML = ''; 
@@ -2767,7 +2805,6 @@ lest: ～しないように
                     window.recordLapTime(accuracy, totalTime, roundName, `${correct}/${this.rounds[this.currentRoundIndex].words.length}`, this.roundMaxStreak);
                 }
                 
-                // Fetch SRS (Update local cache from Pit Stop)
                 if (window.fetchSRSItems) window.fetchSRSItems();
                 if (window.incrementDailyLaps && !this.isPitStopMode) window.incrementDailyLaps();
 
@@ -2824,7 +2861,6 @@ lest: ～しないように
                 document.getElementById('result-screen').classList.add('hidden');
                 document.getElementById('champion-screen').classList.add('hidden');
                 document.getElementById('start-screen').classList.remove('hidden');
-                // Trigger refresh to check for new due items
                 if (window.fetchSRSItems) window.fetchSRSItems();
             }
         }
