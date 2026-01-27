@@ -1,0 +1,3247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RB Hybrid">
+    <link rel="apple-touch-icon" href="./icon.jpg">
+    
+    <title>RB Hybrid GP - 2026 Final Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;600;800&family=Orbitron:wght@900&display=swap');
+        
+        :root {
+            --f1-red: #e10600;
+            --rb-navy: #0b0e14;
+            --neon-cyan: #00f0ff;
+            --neon-green: #39ff14;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; 
+            background-color: var(--rb-navy);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+
+        .f1-font { font-family: 'Chakra Petch', sans-serif; }
+
+        .carbon-bg {
+            background-image: 
+                linear-gradient(rgba(11, 14, 20, 0.9), rgba(11, 14, 20, 0.95)),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            background-attachment: fixed;
+            background-size: cover;
+        }
+
+        #app {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 1rem;
+            position: relative;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        #app::-webkit-scrollbar { display: none; }
+
+        .race-card {
+            background: rgba(23, 28, 38, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-top: 4px solid var(--f1-red);
+        }
+
+        /* --- SIMPLE PASS BOX --- */
+        .simple-pass-box {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #444;
+            border-left: 4px solid var(--neon-green);
+            border-radius: 4px;
+            padding: 1.2rem;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.1);
+        }
+
+        /* --- UI COMPONENTS --- */
+        .option-btn { 
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        .option-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.1); }
+        .option-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Idiom Chips */
+        .chip-btn {
+            transition: all 0.15s;
+            position: relative;
+            touch-action: manipulation;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            text-transform: none; 
+        }
+        .chip-btn:active { transform: scale(0.95); }
+        
+        .chip-pool { 
+            background: linear-gradient(145deg, #252525, #151515); 
+            border: 1px solid #333; 
+            color: #e2e8f0; 
+            font-weight: 500;
+        }
+        .chip-slot { 
+            background: var(--f1-red); 
+            color: white; 
+            border: 1px solid #ff4d6d; 
+            font-weight: bold; 
+            box-shadow: 0 0 10px rgba(225, 6, 0, 0.4); 
+        }
+        .chip-correct { 
+            background: var(--neon-green) !important; 
+            color: black !important; 
+            border-color: var(--neon-green) !important; 
+            box-shadow: 0 0 15px var(--neon-green); 
+        }
+
+        .answer-slot {
+            min-height: 60px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 3px dashed var(--f1-red);
+            transition: all 0.3s ease;
+        }
+        .answer-slot.correct-lane {
+            border-bottom-style: solid;
+            border-color: var(--neon-green); 
+            box-shadow: 0 10px 30px -10px rgba(57, 255, 20, 0.3);
+        }
+        .answer-slot.wrong-lane {
+            border-color: var(--f1-red);
+            box-shadow: 0 0 15px rgba(225, 6, 0, 0.4);
+            background: rgba(225, 6, 0, 0.1);
+        }
+
+        .mode-btn { transition: all 0.2s; opacity: 0.5; border-bottom: 2px solid transparent; }
+        .mode-btn.active { opacity: 1; border-bottom-color: var(--f1-red); color: white; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        .accent-f1 { accent-color: var(--f1-red); }
+        .glitch-text { text-shadow: 2px 0 rgba(255,0,0,0.5), -2px 0 rgba(0,255,255,0.5); }
+
+        .tire-btn { opacity: 0.4; transform: scale(0.95); transition: all 0.2s; border-width: 2px; }
+        .tire-btn.active { opacity: 1; transform: scale(1); box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+        .tire-soft.active { border-color: #ef4444; color: #ef4444; } 
+        .tire-medium.active { border-color: #eab308; color: #eab308; } 
+        .tire-hard.active { border-color: #f8fafc; color: #f8fafc; } 
+
+        input, select { font-size: 16px !important; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+        
+        .locked { opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body class="carbon-bg">
+
+    <div id="app" class="w-full max-w-2xl mx-auto flex flex-col justify-center">
+        
+        <div id="gate-screen" class="race-card p-8 rounded-2xl shadow-2xl text-center relative overflow-hidden animate-slide-in my-auto">
+            <h1 class="f1-font text-5xl mb-2 font-bold text-white tracking-wider">RB<span class="text-red-600">-26</span></h1>
+            <p class="text-gray-400 font-mono text-xs uppercase tracking-[0.4em] mb-12">Hybrid Learning System</p>
+            <button id="gate-login-btn" class="w-full f1-font bg-white hover:bg-gray-200 text-black px-8 py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" /></svg>
+                Sign In
+            </button>
+            <p id="login-status" class="mt-6 text-[10px] text-gray-600 font-mono">System Standby...</p>
+        </div>
+
+        <div id="start-screen" class="hidden race-card p-6 rounded-2xl relative z-10 animate-slide-in my-auto">
+            
+            <div class="flex justify-between items-end mb-6 border-b border-gray-800 pb-4">
+                <div class="text-left">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Driver</p>
+                    </div>
+                    <p id="user-name" class="f1-font text-2xl text-white font-bold truncate max-w-[180px]">TEST DRIVER</p>
+                </div>
+                <button id="logout-btn" class="text-[10px] text-red-500 hover:text-white border border-red-900/50 hover:bg-red-600 px-3 py-1 rounded transition-colors uppercase tracking-wider">Sign Out</button>
+            </div>
+
+            <div class="flex bg-black/40 p-1 rounded-xl mb-6 border border-gray-800">
+                <button onclick="quiz.switchMode('vocab')" id="mode-vocab" class="mode-btn active flex-1 py-3 text-xs font-bold uppercase tracking-widest f1-font">Vocab</button>
+                <button onclick="quiz.switchMode('idiom')" id="mode-idiom" class="mode-btn flex-1 py-3 text-xs font-bold uppercase tracking-widest f1-font">Idiom</button>
+            </div>
+
+            <div id="vocab-settings" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4 mb-2">
+                    <div class="bg-black/30 p-3 rounded-xl border border-gray-800 text-center">
+                        <p class="text-[9px] text-gray-500 uppercase mb-1">Daily Laps</p>
+                        <span id="daily-laps-display" class="f1-font text-2xl text-white font-bold">0</span>
+                    </div>
+                    <div id="tire-status-box" class="bg-black/30 p-3 rounded-xl border border-gray-800 text-center relative overflow-hidden">
+                        <p class="text-[9px] text-gray-500 uppercase mb-1">Condition</p>
+                        <span id="mistake-count-display" class="f1-font text-xl text-green-500 font-bold">OPTIMAL</span>
+                        <div id="pit-alert-overlay" class="hidden absolute inset-0 bg-red-900/95 flex items-center justify-center cursor-pointer active:bg-red-800 transition-colors">
+                            <span class="f1-font text-white font-bold animate-pulse text-xs">PIT STOP REQ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-gray-500 text-[10px] uppercase tracking-widest block mb-1 pl-1">Circuit Selection</label>
+                    <div class="relative">
+                        <select id="round-selector" class="w-full bg-black/50 text-white p-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-base appearance-none"></select>
+                        <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-3 pl-1">Tire Compound (Length)</p>
+                    <div class="flex justify-between gap-2 mb-4">
+                        <button onclick="quiz.setTireStrategy(10, 'soft')" id="tire-soft" class="tire-btn tire-soft flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">🔴 Soft<br><span class="text-[10px] opacity-70">10 Qs</span></button>
+                        <button onclick="quiz.setTireStrategy(20, 'medium')" id="tire-medium" class="tire-btn tire-medium active flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">🟡 Med<br><span class="text-[10px] opacity-70">20 Qs</span></button>
+                        <button onclick="quiz.setTireStrategy(50, 'hard')" id="tire-hard" class="tire-btn tire-hard flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">⚪ Hard<br><span class="text-[10px] opacity-70">50 Qs</span></button>
+                    </div>
+                    <div class="flex flex-col gap-3 border-t border-gray-800 pt-3">
+                        <label class="flex items-center justify-between cursor-pointer group p-1">
+                            <span class="text-xs font-bold text-gray-300 group-hover:text-cyan-400 transition-colors flex items-center gap-2"><span class="text-cyan-400">🔄</span> REVERSE GRID</span>
+                            <input type="checkbox" id="reverse-mode" class="accent-f1 w-5 h-5 cursor-pointer">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group p-1">
+                            <span class="text-xs font-bold text-gray-300 group-hover:text-green-400 transition-colors flex items-center gap-2"><span class="text-green-500">🔊</span> RACE ENGINEER</span>
+                            <input type="checkbox" id="audio-mode" class="accent-f1 w-5 h-5 cursor-pointer" checked>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-800">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Garage Tools</p>
+                    <div class="mb-3 relative group">
+                        <input type="text" id="search-input" placeholder="Quick Scan (Search)..." class="w-full bg-black text-white p-3 pl-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-base transition-colors shadow-inner">
+                        <div id="search-results" class="hidden absolute bottom-full left-0 w-full mb-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"></div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="custom-start" placeholder="1" class="w-16 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-base font-mono">
+                        <span class="text-gray-500">-</span>
+                        <input type="number" id="custom-end" placeholder="50" class="w-16 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-base font-mono">
+                        <button onclick="quiz.createCustomRound()" class="flex-1 bg-gray-800 active:bg-gray-700 text-white text-[10px] font-bold uppercase rounded-lg py-2 border border-gray-600">Set Custom</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="idiom-settings" class="hidden space-y-4">
+                <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-800 text-center">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Total Idioms</p>
+                    <div class="f1-font text-5xl text-white font-bold" id="idiom-count-display">0</div>
+                    <p class="text-xs text-gray-500 mt-2">Sorting Challenge Mode</p>
+                </div>
+                <div class="bg-black/30 p-4 rounded-xl border border-gray-800 text-xs text-gray-400 leading-relaxed">
+                    <strong class="text-white block mb-1">INSTRUCTION:</strong>
+                    Arrange the shuffled chips to complete the sentence. Incorrect ordering will cause a temporary "Crash" penalty.
+                </div>
+            </div>
+
+            <button onclick="quiz.start()" class="mt-6 w-full f1-font bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white py-5 rounded-xl font-bold tracking-[0.2em] uppercase transition-all transform active:scale-95 shadow-lg shadow-red-900/30 text-xl border-b-4 border-red-900">Start Engine</button>
+            
+            <div id="vocab-tools" class="mt-4 pt-4 border-t border-gray-800">
+                <button onclick="quiz.openTelemetry()" class="w-full border border-gray-700 active:bg-gray-800 text-gray-400 py-4 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"><span>📊</span> Telemetry Data</button>
+            </div>
+        </div>
+        
+        <div id="telemetry-screen" class="hidden race-card p-6 rounded-2xl text-center border-t-4 border-blue-500 h-full overflow-y-auto my-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="f1-font text-2xl font-bold text-blue-400 tracking-widest">TELEMETRY</h2>
+                <button onclick="quiz.closeOverlay('telemetry-screen')" class="text-gray-400 active:text-white text-3xl p-2">&times;</button>
+            </div>
+            <div class="bg-black/50 p-2 rounded-xl mb-4 border border-gray-800 h-56 w-full relative">
+                <canvas id="weaknessRadarChart"></canvas>
+            </div>
+            <div class="text-left mb-4">
+                <h3 class="text-xs text-red-500 font-bold uppercase tracking-widest mb-2">Degradation Report</h3>
+                <div id="worst-words-list" class="space-y-1 max-h-60 overflow-y-auto pr-2"></div>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="hidden race-card p-6 rounded-2xl shadow-2xl relative flex flex-col justify-between my-auto min-h-[500px]">
+            <div class="flex justify-between items-start mb-6">
+                <div class="flex flex-col text-left">
+                    <span id="circuit-name" class="f1-font text-[10px] text-gray-400 uppercase tracking-widest">ROUND 1</span>
+                    <span id="question-number" class="f1-font text-white font-bold text-lg">LAP 1/20</span>
+                </div>
+                <div class="text-right">
+                    <div id="timer" class="f1-font text-2xl text-yellow-400 font-mono">0.00s</div>
+                    <div id="streak-display" class="f1-font text-[10px] text-green-500 font-bold uppercase tracking-widest hidden">PURPLE SECTOR</div>
+                </div>
+            </div>
+            <div class="w-full bg-gray-800 h-1 mb-8 rounded-full overflow-hidden">
+                <div id="progress-fill" class="bg-gradient-to-r from-red-600 to-yellow-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+            
+            <div id="vocab-interface" class="flex-grow flex flex-col justify-between hidden">
+                <div class="flex-grow flex flex-col items-center justify-center mb-8 relative">
+                    <div class="absolute -top-6 text-gray-500 text-[10px] uppercase tracking-widest" id="question-label">Target</div>
+                    <h2 id="target-word" class="f1-font text-4xl md:text-5xl font-bold text-white tracking-wide drop-shadow-xl break-words px-2 text-center transition-all"></h2>
+                    <button id="speak-btn" class="mt-4 text-gray-500 active:text-cyan-400 transition-colors p-4 rounded-full border border-gray-700 bg-black/40 active:bg-black/80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                    </button>
+                </div>
+                <div id="options-container" class="grid grid-cols-1 gap-3"></div>
+            </div>
+
+            <div id="idiom-interface" class="flex-grow flex flex-col justify-between hidden">
+                 <div class="flex-grow flex flex-col items-center">
+                    <div id="idiom-japanese" class="f1-font text-xl md:text-2xl font-bold text-gray-200 tracking-wide text-center mb-6 break-words w-full">Loading...</div>
+                    <div class="w-full mb-4 px-1">
+                        <div class="flex flex-wrap items-center justify-center gap-3 mb-2">
+                            <span id="idiom-prefix" class="text-gray-400 f1-font text-lg"></span>
+                            <div id="answer-slot" class="answer-slot flex flex-wrap gap-2 items-center justify-center p-3 rounded-lg min-w-[120px]"></div>
+                            <span id="idiom-suffix" class="text-gray-400 f1-font text-lg"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="word-pool" class="flex flex-wrap justify-center gap-3 w-full mt-auto p-4 bg-black/40 rounded-xl border border-gray-800"></div>
+                <button id="idiom-next-btn" class="hidden mt-4 w-full f1-font bg-[#39ff14] text-black py-4 rounded-xl font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(57,255,20,0.3)] hover:bg-white">
+                    Next Sector >>
+                </button>
+            </div>
+
+            <div id="feedback" class="h-8 mt-2 flex items-center justify-center text-sm font-bold tracking-wider uppercase"></div>
+        </div>
+
+        <div id="result-screen" class="hidden race-card p-8 rounded-2xl shadow-2xl text-center animate-slide-in my-auto">
+            <h2 id="result-title" class="f1-font text-3xl mb-2 font-bold text-white italic">CHECKERED FLAG</h2>
+            <div class="w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 mb-8"></div>
+            
+            <div id="accuracy-display" class="f1-font text-7xl font-bold mb-2 text-white glitch-text">95.0%</div>
+            <p id="rank-text" class="f1-font text-sm mb-8 text-gray-400 font-mono">P1: MAX VERSTAPPEN</p>
+            
+            <div id="pass-issue-area" class="hidden mb-8 transform transition-all hover:scale-105 cursor-pointer active:scale-95">
+                <div class="simple-pass-box">
+                    <div class="text-left">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold mb-1">SUPER LICENSE</div>
+                        <div id="license-id-display" class="f1-font text-2xl text-[#39ff14] font-bold tracking-widest">perfect</div>
+                    </div>
+                    <button id="copy-pass-btn" class="bg-gray-800 text-white text-[10px] px-6 py-3 rounded border border-gray-600 uppercase font-bold active:bg-white active:text-black">
+                        TAP TO COPY
+                    </button>
+                </div>
+            </div>
+
+            <div id="fail-message" class="hidden mb-6 p-4 border border-red-500 bg-red-900/20 text-red-500 font-bold text-xs uppercase tracking-widest">Session Stopped: Accuracy Too Low</div>
+            
+            <div class="bg-black/40 p-4 rounded-xl mb-8 text-left max-h-48 overflow-y-auto border border-gray-800" id="review-list"></div>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="quiz.returnToGrid()" class="f1-font border border-gray-600 active:bg-white active:text-black text-white py-4 rounded-xl font-bold transition-all uppercase text-sm">Garage</button>
+                <button id="next-round-btn" class="f1-font bg-red-600 active:bg-red-700 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-red-900/50 uppercase text-sm">Next Sector</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ==========================================
+// 1. DATA CONFIGURATION (Paste your words here)
+// ==========================================
+const rawData = `
+follow: ～の後に続く、～に従う
+consider: ～を考慮する
+increase: 増える、～を増やす
+expect: ～を予期する
+decide: ～することを決意する
+develop: 発達する、～を発達させる
+provide: ～を供給する、与える
+continue: 続く、～を続ける
+include: ～を含む、含める
+remain: ままでいる
+reach: ～に着く、～に達する
+allow: ～を許可する
+force: ～を強制する
+offer: ～を申し出る
+realize: ～を悟る
+suggest: ～と提案する、～をほのめかす
+require: ～を必要とする
+worry: 心配する
+wonder: ～かと疑問に思う
+cost: ～を要する
+tend: ～する傾向がある、～しがちである
+depend: ～に依存する、～しだいで決まる
+share: ～を分け合う、共有する
+demand: ～を要求する
+support: ～を支持する
+hire: ～を雇う
+regard: AをBだと思う、みなす
+base: AがBに基づいている
+improve: ～を向上させる
+recognize: ～を認める
+notice: ～に気づく
+suppose: ～だと思う
+raise: ～を上げる、～を育てる
+prefer: ～をより好む
+cheer: ～を励ます
+suffer: ～を経験する、受ける、苦しむ
+describe: ～を描写する、～の特徴を説明する
+prevent: ～をさまたげる
+reduce: ～を減らす
+mistake: ～を誤解する、まちがえる
+prepare: ～の準備をする
+encourage: はげます
+prove: ～だとわかる
+treat: ～をあつかう
+establish: ～を設立する、創立する
+relate: 関係がある
+compare: ～を比較する、～をたとえる
+spread: ～を広げる；広がる
+refer: ～を指示する
+supply: ～を供給する
+gain: ～を得る
+destroy: ～を破壊する
+apply: 当てはまる、申し込む
+seek: ～を求める
+search: ～を捜す
+claim: ～と主張する
+draw: ～を引っぱる
+refuse: ～を断る
+respond: ～に返答する
+mention: ～について述べる
+judge: ～を判断する
+approach: ～に接近する；～に取り組む；方法
+admit: ～を認める
+reflect: ～を反映する、～を反射する
+perform: ～を行う、～を遂行する
+bore: ～をうんざりさせる
+survive: 生き残る
+represent: ～を表す
+argue: ～と主張する
+grant: ～を認める、～を与える
+indicate: ～を指し示す
+belong: 所属している
+acquire: ～を習得する
+reply: 返事をする
+feed: ～にエサをやる
+escape: 逃げる
+replace: ～に取って代わる、～を取り替える
+reveal: ～を明らかにする
+surround: ～を取り囲む
+suit: ～に合う
+estimate: ～を推定する
+aim: ～をねらう
+earn: ～をもうける、かせぐ
+decline: 衰退する、低下する、～を辞退する
+afford: ～をする余裕がある
+confuse: ～を当惑させる
+graduate: ～を卒業する
+vary: 変わる、さまざまである
+remove: ～を移す、取り去る
+insist: ～と主張する、言い張る
+examine: ～を調査する
+remind: ＡにＢを思い出させる
+contribute: ～に貢献する、～の一因となる、AをBに寄付する
+warn: ～に警告する
+connect: ～をつなぐ
+match: ～に匹敵する、～に調和する
+focus: 焦点を合わせる
+reject: ～を断る
+convince: ～を納得させる、確信させる
+associate: AをBに関連づける、AからBを連想する
+rush: 急いで行く
+stress: ～を強調する
+attract: ～を引きつける
+rely: Aに頼る
+regret: ～を後悔する
+adopt: ～を採用する
+shake: ～を振る
+hurt: ～を傷つける
+operate: 作動する、～を操作する、手術する
+extend: ～を広げる、延長する
+blame: ～を非難する、～のせいにする
+consist: Aで構成されている
+persuade: ～を説得する
+admire: ～に感心する
+disappoint: ～を失望させる
+expand: 拡大する
+preserve: ～を保護する
+struggle: 苦闘する、もがく
+arrange: ～の手はずを整える、～を配列する
+disturb: ～を妨げる
+employ: ～を雇う、～を用いる
+engage: Aに従事する、Aを行う
+abandon: ～を捨てる
+display: ～を展示する、～を表す
+encounter: ～に偶然出会う
+amuse: ～を楽しませる
+bother: ～に面倒をかける、困らせる
+concentrate: 集中する
+adapt: ～を適応させる、適応する
+puzzle: ～を当惑させる
+appeal: Aに訴える、～を引きつける
+combine: ～を結合させる
+delay: ～を遅らせる
+repair: ～を修理する
+fascinate: ～を夢中にさせる
+pardon: ～を許す
+import: ～を輸入する
+remark: 述べる
+reserve: ～を予約する、～を取っておく
+amaze: ～を驚嘆させる
+frighten: ～をおびえさせる
+release: ～を解放する、～を発表する
+rent: ～を賃借りする
+recover: Aから回復する
+suspect: ～ではないかと思う、～を疑う
+deliver: ～を配達する、渡す、～をする
+identify: ～の正体をつきとめる、Aと共感する
+locate: 位置する
+manufacture: ～を製造する
+occupy: ～を占める
+own: ～を所有している
+expose: ＡをＢにさらす
+translate: ～を翻訳する
+cure: ～を治療する
+perceive: ～を知覚する
+adjust: ～に慣れる、調節して合わせる
+alarm: ～をぎょっとさせる、おびえさせる
+assist: ～を助ける、～を手伝う
+freeze: 凍りつく
+spoil: ～を台無しにする
+shift: ～を変える
+embarrass: ～を困惑させる、～に恥ずかしい思いをさせる
+approve: 賛成する；～を承認する
+weigh: ～の重さがある、～を比較検討する、よく考える
+stretch: ～を広げる
+participate: Aに参加する
+exhibit: ～を展示する
+owe: AのことはBのおかげだ
+celebrate: ～を祝う
+decorate: ～を装飾する
+forgive: ～を許す
+seat: (be seated)座っている
+injure: ～を傷つける
+sew: ～を縫う
+result: 結果
+feature: 特徴
+society: 社会、協会、団体
+wheel: 車輪、ハンドル
+value: 価値
+effect: 効果、影響、結果
+individual: 個人
+influence: 影響
+fee: 謝礼、料金
+rate: 割合、速度
+sign: 印、兆候
+service: 公共事業、業務
+advance: 前進、進歩
+laughter: 笑い
+material: 物質
+industry: 工業
+attempt: 試み
+trade: 貿易
+progress: 進歩、前進
+excuse: 言い訳
+custom: 習慣、税関
+passage: 一節、経過、通行
+economy: 経済
+track: 小道、足跡
+transportation: 交通機関、輸送
+official: 役人
+sight: 見ること、光景、視力
+taste: 味、好み
+range: 範囲
+appointment: 約束、予約
+patient: 患者、忍耐強い
+project: 計画
+favor: 好意
+appearance: 外見、様子、出現
+risk: 危険
+benefit: 利益
+resident: 住民
+relative: 親族、親戚
+region: 地域
+characteristic: 特徴
+pain: 苦痛
+twin: 双子の一方、双生児
+occasion: 場合、機会
+principle: 原理、原則
+department: 部門、学科
+duty: 義務、関税
+scene: 場面、現場
+jam: 渋滞
+spirit: 精神
+medium: 手段
+mass: 一般大衆、多くの
+audience: 聴衆、観客
+element: 要素、元素
+climate: 気候
+revolution: 革命
+quarter: 4分の1
+furniture: 家具
+brain: 脳
+atmosphere: 大気、雰囲気
+property: 財産
+reward: 報酬
+security: 安全
+delight: 大喜び
+desert: 砂漠
+background: 背景、生い立ち、経歴
+trend: 傾向
+vote: 投票
+impact: 影響、衝撃
+institution: 機関、制度
+interaction: 交流
+alternative: 代わりのもの
+harm: 害
+agency: 機関、代理店
+capacity: 能力
+minister: 大臣
+volunteer: ボランティア
+access: 利用する権利
+quantity: 量
+branch: 枝、支店、支局、部門、分野
+common: 共通の、普通の
+rough: 荒い、大雑把な
+likely: ありそうな、～する可能性が高い
+serious: 深刻な
+particular: ある特定の、特有の
+available: 手に入る、利用できる
+bilingual: 二言語使用の
+ready: 用意ができた
+correct: 正しい
+familiar: 熟知している、くわしい
+physical: 身体の、肉体の
+worth: ～の価値がある
+involved: ～に関係している、参加している
+fantastic: すばらしい
+private: 個人の、私的な
+obvious: 明白な
+native: 母国の
+complex: 複雑な
+willing: ～する気がある、～してもかまわない
+current: 最新の
+male: 男の
+proper: 適切な
+capable: ～する能力がある
+independent: 独立した
+positive: 積極的な
+pleasant: 楽しい
+significant: 重要な
+former: 前の
+chemical: 化学的な
+upset: 動揺している
+previous: 前の
+calm: 冷静な
+specific: 特定の
+conscious: 意識している
+superior: よりすぐれている
+efficient: 効率がいい
+fundamental: 基本的な
+narrow: 狭い
+reasonable: 理にかなった
+nervous: 神経質な、不安な
+alike: 似ている
+domestic: 家庭の、国内の
+negative: 否定の
+moral: 道徳的な
+eager: 熱望している
+remarkable: すばらしい
+evil: 悪い
+awake: 目を覚まして
+aged: 年老いた
+anxious: 心配して、切望して
+tough: たくましい、骨の折れる
+nuclear: 核の、原子力の
+legal: 合法の、法律の
+curious: 好奇心の強い
+civil: 一般市民の
+recent: 最近の
+senior: 上級の、先輩の
+afterward: その後
+nearly: ほとんど
+therefore: それゆえに
+exactly: 正確に
+possibly: ひょっとすると、どうしてもVできない
+contrary: 反対に
+occasionally: 時々
+somehow: どういうわけか、なぜか
+seldom: めったに～ない
+thus: それゆえ、そのように
+throughout: いたる所に
+unlike: ～と違って
+besides: ～に加えて
+beyond: ～の向こうに；～できる範囲をこえて
+within: ～以内で
+nor: ～もない
+unless: ～しない限り
+except: ～を除いて
+ought: ～すべきである
+in spite of: ～にもかかわらず
+whether: ～かどうか、～であろうとなかろうと
+explain: ～を説明する
+accept: ～を受け入れる
+produce: ～を生産する
+exist: 存在する
+express: ～を表現する
+add: ～を加える
+avoid: ～を避ける
+marry: ～と結婚する
+protect: ～を守る
+affect: ～に影響する
+determine: ～を決定する
+solve: ～を解決する
+contain: ～を含んでいる
+discuss: ～を議論する
+ignore: ～を無視する
+guess: ～を推測する
+exchange: 交換する
+satisfy: ～を満たす
+complain: 苦情を言う
+achieve: ～を達成する
+enable: ～を可能にする
+intend: つもりだ
+obtain: ～を得る
+divide: 分割する
+annoy: ～をいらいらさせる
+differ: 異なる
+educate: ～を教育する
+borrow: ～を借りる
+invent: ～を発明する
+promote: ～を促進する
+advise: ～に忠告する
+retire: 辞める
+permit: ～を許す
+recommend: ～を勧める
+apologize: 謝る
+inform: ～に知らせる
+oppose: ～に反対する
+trust: ～を信用する
+select: ～を選ぶ
+praise: ～をほめる
+handle: ～に対処する
+propose: ～を提案する
+breathe: ～を呼吸する
+criticize: ～を非難する
+overcome: ～に打ち勝つ
+possess: ～を持っている
+predict: ～を予言する
+publish: ～を出版する
+floating: 浮かぶ
+recall: ～を思い出す
+explore: ～を探検する
+pretend: ふりをする
+absorb: ～を吸収する
+resemble: ～に似ている
+tear: ～を引き裂く
+consume: ～を消費する
+compete: 競争する
+quit: ～をやめる
+announce: ～を発表する
+react: 反応する
+wander: 歩き回る
+text: メールを送る
+generate: ～を生み出す
+score: ～を取る
+government: 政府
+knowledge: 知識
+nation: 国
+effort: 努力
+period: 時代
+population: 人口
+purpose: 目的
+behavior: 行動
+lack: 不足
+skill: 技術
+quality: 質
+environment: 環境
+role: 役割
+attitude: 態度
+author: 筆者
+research: 研究
+opportunity: 機会
+source: 源
+carbon: 炭素
+shape: 形
+advantage: 利点
+method: 方法
+habit: 習慣
+detail: 細部
+distance: 距離
+crowd: 群衆
+instance: 例
+desire: 願望
+standard: 水準
+task: 仕事
+generation: 世代
+responsibility: 責任
+experiment: 実験
+athlete: 運動選手
+decade: 10年
+loss: 損失
+fever: 熱
+theory: 理論
+statement: 記述
+professor: 教授
+function: 機能
+surface: 表面
+envelope: 封筒
+organization: 組織
+policy: 政策
+resource: 資源
+contrast: 対比
+flood: 洪水
+mate: 連れ合い
+goods: 商品
+creature: 動物
+structure: 構造
+tradition: 伝統
+weight: 体重
+charity: 慈善
+citizen: 市民
+impression: 印象
+cartoon: マンガ
+career: 経歴
+site: 用地
+passenger: 乗客
+violence: 暴力
+income: 所得
+temperature: 気温
+majority: 大多数
+origin: 起源
+literature: 文学
+equipment: 設備
+stranger: 見知らぬ人
+strength: 強さ
+planet: 惑星
+fiction: 小説
+religion: 宗教
+pollution: 汚染
+wealth: 富
+document: 文書
+profit: もうけ
+technique: 技術
+emotion: 感情
+phenomenon: 現象
+horror: 恐怖
+ladder: はしご
+billion: 十億
+status: 地位
+youth: 若者
+confidence: 自信
+edge: 周辺
+household: 家庭
+scholar: 学者
+survey: 調査
+vocabulary: 語彙
+enemy: 敵
+construction: 建設
+lecture: 講義
+instruction: 指示
+crisis: 危機
+instrument: 器具
+crop: 作物
+weapon: 兵器
+device: 装置
+path: 道
+earthquake: 地震
+stream: 小川
+notion: 概念
+yard: 庭
+victim: 犠牲者
+fuel: 燃料
+ancestor: 祖先
+soil: 土壌
+debate: 討論
+crime: 犯罪
+colleague: 同僚
+shelf: 棚
+analysis: 分析
+universe: 宇宙
+electricity: 電気
+insect: 昆虫
+web: 巣
+storm: 嵐
+plenty: 十分な
+agriculture: 農業
+gene: 遺伝子
+evidence: 証拠
+consequence: 結果
+infant: 幼児
+leisure: 暇
+cell: 細胞
+talent: 才能
+advertising: 広告
+extent: 程度
+garbage: ごみ
+general: 一般
+various: さまざまな
+similar: 似ている
+complete: 完全な
+sharp: 急激な
+expensive: 高価な
+political: 政治的な
+aware: 気づいている
+ancient: 古代の
+medical: 医学の
+essential: 不可欠だ
+huge: 巨大な
+terrible: ひどい
+practical: 実用的な
+entire: 全
+favorite: いちばん好きな
+comfortable: 快適な
+minor: 小さい
+typical: 典型的な
+ideal: 理想的な
+principal: 主要な
+appropriate: 適切な
+empty: からの
+rapid: 急速な
+mental: 精神の
+excellent: すばらしい
+convenient: 都合がいい
+potential: 潜在的な
+financial: 財政的な
+enormous: 莫大な
+rare: 珍しい
+artificial: 人工
+tiny: ちっちゃな
+considerable: かなりの
+sensitive: 敏感な
+intellectual: 知的な
+thirsty: のどが渇く
+polite: 礼儀正しい
+accurate: 正確な
+rude: 失礼な
+sufficient: 十分な
+urban: 都会の
+temporary: 一時的な
+primitive: 原始的な
+permanent: 永久
+elderly: 高齢の
+severe: 厳しい
+brief: 簡潔な
+mobile: 流動的な
+latest: 最新の
+military: 軍事的な
+strict: 厳しい
+solid: 固体の
+stupid: ばかな
+biological: 生物
+probably: おそらく
+hardly: ほとんど～ない
+immediately: すぐに
+eventually: ついに
+frequently: しばしば
+extremely: 非常に
+gradually: だんだん
+instantly: すぐに
+nevertheless: それにもかかわらず
+moreover: その上
+relatively: 比較的
+apparently: 一見
+definitely: 絶対
+largely: 主に
+mostly: 大部分は
+approximately: およそ
+overnight: 一晩
+accidentally: 偶然
+despite: にもかかわらず
+proceed: 進む
+ensure: ～を確実にする
+interpret: ～を解釈する
+cease: ～しなくなる
+ban: （公式に）～を禁止する
+obey: ～に従う
+eliminate: (不要なもの)を除去する
+resist: ～に抵抗する
+accompany: 〈人〉に同伴する
+commit: 〈罪など〉を犯す、～をゆだねる、委任する、(本気で)取り組む
+pursue: ～を追求する
+demonstrate: (証明などが)～を明らかに示す
+bet: きっと～だと思う
+ruin: ～を台無しにする、破滅させる
+threaten: ～を脅迫する
+attach: AをBにくっつける
+reverse: ～を反対にする、逆転する
+restrict: ～を制限する
+compose: ～を組み立てる
+lean: よりかかる、もたれる
+substitute: ～を代わりに用いる
+trace: ～の跡をたどる
+interrupt: ～を妨げる
+confront: ～の前に立ちふさがる、～に立ち向かう
+illustrate: ～を（例で）示す
+arrest: ～を逮捕する
+stimulate: ～を刺激する
+assure: （～を）保証する
+consult: ～に相談する、～を参照する
+depress: ～を憂鬱にさせる
+crash: 激突する
+inspire: ～を奮起させる、やる気にさせる
+specialize: Aを専門にする、専攻する
+cultivate: (植物)を栽培する、(感情・能力などを)育む
+fulfill: (約束・夢など)を果たす
+transmit: ～を送る、伝える
+found: ～を創立する、設立する
+clap: (手など)をたたく
+burst: 破裂する、突然～しだす
+bow: おじぎする
+dismiss: (考えなど)を無視する、(人)を解雇する、解散する
+breed: ～を繁殖させる、繁殖する
+prohibit: 〈法・団体が〉～を禁じる
+oblige: ～に強いる
+qualify: Aに適任である
+invest: （金）を投資する
+grasp: ～を理解する
+collapse: 崩壊する
+overlook: ～を見落とす、～を見逃す
+accuse: ～を非難する
+frustrate: 〈人〉を欲求不満にさせる
+deprive: AからBを奪う
+astonish: ～を驚嘆させる
+register: ～を登録する
+correspond: 一致する
+cast: ～を投げる
+attribute: AはBのおかげだと思う
+neglect: ～を無視する、怠る
+starve: 飢える
+resolve: (問題など)を解決する
+impose: AをBに課す、押し付ける
+convert: ～を転換する
+scare: ～をおびえさせる
+constitute: ～を構成する、占める、～である
+appoint: ～を任命する
+imply: ～を(暗に)意味する
+assign: (仕事・物)を割り当てる
+nod: うなずく
+elect: ～を選挙で選ぶ
+transfer: ～を移す
+rob: AからBを奪う
+capture: ～を捕らえる
+undertake: （仕事など）を引き受ける
+drown: おぼれ死ぬ
+split: ～を割る、分裂する
+resort: Aに訴える
+descend: 下る、降りる
+irritate: ～をいらだたせる
+pronounce: 〈単語など〉を発音する
+equip: ～を装備させる
+cheat: いかさまをする
+emerge: 〈隠れていたものが〉現れる
+devote: ～をささげる
+heal: 〈けがなど〉を治す、治る
+urge: ～に強く迫る、～を説得する
+envy: ～をうらやむ
+chase: ～を追いかける
+prompt: ～を促す
+withdraw: ～を引っ込める、引きこもる、退く、(預金など)を引き出す
+detect: ～を探知する、～を発見する
+interfere: Aを邪魔する
+kid: 冗談を言う、からかう
+launch: (ロケットなど)を打ち上げる
+endanger: ～を危険にさらす
+foster: ～を促進する、育成する
+diminish: 減少する、衰える、～を減らす
+spill: ～をこぼす
+infect: 〈人〉に感染する
+stem: Aから生じる、Aに由来する
+tap: ～を軽くたたく
+embrace: 受け入れる、含む
+proportion: 比率
+contract: 契約
+chest: 胸
+treasure: 財宝
+stock: 株(式)
+facility: 設備、施設
+sum: 金額、合計、要約
+rank: 地位
+democracy: 民主主義、民主国家
+emergency: 緊急事態
+protest: 抗議
+immigrant: 移民
+vehicle: 車、乗り物、手段
+routine: 決まりきった仕事、日課
+stuff: 物
+row: 列
+profile: プロフィール、人物紹介、横顔
+dawn: 夜明け
+welfare: 福祉
+perspective: 見方
+enthusiasm: 熱意、情熱
+faith: 信頼
+occupation: 職業、占領
+witness: 証人、目撃者
+kingdom: 王国
+equivalent: 同等のもの、相当するもの
+objective: 目的、目標、客観的な
+pile: 積み重ね
+shelter: 避難(所)
+trial: 試み、裁判
+honor: 名誉
+territory: 領土、なわ張り
+frame: わく
+border: 国境地帯
+statistics: 統計(学)
+enterprise: 企業、事業
+context: 文脈、状況
+load: 荷物
+grain: 穀物
+review: 再検討
+prejudice: 偏見
+strain: 負担
+trap: わな、閉じ込められる、わなにかける
+temper: 気性
+slave: 奴隷
+wound: 傷
+divorce: 離婚
+tune: 曲
+height: 高さ、最盛期
+faculty: 学部、能力
+span: 期間
+dimension: 側面、要素、次元
+version: 型、...版、翻訳、説明
+parallel: 類似(物)、匹敵するもの
+horizon: 地平線
+acquaintance: 知人
+burden: 重荷
+basis: 基礎、根拠、方式、やり方
+poison: 毒
+constitution: 憲法
+administration: 経営、行政
+charm: 魅力
+organ: 臓器、器官
+prey: 獲物、えじき
+venture: 冒険的事業
+mission: 使命、任務
+inquiry: 調査、質問、問い合わせ
+award: 賞
+strip: 細長い一片
+distress: 苦しみ、悲嘆、苦難
+circulation: 循環、流通、発行部数
+shade: 陰、日陰
+stereotype: 典型的なイメージ、類型、固定観念
+client: 依頼人
+output: 生産高
+lord: 神
+convention: 慣習、しきたり、会議、大会
+mine: 鉱山
+craft: 工芸、技術、巧みに作る
+core: 中心、核心
+stroke: 脳卒中、発作、打撃、一撃、なでる
+frontier: 国境
+peer: 同僚、じっと見る
+vessel: 血管、船、器
+disability: 障害
+gravity: 重力
+ethic: 倫理(学)
+terminal: 終点
+tide: 潮流、潮の干満
+abuse: 虐待
+guilty: 有罪の、罪の意識がある
+vital: きわめて重要な、必要な、活気のある
+fellow: 仲間の
+contemporary: 現代の
+annual: 年に１度の、１年間の
+accustomed: 慣れた
+steady: しっかりした
+dull: 退屈させる
+keen: 熱望して、鋭い
+loose: ゆるい
+delicate: 繊細な、微妙で難しい
+internal: 内部の、国内の
+casual: 形式ばらない、気楽な
+mature: 成熟した
+concrete: 具体的な
+awful: ひどい
+exhausted: 疲れ切っている
+overall: 全面的な、全体的な
+tight: 引き締まった、きつい
+prime: 最も重要な、主要な
+genuine: 本物の、真の、心からの
+modest: 控えめな、謙虚な、わずかな
+intimate: 親密な
+minimum: 最小限の
+sophisticated: 高度な
+latter: 後者の
+bitter: 苦い、つらい、腹を立てた
+peculiar: 独特の、固有の
+passive: 受動的な、消極的な
+ethnic: 民族的な、民族の
+noble: 高貴な
+vain: むだな
+innocent: 無罪の、罪のない、無邪気な
+underlying: 根本的な
+alien: 外国の、異質な
+relevant: 関連のある
+inclined: Ｖする傾向がある、Ｖしたい気がある
+awkward: 気まずい
+brilliant: すばらしい
+desperate: 必死の
+refreshing: さわやかな
+thrilled: とてつもなくうれしい
+inner: 内側の
+consistent: 矛盾のない、一致した
+plain: 明白な、わかりやすい
+vivid: 鮮やかな
+miserable: 惨めな
+substantial: 相当な、多大な
+fond: Aが好きだ
+false: まちがいの
+lazy: 怠惰な
+precisely: 正確に、まさに、ちょうど
+meanwhile: その間に
+altogether: 完全に
+lately: 最近
+barely: かろうじて
+scarcely: ほとんど～ない
+accordingly: それ相応に
+deliberately: わざと
+beneath: ～の下で
+whereas: ～だが一方
+declare: ～を宣言する
+alter: ～を変える
+arise: 生じる
+transform: 変える
+defeat: ～を打ち負かす
+investigate: ～を調査する
+distinguish: ～を見分ける
+bury: ～を埋める
+cope: うまく対処する
+occur: 起こる
+accomplish: ～をやりとげる
+hesitate: ためらう
+endure: ～に耐える
+conclude: ～と結論づける
+guarantee: ～を保証する
+dominate: ～を支配する
+confirm: ～を裏付ける
+greet: ～にあいさつする
+entertain: ～を楽しませる
+defend: ～を守る
+forbid: ～を禁じる
+broadcast: ～を放送する
+sacrifice: ～を犠牲にする
+punish: ～を罰する
+glance: ちらりと見る
+retain: ～を保持する
+calculate: ～を計算する
+sinking: 沈む
+rescue: ～を救助する
+beg: ～と乞う
+define: 定義する
+deceive: ～をだます
+convey: ～を伝える
+sustain: ～を維持する
+purchase: ～を購入する
+fade: 薄れる
+regulate: ～を規制する
+distribute: ～を分配する
+enhance: ～を向上させる
+chat: おしゃべりする
+exceed: ～を超える
+wipe: ～をふく
+cooperate: 協力する
+inherit: ～を受け継ぐ
+unite: ～を団結させる
+leap: 跳ぶ
+exaggerate: ～を誇張する
+conquer: ～を征服する
+melt: 溶ける
+invade: ～に侵入する
+modify: ～を修正する
+scatter: ～をばらまく
+undergo: ～を経験する
+evaluate: ～を評価する
+bend: 身をかがめる
+derive: 由来する
+screaming: 悲鳴をあげる
+gaze: 見つめる
+pray: 祈る
+polish: ～を磨く
+classify: 分類する
+assert: ～と主張する
+grab: ～をつかむ
+fold: ～を折りたたむ
+sweep: ～を掃く
+whisper: ささやく
+imitate: ～をまねる
+stare: じっと見る
+emphasize: ～を強調する
+rid: ～を取り除く
+pour: ～を注ぐ
+vanish: 消える
+restore: ～を修復する
+deserve: 当然だ
+laboratory: 研究所
+conference: 会議
+continent: 大陸
+insurance: 保険
+crew: 乗組員たち
+poverty: 貧乏
+shortage: 不足
+affair: 情勢
+exception: 例外
+wage: 賃金
+wisdom: 知恵
+tax: 税金
+evolution: 進化
+barrier: 壁
+category: 範ちゅう
+unit: 単位
+reputation: 評判
+virtue: 美徳
+courage: 勇気
+sympathy: 同情
+union: 組合
+civilization: 文明
+volume: 冊
+blossom: 花
+era: 時代
+dispute: 紛争
+tourism: 観光
+mankind: 人類
+murder: 殺人
+landscape: 風景
+destination: 目的地
+tale: 話
+reform: 改革
+muscle: 筋肉
+prospect: 見通し
+corporation: 企業
+colony: 植民地
+quarrel: 口論
+profession: 職業
+aspect: 側面
+pause: 休止
+conflict: 対立
+privilege: 特権
+prosperity: 繁栄
+genius: 天才
+seed: 種
+symptom: 症状
+merit: 長所
+layer: 層
+clue: 手がかり
+circumstances: 状況
+district: 地区
+prison: 刑務所
+companion: 仲間
+executive: 重役
+justice: 正義
+procedure: 手続き
+ray: 光線
+heaven: 天国
+luxury: 贅沢
+oxygen: 酸素
+fund: 資金
+theme: 主題、テーマ
+boundary: 境界
+ambition: 熱望
+forecast: 予報
+psychology: 心理学
+labor: 労働
+committee: 委員会
+physician: 医者
+philosophy: 哲学
+affection: 愛情
+candidate: 候補
+bomb: 爆弾
+priority: 優先
+obstacle: 障害
+appetite: 食欲
+tension: 緊張
+tribe: 部族
+budget: 予算
+campaign: 運動、キャンペーン
+sorrow: 悲しみ
+satellite: 衛星
+insight: 洞察
+cough: せき
+fate: 運命
+scheme: 計画
+insult: 侮辱
+inhabitant: 住民
+fossil: 化石
+motive: 動機
+instinct: 本能
+legend: 伝説
+empire: 帝国
+suburb: 郊外
+architecture: 建築
+passion: 情熱
+cancer: ガン
+logic: 論理
+dozen: ダース
+harvest: 収穫
+ingredient: 材料
+hypothesis: 仮説
+voyage: 航海
+editor: 編集者
+option: 選択の自由
+hemisphere: 半球
+mechanism: 仕組み
+anthropologist: 人類学者
+tragedy: 悲劇
+antibiotic: 抗生物質
+fare: 運賃
+debt: 借金
+curriculum: 教育課程
+component: 構成要素
+wheat: 小麦
+usage: 語法
+castle: 城
+famine: 飢饉
+extinction: 絶滅
+purse: 財布
+folk: 民族
+explosion: 爆発
+portion: 部分
+organism: 生物
+merchant: 商人
+myth: 神話
+incident: 出来事
+wildlife: 野生生物
+congress: 議会
+bay: 湾
+penalty: 刑
+heritage: 遺産
+diversity: 多様性
+thumb: 親指
+geography: 地理
+factor: 要因
+discrimination: 差別
+virus: ウイルス
+statue: 像
+priest: 神父
+pioneer: 先駆者
+trait: 特徴
+bond: きずな
+grocery: 食料品
+secretary: 秘書
+dialect: 方言
+astronomy: 天文学
+youngster: 子供
+substance: 物質
+finding: 発見
+strategy: 戦略
+lung: 肺
+opponent: 敵
+ritual: 儀式
+outcome: 結果
+conservation: 環境保護
+mammal: 哺乳類
+telescope: 望遠鏡
+refugee: 難民
+code: 規則
+flavor: 風味
+particle: 粒子
+nursing: 看護
+suicide: 自殺
+habitat: 生息地
+bullying: いじめ
+dinosaur: 恐竜
+council: 議会
+gender: 性別
+surgery: 手術
+innovation: 革新
+protein: タンパク質
+nutrition: 栄養
+disaster: 災害
+emission: 排出
+ape: 類人猿
+molecule: 分子
+sweat: 汗
+transplant: 移植
+species: 種
+tip: 先
+cattle: 牛
+density: 密度
+concept: 概念
+pale: 青白い
+precious: 貴重な
+loyal: 忠実な
+isolated: 孤立している
+generous: 気前のよい
+tropical: 熱帯
+reluctant: したがらない
+vague: 漠然とした
+vast: 広大な
+numerous: たくさんの
+rural: 田舎の
+widespread: 広まっている
+complicated: 複雑な
+visible: 目に見える
+raw: 生の
+remote: へんぴな
+urgent: 緊急の
+silly: ばかな
+striking: いちじるしい
+adequate: 十分な
+extraordinary: 並外れた
+odd: おかしな
+abstract: 抽象的な
+mutual: 相互の
+excessive: 過度の
+ashamed: 恥ずかしい
+tremendous: とてつもない
+inevitable: 避けられない
+pure: 純
+stable: 安定した
+indifferent: 無関心だ
+aggressive: 攻撃的な
+ultimate: 究極の
+shy: 内気な
+solar: 太陽
+profound: 深い
+subtle: 微妙な
+conservative: 保守
+brave: 勇敢な
+intense: 強烈な
+alcoholic: アルコールの
+manual: 手を使う
+cruel: 残酷な
+rational: 理性的な
+initial: 最初の
+immune: 免疫
+linguistic: 言語の
+crucial: 重大な
+verbal: 言葉による
+optimistic: 楽観的な
+flexible: 柔軟な
+grateful: 感謝している
+lively: 生き生きとした
+overwhelming: 圧倒的な
+abundant: 豊富な
+selfish: 利己的な
+ugly: みにくい
+racial: 人種の
+prominent: 有名な
+controversial: 物議を呼ぶ
+federal: 連邦の
+ridiculous: ばかげた
+imaginary: 架空の
+harsh: 厳しい
+random: 無作為な
+adolescent: 思春期の
+up-to-date: 最新の
+liberal: 自由主義の
+prior: 前の
+moderate: 適度な
+fluent: 流ちょうな
+elaborate: 手の込んだ
+incredible: 信じられない
+radical: 根本的な
+acid: 酸性の
+deaf: 耳が不自由な
+medieval: 中世の
+ecological: 生態
+slight: 少しの
+ignorant: 無知な
+cognitive: 認知
+absolutely: 絶対に
+virtually: ほとんど
+somewhat: 多少
+merely: 単に
+literally: 文字通り
+seemingly: 一見
+regardless: 関係なく
+thoroughly: 徹底的に
+submit: Aに服従する、提出する
+tempt: 誘惑する、する気にさせる
+resign: 辞職する
+conform: 従う
+confine: 限定する
+assemble: 組み立てる
+dedicate: ささげる
+advocate: 主張する
+thrive: 繁栄する
+provoke: 引き起こす
+dictate: 命じる、要求する、決定する
+exploit: 利用する、開発する
+surrender: 降伏する
+reproduce: 再生する、複製する、繁殖する[させる]
+acknowledge: 認める
+swell: ふくらむ
+shed: 落とす
+wind: 曲がる
+cite: 引き合いに出す
+digest: 消化する
+skip: とばす、抜かす
+bind: 縛る、束縛する
+dissolve: 溶解する
+implement: 実行する
+steer: 操縦する
+congratulate: 祝福する
+designate: 指定する
+violate: 破る、違反する
+presume: 推定する、思う
+recruit: （新人を）入れる
+coincide: 同時に起きる、重なる
+enforce: 施行する
+displace: とってかわる、故郷から追い出す
+shrink: 縮む、縮ませる、減る
+betray: 裏切る、もらす
+comprise: 構成される、構成する、占める
+indulge: ふける
+penetrate: 入り込む
+devastate: 壊滅させる
+plunge: 突っ込む
+bounce: はね返る
+contradict: 矛盾する
+prescribe: 処方する
+oppress: しいたげる
+cherish: 胸に抱く
+illuminate: 照らす、解明する
+trigger: きっかけになる
+commute: 通勤する、通学する
+induce: 誘う
+utilize: 利用する
+snap: ポキンと折れる、ポキンと折る
+donate: 提供する
+hatch: （卵?ヒナ）かえす、かえる
+enclose: 囲む
+prevail: 普及している、広まる
+sigh: ため息をつく
+leak: 漏れる、漏らす
+compel: 強制する
+crush: 押しつぶす
+comprehend: 理解する
+negotiate: 交渉する
+persist: 持続する、残る
+multiply: 増やす、増える、掛ける
+conceive: 想像する
+compensate: 埋め合わせる
+suspend: 中止する、つるす
+stir: かきたてる
+soak: 浸す、びしょぬれにする、吸収する
+refine: 洗練する、磨きをかける
+arouse: 刺激する、かき立てる
+precede: 先行する
+render: OをCにする、変える
+mount: すえつける、乗る
+retreat: 退く
+startle: 驚かせる
+dare: する勇気がある
+sphere: 領域、範囲
+sequence: 連続、順番、順序
+deposit: 預金、頭金、堆積物
+poll: 世論調査、投票
+caution: 用心
+rage: 激怒、怒り
+formula: 式、公式、方法、秘訣、解決策
+plot: 筋、たくらみ、陰謀
+scope: 範囲
+norm: 規範
+disgust: 嫌悪
+compromise: 妥協
+supervisor: 監督者
+paradox: 逆説
+tissue: （生物の）組織；ティッシュペーパー
+breakdown: 崩壊
+initiative: 構想、主導権、
+fabric: 織物、布
+publicity: 宣伝、広告
+summit: 頂上、頂点、首脳会議
+flock: 群れ
+plague: 疫病
+haste: 急ぐこと
+nap: うたた寝
+ally: 同盟国
+draft: 下書き、草稿
+spectacle: 光景
+premise: 前提
+asset: 財産
+lag: 遅れ
+therapy: 療法、治療法
+reception: もてなし
+compound: 化合物
+blessing: ありがたいもの、恵み
+sensation: 感覚、感じ
+recession: 不景気、不況
+pole: 棒、極
+outlook: 態度、考え方、見通し、見込み
+endeavor: 活動
+mercy: 慈悲、情け
+counterpart: 相当するもの
+session: 期間、討論
+spectrum: 変動範囲、領域
+junk: くず、がらくた
+worship: 崇拝
+apt: しがちである、する傾向がある
+humble: 謙虚な、粗末な
+entitled: 得る権利がある、題された
+valid: 妥当な、正当な
+faint: かすかな
+stiff: 堅い
+obscure: わかりにくい
+fierce: 激しい
+acute: （問題が）深刻な、（感覚・痛みが）鋭い
+idle: （仕事がなくて）何もしていない
+crude: 粗末な、粗野な
+jealous: 嫉妬深い、羨ましい
+pregnant: 妊娠している
+liable: しがちである、可能性が高い
+stubborn: 頑固な
+decent: まともな
+marvelous: 驚くべき
+misleading: 誤解を招く
+synthetic: 合成の
+classical: クラシックの
+Muslim: イスラム教の
+anticipate: 予想する
+rub: こする
+dispose: 処理する
+refrain: 控える
+accumulate: 蓄積する
+boost: 活気づける
+drag: 引きずる
+revise: 修正する
+scratch: かく
+roar: ほえる
+quote: 引用する
+bloom: 咲く
+insert: 差し込む
+awaiting: 待つ
+dread: 恐れる
+conceal: 隠す
+enrich: 豊かにする
+cling: 固執する
+surpass: まさる
+suppress: 抑える
+portray: 描く
+soaring: 急上昇する
+drain: 排出する
+glow: ボーッと光る
+migrate: 移住する
+exclaim: 叫ぶ
+exert: 及ぼす
+disguise: 隠す
+accelerate: 加速する
+dwell: 住む
+integrate: 融けこませる
+weep: 泣く
+reassure: 安心させる
+crawl: はって進む
+restrain: 抑制する
+resent: 腹を立てる
+yell: 大声で叫ぶ
+assess: 評価する
+carve: 彫る
+halt: 止める
+inspect: 検査する
+tackle: 取り組む
+omit: 省く
+chew: かむ
+resume: 再開する
+mold: 作る
+accommodate: 収容できる
+erase: 消す
+inferred: 推量する
+revive: 生き返らせる
+contemplate: 考える
+rotate: 回転する
+disrupt: かき乱す
+navigate: 進路を決める
+ache: 痛む
+discard: 捨てる
+incorporate: 取り入れる
+overtake: 追い越す
+supplement: 補う
+manipulate: 操作する
+nourish: 養う
+squeeze: しぼる
+depict: 描く
+distract: そらす
+disclose: 暴露する
+enroll: 入学する
+nurture: 育てる
+speculate: 推測する
+prolong: 延ばす
+execute: 処刑する
+uncover: 明らかにする
+tremble: 震える
+seize: つかむ
+abolish: 廃止する
+scold: しかる
+attain: 達成する
+utter: 発する
+flee: 逃げる
+offending: 怒らせる
+confess: 告白する
+postpone: 延期する
+drift: 漂う
+weave: 織る
+install: 備えつける
+twist: ねじ曲げる
+extract: 取り出す
+bump: ぶつかる
+despise: 軽蔑する
+tolerate: 我慢する
+boast: 自慢する
+flourishing: 栄えている
+disregard: 無視する
+tease: からかう
+reinforce: 強める
+strive: 努力する
+coordinate: 合わせる
+yawn: あくびをする
+hug: 抱きしめる
+combat: 戦う
+knit: 編む
+fatigue: 疲労
+fame: 名声
+mess: めちゃくちゃ
+dignity: 尊厳
+canal: 運河
+drought: 干ばつ
+despair: 絶望
+interval: 間隔
+luggage: 荷物
+behalf: 代表して
+impulse: 衝動
+debris: 破片
+beast: 野獣
+superstition: 迷信
+illusion: 幻想、錯覚
+thread: 糸
+intake: 摂取量
+feast: 宴会
+transition: 移り変わり
+misery: 悲惨さ
+radiation: 放射線
+log: 丸太
+consensus: 合意
+deed: 行い
+proverb: ことわざ
+compliment: ほめ言葉
+flame: 炎
+anniversary: 記念日
+conscience: 良心
+expedition: 探検
+offspring: 子孫
+allowance: こづかい
+headline: 大見出し
+treaty: 条約
+monument: 記念碑
+worm: 虫
+remedy: 治療法
+encyclopedia: 百科事典
+glimpse: ちらり
+personnel: 職員
+triumph: 勝利
+arithmetic: 算数
+self-esteem: 自尊心
+microbe: 微生物
+odds: 可能性
+chaos: 混沌
+destiny: 運命
+diameter: 直径
+lottery: 宝くじ
+souvenir: みやげ物
+trail: 小道
+ratio: 比率
+sword: 剣
+whistle: 笛
+sentiment: 感情
+chore: 雑用
+courtesy: 礼儀
+mayor: 市長
+surveillance: 監視、見張り
+trash: ごみ
+prestige: 名声
+headquarters: 本部、本社
+wilderness: 荒野
+orbit: 軌道
+bias: 偏見
+republic: 共和国
+bargain: 掘り出し物
+domain: 領域
+fragment: 破片
+galaxy: 星雲
+lap: ひざ
+deadline: 締め切り
+bullet: 弾丸
+pedestrian: 歩行者
+wit: 機知
+nuisance: 迷惑
+criteria: 基準
+hardship: 苦難
+glory: 栄光
+pavement: 歩道
+navy: 海軍
+script: 台本
+pension: 年金
+province: 州
+surplus: 余剰
+moisture: 水分
+patch: あて布
+altitude: 高度、標高
+thermometer: 温度計
+tuition: 授業料
+troop: 軍隊
+primate: 霊長類
+flaw: 欠陥
+nephew: 甥
+garment: 衣服、衣類
+diagnosis: 診断
+commerce: 商業
+antiquity: 古代、古物
+fraction: ほんの一部
+irony: 皮肉
+nightmare: 悪夢
+defect: 欠陥
+certificate: 証明書
+decay: 腐敗
+erosion: 浸食
+recipe: 秘けつ
+skeleton: 骨格
+grace: 優雅さ
+landmark: 名所
+dementia: 認知症
+flesh: 肉
+collision: 衝突、対立
+hazard: 危険なもの
+tomb: 墓
+injection: 注射
+breakthrough: 飛躍的進歩
+leather: 革
+jewelry: 宝石
+cue: 合図
+ambulance: 救急車
+estate: 不動産
+commodity: 商品
+departure: 出発
+phase: 段階
+thief: 泥棒
+saint: 聖
+sculpture: 彫刻
+grief: 悲しみ
+lane: 車線
+predator: 捕食動物
+fluid: 流体
+incentive: はげみ
+bride: 花嫁
+intervention: 介入
+margin: 差
+biography: 伝記
+consent: 同意
+volcano: 火山
+rebel: 反逆者
+metaphor: 比喩
+legislation: 法律
+lightning: 雷
+pesticide: 殺虫剤
+column: コラム
+rumor: うわさ
+dust: ほこり
+dialogue: 対話
+kindergarten: 幼稚園
+diabetes: 糖尿病
+obesity: 肥満
+patent: 特許
+chapter: 章
+palace: 宮殿
+laundry: 洗濯
+ward: 病棟
+outbreak: ぼっ発
+equation: 方程式
+archaeologist: 考古学者
+corruption: 腐敗
+germ: 細菌
+revenue: 収入
+spouse: 配偶者
+epidemic: 流行
+mortality: 死亡
+syndrome: 症候群
+retail: 小売り
+dose: 量
+beverage: 飲み物
+metabolism: 新陳代謝
+hybrid: 交配種
+scent: 香り
+inflammation: 炎症
+pill: 薬
+grave: 重大な
+fertile: 肥えた
+hostile: 反感を持つ
+indispensable: 不可欠な
+oriented: 志向の
+splendid: すばらしい
+competent: 有能な
+supreme: 最高の
+straightforward: わかりやすい
+sacred: 聖
+bold: 大胆な
+uneasy: 不安な
+neat: きちんとした
+shallow: 浅い
+fake: 偽物の
+superficial: 表面的な
+absurd: ばかげた
+fragile: 壊れやすい
+respectable: ちゃんとした
+magnificent: すばらしい
+infinite: 無限の
+comprehensive: 包括的な
+steep: 険しい
+gross: 総
+subsequent: 次に起こる
+sincere: 心からの
+toxic: 有毒な
+neutral: 中立の
+diligent: 勤勉な
+sore: 痛い
+contaminated: 汚染された
+ambiguous: あいまいな
+oral: 口述の
+restless: 落ち着かない
+rotten: 腐った
+vigorous: 精力的な
+immense: 莫大な
+metropolitan: 大都市の
+punctual: 時間をきっちり守る
+solitary: 孤独な
+collective: 集団
+diplomatic: 外交の
+nasty: 不快な
+helpless: 無力な
+explicit: 明確な、はっきりした
+bankrupt: 破産した
+eternal: 永遠の
+sole: 唯一の
+sour: すっぱい
+notable: 注目すべき
+affluent: 裕福な
+naked: 裸の
+vocal: 発声
+feminine: 女性の
+vacant: 空いている
+exotic: 外来の
+rigid: 厳格な
+humid: 蒸し暑い
+outstanding: 傑出した
+addicted: 中毒である
+vulnerable: 受けやすい
+spontaneous: 自然に起こる
+greedy: 貪欲な
+trivial: ささいな
+per capita: 一人当たりの
+inherent: 元から伴う
+promising: 前途有望な
+physiological: 生理的な
+clinical: 臨床
+chronic: 慢性の
+geological: 地質学的な
+countless: 無数の
+innate: 先天的な
+alert: 用心する
+autonomous: 自動運転
+simultaneously: 同時に
+utterly: まったく
+drastically: 劇的に
+necessarily: 必ずしも
+thereby: そうすることで
+frankly: 率直に
+namely: すなわち
+hence: だから
+via: 経由で
+owing: のために
+clarify: 明らかにする
+smash: 粉々に砕く
+mourn: 悲しむ
+summon: 呼ぶ
+shatter: 粉々にする
+linger: 残る
+lament: 嘆く
+endowed: 恵まれる
+rejoice: 喜ぶ
+allocate: 配分する
+slap: ピシャリと打つ
+contend: 主張する
+swear: 誓う
+discern: 識別する
+degrade: 悪化させる
+erect: 築く
+testify: 証言する
+spur: 駆りたてる
+roam: 歩き回る
+frown: まゆをひそめる
+lure: 呼び込む
+defy: 逆らう
+stroll: ぶらつく
+rattle: がたがた鳴らす
+reconcile: 調和させる
+blur: ぼやかす
+soothe: なだめる
+impair: 低下させる
+comply: 従う
+pierce: 穴をあける
+stumble: つまずく
+hinder: さまたげる
+mock: あざける
+embody: 具現する
+stalk: 忍び寄る
+proclaim: 宣言する
+applaud: 拍手する
+inflict: 与える
+merge: 合併する
+evacuated: 避難した
+undone: 元に戻る
+poke: 突く
+haunted: つきまとわれる
+adhere: 固く守る
+compile: まとめる
+wither: しぼむ
+stun: びっくりさせる
+choke: のどがつまる
+deteriorate: 悪化する
+dump: 捨てる
+murmur: つぶやく
+delete: 削除する
+inhibit: 阻害する
+divert: そらす
+tame: 飼いならす
+reap: 手に入れる
+affirm: 断言する
+immersed: 浸る
+expire: 期限が切れる
+embark: 乗り出す
+vow: 誓う
+foresee: 予知する
+adore: 崇拝する
+yearn: 切望する
+undermine: 弱める
+suck: 吸う
+pledge: 誓う
+intrude: 立ち入る
+sue: 訴える
+distort: 歪曲する
+extinguish: 消す
+preach: 説教する
+curb: 抑制する
+withstand: 耐える
+dip: 浸す
+recite: 暗唱する
+thrust: 押し込む
+plead: 嘆願する
+humiliate: 恥をかかせる
+discharge: 放出する
+condemn: 非難する
+retrieve: 検索する
+shrug: 肩をすくめる
+evoke: 呼び起こす
+fetch: 取ってくる
+flatter: お世辞を言う
+prose: 散文
+textile: 織物
+timber: 材木
+masterpiece: 傑作
+riot: 暴動
+carriage: 車両
+apparatus: 装置
+fuss: 大騒ぎ
+deficiency: 欠乏
+heir: 相続人
+equator: 赤道
+petroleum: 石油
+witch: 魔女
+vapor: 蒸気
+probe: 探査機
+expertise: 専門知識
+scorn: 軽蔑
+prophet: 預言者
+breeze: そよ風
+sin: 罪
+surge: 急増
+complement: 補うもの
+queue: 列
+stake: 賭け金
+ambassador: 大使
+jury: 陪審員
+cluster: 集団
+lump: こぶ
+meadow: 牧草地
+feat: 偉業
+temperament: 気質
+chill: 寒気
+appliance: 器具
+predecessor: 前任者
+entity: 存在
+hospitality: もてなし
+narrative: 話
+segment: 部分、区分
+catastrophe: 大災害
+monarch: 君主、皇帝
+constraint: 制約
+amendment: 改正、修正
+cosmos: 宇宙
+aisle: 通路
+hierarchy: 階級制度
+toll: 通行料
+transaction: 取引
+burglar: 強盗
+tyranny: 圧政
+parasite: 寄生生物
+intuition: 直感
+communist: 共産主義の
+legacy: 遺産
+vein: 静脈
+discourse: 論説
+dairy: 乳製品、酪農
+artifact: 工芸品
+outlet: はけ口
+apprehension: 不安
+melancholy: 憂うつ
+novelty: 目新しさ
+specimen: 標本
+hygiene: 衛生
+tactics: 戦術
+monopoly: 独占
+token: 印
+aristocracy: 貴族階級
+revenge: 復讐
+activist: 活動家
+rhetoric: 美辞麗句
+entrepreneur: 起業家
+census: 国勢調査
+verge: 瀬戸際
+advent: 出現、到来
+analogy: 類似点
+irrigation: 灌漑
+coverage: 報道
+cuisine: 料理
+menace: 脅威
+peril: 危険
+limb: 手足
+assault: 攻撃
+hatred: 憎しみ
+autonomy: 自主性
+cram: 塾
+subsidy: 補助金
+empathy: 共感
+slang: 俗語
+posture: 姿勢
+ideology: イデオロギー
+curse: 災いのもと
+tumor: 腫瘍
+intersection: 交差点
+duration: 期間
+deforestation: 森林破壊
+precaution: 用心
+bunch: ひとたばの
+shortcoming: 欠点
+aspiration: 熱望
+psychiatrist: 精神科医
+shipping: 発送
+senator: 上院議員
+statesman: 政治家
+subordinate: 部下
+vacuum: 空白
+quest: 探究
+meditation: 瞑想
+subscriber: 加入者
+riddle: 謎
+rag: ぼろ
+rust: さび
+sanitation: 衛生
+midst: まっただ中
+mischief: いたずら
+proficiency: 検定
+recollection: 記憶
+latitude: 緯
+friction: 摩擦
+botanist: 植物学者
+heredity: 遺伝
+contempt: 軽蔑
+anatomy: 構造
+integrity: 誠実
+cargo: 貨物
+bribe: わいろ
+eruption: 噴火
+funeral: 葬式
+deficit: 赤字
+bulk: 大部分
+millionaire: 百万長者
+ash: 灰
+realm: 領域
+plantation: 農園
+plow: すき
+vending: 販売
+orphan: 孤児
+neuron: 神経細胞
+vegetation: 植生
+warrior: 戦士
+mutation: 突然変異
+sewage: 下水
+paradigm: 理論的枠組
+protocol: 議定書
+skyscraper: 高層ビル
+accord: 一致
+bureaucrat: 官僚
+array: 多彩
+clash: 衝突
+torture: 拷問
+reign: 統治
+thesis: 論文
+digit: 桁
+agenda: 課題
+onset: 発症
+peasant: 小作農
+ultraviolet: 紫外
+renowned: 有名な
+transparent: 透き通った
+dim: 薄暗い
+legitimate: 正当な
+adverse: 悪
+swift: すばやい
+naive: 世間知らずの
+dumb: ばか
+gloomy: 暗い
+furious: 激怒した
+earnest: まじめな
+terrific: すばらしい
+vertical: 垂直な
+wicked: 邪悪な
+subjective: 主観的な
+enlightened: 進んだ考えの
+authentic: 本物の
+brutal: 残忍な
+dizzy: めまい
+sheer: まったくの
+naughty: いたずらな
+damp: 湿った
+static: 静的な
+doomed: 運命にある
+respiratory: 呼吸器に関する、呼吸の
+innumerable: 無数の
+clumsy: 不器用な
+aesthetic: 美的
+obsessed: とりつかれている
+detached: 切り離された
+wrecked: 難破した
+reckless: 無謀な
+arrogant: 傲慢な
+preoccupied: 頭がいっぱいだ
+gigantic: 巨大な
+conspicuous: 顕著な
+slender: すらりとした
+manifest: 明らかな
+tidy: きちんと
+skeptical: 懐疑的な
+notorious: 悪名高い
+anonymous: 匿名の
+monotonous: 単調な
+ample: 豊富に
+trim: こぎれいな
+savage: 野蛮な
+coherent: 一貫した
+eloquent: 雄弁な
+foul: 不快な
+juvenile: 青少年の
+compulsory: 義務的な
+prone: やすい
+arbitrary: 勝手な
+ingenious: 独創的な
+divine: 神聖なる
+tender: やさしい
+outraged: 憤慨している
+intrinsic: 本来の
+paralyzed: 麻痺している
+compatible: 適合する
+patriotic: 愛国的な
+eminent: 名高い
+potent: 強力な
+insane: 正気を失っている
+staple: 主要な
+secondhand: 間接
+indigenous: 先住
+utmost: 最も
+integral: 不可欠な
+intricate: 複雑な
+demographic: 人口統計の
+mighty: 強力な
+intact: 無傷の
+intent: 決意をしている
+intriguing: 興味深い
+merry: 陽気な
+perpetual: 永続する
+spinal: 脊椎の
+susceptible: かかりやすい
+mandatory: 義務的な
+upright: まっすぐに
+abruptly: 不意に
+conversely: 逆に
+predominantly: 主に
+lest: ～しないように
+`;
+
+// 熟語モード用データ
+const idiomData = [
+    { id: 1, japanese: "10分間休憩にしましょう", prefix: "Let's (", suffix: ")", parts: ["take", "a", "ten-minute", "break"] },
+    { id: 2, japanese: "彼はそのニュースに驚いたようだ", prefix: "He seems (", suffix: ") at the news.", parts: ["to", "have", "been", "surprised"] },
+    { id: 3, japanese: "できるだけ早く", prefix: "Please come (", suffix: ").", parts: ["as", "soon", "as", "possible"] },
+    { id: 4, japanese: "私はこの歌を聞くと必ず学生時代を思い出す", prefix: "I never hear this song (", suffix: ") of my school days.", parts: ["without", "being", "reminded"] },
+    { id: 5, japanese: "雨が降っていたにもかかわらず", prefix: "(", suffix: ") the rain, they went out.", parts: ["In", "spite", "of"] },
+    { id: 6, japanese: "彼女はプライドが高すぎてその仕事ができない", prefix: "She is (", suffix: ") to do the work.", parts: ["too", "proud"] },
+    { id: 7, japanese: "彼は始発列車に乗れるように早く起きた", prefix: "He got up early (", suffix: ") the first train.", parts: ["so", "as", "to", "catch"] },
+    { id: 8, japanese: "これは私が今まで読んだ中で最も面白い本だ", prefix: "This is (", suffix: ") I have ever read.", parts: ["the", "most", "interesting", "book"] }
+];
+
+// ==========================================
+// 2. MAIN LOGIC
+// ==========================================
+
+        document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
+        document.addEventListener('touchmove', function(event) { if (event.scale !== 1) { event.preventDefault(); } }, { passive: false });
+
+        class HybridQuiz {
+            constructor() {
+                this.mode = 'vocab'; 
+                this.wordsPerRound = 20; 
+                this.masterList = [];
+                this.vocabRounds = [];
+                this.currentRoundIndex = 0;
+                this.currentIdiomParts = [];
+                this.shuffledIdiomParts = [];
+                this.userAns = [];
+                this.isLocked = false;
+                this.questions = [];
+                this.currentIndex = 0;
+                this.missCount = 0;
+                this.missedWordsLog = [];
+                this.startTime = 0;
+                this.timerInterval = null;
+                this.currentStreak = 0;
+                this.maxStreak = 0; 
+                this.dueMistakes = [];
+                this.allMistakes = []; 
+                this.isPitStopMode = false;
+                this.isReverseMode = false;
+                this.isAutoAudio = localStorage.getItem('vocab_auto_audio') !== 'false';
+                this.generatedLicenseId = "perfect"; 
+
+                this.synth = window.speechSynthesis;
+                this.englishVoices = [];
+                if (this.synth) { this.synth.onvoiceschanged = () => this.loadVoices(); this.loadVoices(); }
+
+                const audioCheck = document.getElementById('audio-mode');
+                if(audioCheck) {
+                    audioCheck.checked = this.isAutoAudio;
+                    audioCheck.addEventListener('change', (e) => {
+                        this.isAutoAudio = e.target.checked;
+                        localStorage.setItem('vocab_auto_audio', this.isAutoAudio);
+                    });
+                }
+
+                this.parseData();
+                this.generateRounds();
+                this.initUI();
+                this.initSearch(); 
+            }
+
+            loadVoices() {
+                if(!this.synth) return;
+                const allVoices = this.synth.getVoices();
+                this.englishVoices = allVoices.filter(v => v.lang.startsWith('en'));
+            }
+
+            parseData() {
+                if(!rawData.trim()) { this.masterList = []; return; }
+                const lines = rawData.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('[source'));
+                this.masterList = [];
+                lines.forEach(line => {
+                    let sep = -1;
+                    if (line.indexOf('\t') !== -1) sep = line.indexOf('\t');
+                    else if (line.indexOf(':') !== -1) sep = line.indexOf(':');
+                    else if (line.indexOf('：') !== -1) sep = line.indexOf('：');
+                    if (sep !== -1) {
+                        this.masterList.push({ w: line.substring(0, sep).trim(), m: line.substring(sep + 1).trim() });
+                    }
+                });
+            }
+
+            generateRounds() {
+                const wordCopy = [...this.masterList]; 
+                this.vocabRounds = [];
+                let roundNum = 1;
+                let currentWordIndex = 1; 
+                while (wordCopy.length > 0) {
+                    const chunk = wordCopy.splice(0, this.wordsPerRound);
+                    if (chunk.length > 0) {
+                        this.vocabRounds.push({ id: roundNum, name: `ROUND ${roundNum} (No.${currentWordIndex} - ${currentWordIndex + chunk.length - 1})`, words: chunk });
+                        roundNum++;
+                        currentWordIndex += chunk.length;
+                    }
+                }
+            }
+
+            initUI() {
+                const selector = document.getElementById('round-selector');
+                selector.innerHTML = '';
+                if(this.vocabRounds.length === 0) { selector.innerHTML = '<option>Load Data or Login</option>'; }
+                else {
+                    this.vocabRounds.forEach((round, index) => {
+                        const opt = document.createElement('option');
+                        opt.value = index;
+                        opt.text = round.name;
+                        selector.appendChild(opt);
+                    });
+                }
+                document.getElementById('idiom-count-display').innerText = idiomData.length;
+            }
+
+            initSearch() {
+                const input = document.getElementById('search-input');
+                const results = document.getElementById('search-results');
+                input.addEventListener('input', (e) => {
+                    const q = e.target.value.toLowerCase().trim();
+                    if (!q) { results.classList.add('hidden'); return; }
+                    const hits = this.masterList.map((item, index) => ({ ...item, i: index + 1 }))
+                        .filter(item => item.w.toLowerCase().includes(q) || item.m.toLowerCase().includes(q))
+                        .slice(0, 50);
+                    if (hits.length > 0) {
+                        results.classList.remove('hidden');
+                        results.innerHTML = hits.map(h => `
+                            <div onclick="quiz.speak('${h.w.replace(/'/g, "\\'")}')" class="p-3 border-b border-gray-800 active:bg-gray-800 cursor-pointer flex justify-between items-center group transition-colors">
+                                <div class="text-left"><div class="flex items-baseline gap-2"><span class="text-[10px] text-yellow-500 font-mono opacity-70">No.${h.i}</span><span class="text-red-400 font-bold text-xs f1-font">${h.w}</span></div><span class="text-gray-400 text-[10px] pl-1">${h.m}</span></div>
+                                <button class="text-[8px] bg-gray-700 text-white px-2 py-1 rounded-full uppercase">Listen</button>
+                            </div>`).join('');
+                    } else {
+                        results.classList.remove('hidden');
+                        results.innerHTML = `<div class="p-3 text-gray-500 text-[10px] text-center">NO DATA</div>`;
+                    }
+                });
+                document.addEventListener('click', (e) => { if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden'); });
+            }
+
+            createCustomRound() {
+                const s = parseInt(document.getElementById('custom-start').value) - 1;
+                const e = parseInt(document.getElementById('custom-end').value);
+                if(isNaN(s) || isNaN(e) || s < 0 || e > this.masterList.length || s >= e) { alert("Invalid Range"); return; }
+                const customWords = this.masterList.slice(s, e);
+                this.vocabRounds.unshift({ id: 'custom', name: `CUSTOM (No.${s+1}-${e})`, words: customWords });
+                this.initUI();
+                document.getElementById('round-selector').value = 0;
+            }
+            
+            setTireStrategy(count, type) {
+                this.wordsPerRound = count;
+                this.generateRounds();
+                this.initUI();
+                document.querySelectorAll('.tire-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(`tire-${type}`).classList.add('active');
+            }
+
+            switchMode(newMode) {
+                this.mode = newMode;
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(`mode-${newMode}`).classList.add('active');
+                
+                if (newMode === 'vocab') {
+                    document.getElementById('vocab-settings').classList.remove('hidden');
+                    document.getElementById('vocab-tools').classList.remove('hidden');
+                    document.getElementById('idiom-settings').classList.add('hidden');
+                } else {
+                    document.getElementById('vocab-settings').classList.add('hidden');
+                    document.getElementById('vocab-tools').classList.add('hidden');
+                    document.getElementById('idiom-settings').classList.remove('hidden');
+                }
+            }
+
+            speak(text) {
+                if (!this.synth) return;
+                this.synth.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                if (this.englishVoices.length > 0) utterance.voice = this.englishVoices[0];
+                utterance.rate = 1.3; 
+                this.synth.speak(utterance);
+            }
+
+            start() {
+                this.currentIndex = 0;
+                this.missCount = 0;
+                this.missedWordsLog = [];
+                this.currentStreak = 0;
+                this.maxStreak = 0;
+                this.startTime = Date.now();
+                this.startTimer();
+                
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                
+                document.getElementById('vocab-interface').classList.add('hidden');
+                document.getElementById('idiom-interface').classList.add('hidden');
+
+                if (this.mode === 'vocab') {
+                    this.startVocabMode();
+                } else {
+                    this.startIdiomMode();
+                }
+            }
+
+            startVocabMode() {
+                if(this.vocabRounds.length === 0) { alert("Data not loaded"); this.returnToGrid(); return; }
+                this.isPitStopMode = false;
+                document.getElementById('vocab-interface').classList.remove('hidden');
+                
+                const selector = document.getElementById('round-selector');
+                this.currentRoundIndex = parseInt(selector.value);
+                const selectedRound = this.vocabRounds[this.currentRoundIndex];
+                
+                this.isReverseMode = document.getElementById('reverse-mode').checked;
+                
+                document.getElementById('circuit-name').innerText = selectedRound.name + (this.isReverseMode ? " [REV]" : "");
+                document.getElementById('question-label').innerText = this.isReverseMode ? "TRANSLATE" : "MEANING";
+
+                this.questions = selectedRound.words.map(target => {
+                    const qText = this.isReverseMode ? target.m : target.w;
+                    const aText = this.isReverseMode ? target.w : target.m;
+                    const distractors = this.getDistractors(target, this.isReverseMode);
+                    const options = [aText, ...distractors].sort(() => Math.random() - 0.5);
+                    return { w: target.w, m: target.m, qText: qText, aText: aText, o: options };
+                });
+                this.questions.sort(() => Math.random() - 0.5);
+                this.showVocabQuestion();
+            }
+
+            startIdiomMode() {
+                document.getElementById('idiom-interface').classList.remove('hidden');
+                document.getElementById('circuit-name').innerText = "IDIOM SORTING";
+                
+                this.questions = [...idiomData].sort(() => Math.random() - 0.5);
+                this.showIdiomQuestion();
+            }
+            
+            getDistractors(targetWord, isReverse) {
+                const distractors = [];
+                let attempts = 0;
+                if (this.masterList.length < 4) return ["Option A", "Option B", "Option C"]; 
+
+                while (distractors.length < 3 && attempts < 100) {
+                    const r = this.masterList[Math.floor(Math.random() * this.masterList.length)];
+                    const candidate = isReverse ? r.w : r.m;
+                    const forbidden = isReverse ? targetWord.w : targetWord.m;
+                    if (candidate !== forbidden && !distractors.includes(candidate)) distractors.push(candidate);
+                    attempts++;
+                }
+                return distractors;
+            }
+
+            showVocabQuestion() {
+                const q = this.questions[this.currentIndex];
+                document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
+                
+                const targetDisplay = document.getElementById('target-word');
+                targetDisplay.innerText = q.qText;
+                targetDisplay.className = (this.isReverseMode && q.qText.length > 8) 
+                    ? "f1-font text-3xl font-bold text-white tracking-wide break-words px-2"
+                    : "f1-font text-5xl font-bold text-white tracking-wide drop-shadow-lg break-words px-2";
+
+                document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
+                document.getElementById('feedback').innerText = '';
+                
+                const speakBtn = document.getElementById('speak-btn');
+                speakBtn.onclick = () => this.speak(q.w);
+                if (this.isAutoAudio && !this.isReverseMode) setTimeout(() => this.speak(q.w), 200);
+
+                const container = document.getElementById('options-container');
+                container.innerHTML = ''; 
+                
+                const revealBtn = document.createElement('button');
+                revealBtn.className = 'col-span-1 md:col-span-2 w-full h-24 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded-xl text-gray-400 f1-font text-lg uppercase tracking-widest active:border-yellow-500 active:text-yellow-500 transition-all flex flex-col items-center justify-center gap-1 animate-pulse';
+                revealBtn.innerHTML = `<span>VISUALIZE MEANING</span><span class="text-[10px] text-gray-500 font-mono">TAP TO UNLOCK</span>`;
+                revealBtn.onclick = () => { 
+                    container.innerHTML = '';
+                    q.o.forEach(opt => {
+                        const btn = document.createElement('button');
+                        const fontClass = this.isReverseMode ? "f1-font tracking-wider text-xl" : "text-lg";
+                        btn.className = `option-btn w-full text-left p-5 rounded-xl bg-white/5 border border-white/10 active:border-red-500 font-bold shadow-lg ${fontClass}`;
+                        btn.innerText = opt;
+                        btn.onclick = () => this.handleVocabAnswer(opt, q);
+                        container.appendChild(btn);
+                    });
+                };
+                container.appendChild(revealBtn);
+            }
+
+            handleVocabAnswer(selected, q) {
+                const feedback = document.getElementById('feedback');
+                const isCorrect = (selected === q.aText);
+                const streakDisp = document.getElementById('streak-display');
+                
+                // ★ CRITICAL FIX: Use 'q' not 'questionObj'
+                if (window.handleSRSUpdate) window.handleSRSUpdate(q, isCorrect);
+
+                if (isCorrect) {
+                    this.currentStreak++;
+                    if(this.currentStreak > this.maxStreak) this.maxStreak = this.currentStreak;
+                    
+                    if (this.currentStreak >= 2) { 
+                        streakDisp.innerText = `COMBO: ${this.currentStreak}`; 
+                        streakDisp.classList.remove('hidden'); 
+                    }
+
+                    if(this.isReverseMode) this.speak(q.w);
+                    this.currentIndex++;
+                    if (this.currentIndex < this.questions.length) this.showVocabQuestion();
+                    else this.finish();
+                } else {
+                    this.currentStreak = 0;
+                    streakDisp.classList.add('hidden');
+                    this.missCount++;
+                    feedback.innerText = `WRONG: ${q.w} = ${q.m}`;
+                    feedback.className = "mt-4 text-center h-6 font-bold text-red-500 animate-pulse";
+                    if (!this.missedWordsLog.find(item => item.w === q.w)) this.missedWordsLog.push({ w: q.w, m: q.m });
+                    
+                    this.questions.push(q);
+                    const btns = document.querySelectorAll('.option-btn');
+                    btns.forEach(b => b.disabled = true);
+                    setTimeout(() => { this.currentIndex++; this.showVocabQuestion(); }, 1200);
+                }
+            }
+
+            // --- IDIOM ENGINE ---
+            showIdiomQuestion() {
+                const data = this.questions[this.currentIndex];
+                document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1}/${this.questions.length}`;
+                document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
+                document.getElementById('feedback').innerHTML = "";
+                document.getElementById('idiom-next-btn').classList.add('hidden');
+                
+                document.getElementById('idiom-japanese').innerText = data.japanese;
+                document.getElementById('idiom-prefix').innerText = data.prefix;
+                document.getElementById('idiom-suffix').innerText = data.suffix;
+                
+                document.getElementById('answer-slot').classList.remove('correct-lane', 'wrong-lane');
+                document.getElementById('answer-slot').innerHTML = '';
+
+                this.userAns = [];
+                this.currentIdiomParts = [...data.parts];
+                this.shuffledIdiomParts = [...data.parts];
+                this.shuffle(this.shuffledIdiomParts);
+                
+                this.isLocked = false;
+                this.renderIdiomPool();
+            }
+
+            renderIdiomPool() {
+                const poolEl = document.getElementById('word-pool');
+                poolEl.innerHTML = '';
+                const remaining = this.getRemainingParts(this.shuffledIdiomParts, this.userAns);
+                
+                remaining.forEach((word) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'chip-btn chip-pool f1-font px-4 py-3 rounded-lg text-lg border border-gray-700 shadow-md active:bg-gray-700';
+                    btn.innerText = word;
+                    if(this.isLocked) btn.classList.add('locked');
+                    btn.onclick = () => { if(!this.isLocked) this.moveWordToSlot(word); };
+                    poolEl.appendChild(btn);
+                });
+            }
+
+            renderIdiomSlot() {
+                const slotEl = document.getElementById('answer-slot');
+                slotEl.innerHTML = '';
+                this.userAns.forEach((word, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'chip-btn chip-slot f1-font px-3 py-2 rounded-md text-lg';
+                    btn.innerText = word;
+                    if(this.isLocked) btn.classList.add('locked');
+                    btn.onclick = () => { if(!this.isLocked) this.moveWordToPool(idx); };
+                    slotEl.appendChild(btn);
+                });
+                this.checkIdiomWin();
+            }
+
+            moveWordToSlot(word) {
+                this.userAns.push(word);
+                this.renderIdiomPool();
+                this.renderIdiomSlot();
+            }
+
+            moveWordToPool(idx) {
+                this.userAns.splice(idx, 1);
+                this.renderIdiomPool();
+                this.renderIdiomSlot();
+            }
+
+            getRemainingParts(allParts, usedParts) {
+                const pool = [...allParts];
+                const used = [...usedParts];
+                used.forEach(u => {
+                    const i = pool.indexOf(u);
+                    if (i > -1) pool.splice(i, 1);
+                });
+                return pool;
+            }
+
+            checkIdiomWin() {
+                const correctOrder = this.questions[this.currentIndex].parts;
+                const slotEl = document.getElementById('answer-slot');
+                if (this.userAns.length !== correctOrder.length) return;
+                const isCorrect = this.userAns.every((val, index) => val === correctOrder[index]);
+
+                if (isCorrect) {
+                    slotEl.classList.add('correct-lane');
+                    document.getElementById('feedback').innerHTML = "<span class='text-[#39ff14] text-lg'>✅ PURPLE SECTOR</span>";
+                    slotEl.querySelectorAll('.chip-btn').forEach(c => c.classList.add('chip-correct'));
+                    
+                    const nextBtn = document.getElementById('idiom-next-btn');
+                    nextBtn.classList.remove('hidden');
+                    nextBtn.onclick = () => {
+                        this.currentIndex++;
+                        if (this.currentIndex < this.questions.length) this.showIdiomQuestion();
+                        else this.finish();
+                    };
+                } else {
+                    this.missCount++;
+                    if (!this.missedWordsLog.find(item => item.w === "Idiom Order")) {
+                        this.missedWordsLog.push({ w: "Idiom Order Error", m: this.questions[this.currentIndex].japanese });
+                    }
+                    this.isLocked = true;
+                    document.getElementById('feedback').innerHTML = "<span class='text-[#e10600]'>⚠️ CRASHED! RESETTING...</span>";
+                    slotEl.classList.add('wrong-lane', 'animate-shake');
+                    setTimeout(() => {
+                        slotEl.classList.remove('animate-shake', 'wrong-lane');
+                        document.getElementById('feedback').innerHTML = "";
+                        this.userAns = [];
+                        this.isLocked = false;
+                        this.renderIdiomPool();
+                        this.renderIdiomSlot();
+                    }, 800);
+                }
+            }
+
+            // --- COMMON UTILS ---
+            startTimer() {
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => { document.getElementById('timer').innerText = ((Date.now() - this.startTime) / 1000).toFixed(2) + 's'; }, 50);
+            }
+
+            shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            // ★ HELPER FOR PASS COPY
+            copyToClipboard(text, btnElement) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btnElement.innerText = "AUTO-COPIED!";
+                    btnElement.classList.remove("bg-black", "text-white");
+                    btnElement.classList.add("bg-green-500", "text-black", "border", "border-green-400");
+                    setTimeout(() => {
+                        btnElement.innerText = "COPY LICENSE ID";
+                        btnElement.classList.add("bg-black", "text-white");
+                        btnElement.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
+                    }, 3000);
+                }).catch(err => {
+                    console.log("Auto-copy blocked:", err);
+                    btnElement.innerText = "COPY LICENSE ID";
+                });
+            }
+
+            finish() {
+                clearInterval(this.timerInterval);
+                document.getElementById('quiz-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+                
+                const totalTime = (Date.now() - this.startTime) / 1000;
+                
+                // ★ FIXED ACCURACY FORMULA
+                const totalQs = this.questions.length;
+                let accuracy = (totalQs > 0) ? Math.max(0, ((totalQs - this.missCount) / totalQs) * 100) : 0;
+
+                const accDisplay = document.getElementById('accuracy-display');
+                accDisplay.innerText = `${accuracy.toFixed(1)}%`;
+                
+                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
+                document.getElementById('result-title').innerText = "CHECKERED FLAG";
+                
+                const passArea = document.getElementById('pass-issue-area');
+                const failMsg = document.getElementById('fail-message');
+                const passBtn = document.getElementById('copy-pass-btn');
+
+                // ★ AUTO-COPY LOGIC
+                if (accuracy >= 90) {
+                    accDisplay.style.color = "#4ade80"; 
+                    passArea.classList.remove('hidden');
+                    failMsg.classList.add('hidden');
+                    
+                    const licenseId = `barcelona`;
+                    
+                    navigator.clipboard.writeText(licenseId).then(() => {
+                        passBtn.innerText = "AUTO-COPIED!";
+                        passBtn.classList.remove("bg-black", "text-white");
+                        passBtn.classList.add("bg-green-500", "text-black", "border", "border-green-400");
+                        setTimeout(() => {
+                            passBtn.innerText = "COPY LICENSE ID";
+                            passBtn.classList.add("bg-black", "text-white");
+                            passBtn.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
+                        }, 3000);
+                    }).catch(err => {
+                        console.log("Auto-copy blocked:", err);
+                        passBtn.innerText = "COPY LICENSE ID"; 
+                    });
+
+                    passBtn.onclick = () => this.copyToClipboard(licenseId, passBtn);
+
+                } else {
+                    accDisplay.style.color = "#ef4444"; 
+                    passArea.classList.add('hidden');
+                    failMsg.classList.remove('hidden');
+                }
+                
+                const review = document.getElementById('review-list');
+                let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Lap Analysis</div>`;
+                if (this.missedWordsLog.length > 0) { summaryHtml += this.missedWordsLog.map(item => `<div class="mb-2 text-sm p-2 bg-red-900/10 border border-red-900/30 rounded"><span class="font-bold text-white block">${item.w}</span><span class="text-gray-400">${item.m}</span></div>`).join(''); } else { summaryHtml += '<p class="text-green-500 font-bold">Perfect Lap. No Issues Detected.</p>'; }
+                review.innerHTML = summaryHtml;
+                
+                const nextBtn = document.getElementById('next-round-btn');
+                if (this.mode === 'vocab' && !this.isPitStopMode && this.currentRoundIndex + 1 < this.vocabRounds.length) {
+                    nextBtn.classList.remove('hidden');
+                    nextBtn.onclick = () => { document.getElementById('round-selector').value = this.currentRoundIndex + 1; this.start(); };
+                } else { nextBtn.classList.add('hidden'); }
+                
+                if (window.fetchSRSItems) window.fetchSRSItems();
+                if (window.incrementDailyLaps) window.incrementDailyLaps(); 
+
+                if (this.mode === 'vocab' && !this.isPitStopMode && window.recordLapTime && window.currentUser) {
+                    const roundName = this.vocabRounds[this.currentRoundIndex] ? this.vocabRounds[this.currentRoundIndex].name : "Custom";
+                    const correct = Math.max(0, totalQs - this.missCount);
+                    const scoreStr = `${correct}/${totalQs}`;
+                    window.recordLapTime(accuracy, totalTime, roundName, scoreStr, this.maxStreak);
+                }
+            }
+
+            returnToGrid() {
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+                if (window.fetchSRSItems) window.fetchSRSItems();
+            }
+            
+            updatePitStopButton(count) {
+                const text = document.getElementById('mistake-count-display');
+                const overlay = document.getElementById('pit-alert-overlay');
+                if (count > 0) {
+                    text.innerText = "CRITICAL"; text.classList.remove('text-green-500'); text.classList.add('text-red-500');
+                    overlay.classList.remove('hidden'); overlay.onclick = () => this.startPitStop();
+                } else {
+                    text.innerText = "OPTIMAL"; text.classList.add('text-green-500'); text.classList.remove('text-red-500');
+                    overlay.classList.add('hidden');
+                }
+            }
+            
+            startPitStop() {
+                if (!this.dueMistakes || this.dueMistakes.length === 0) return;
+                this.isPitStopMode = true; 
+                this.switchMode('vocab'); 
+                
+                this.questions = this.dueMistakes.map(item => {
+                    const word = item.word || item.w;
+                    const meaning = item.meaning || item.m;
+                    const targetWord = { w: word, m: meaning };
+                    
+                    const distractors = this.getDistractors(targetWord, false);
+                    const options = [targetWord.m, ...distractors].sort(() => Math.random() - 0.5);
+                    return { w: targetWord.w, m: targetWord.m, qText: targetWord.w, aText: targetWord.m, o: options, docId: item.id, interval: item.interval || 0, repetitions: item.repetitions || 0, easeFactor: item.easeFactor || 2.5 };
+                });
+                
+                this.questions.sort(() => Math.random() - 0.5);
+                this.currentIndex = 0; this.missCount = 0; this.missedWordsLog = [];
+                document.getElementById('circuit-name').innerText = "SRS PIT STOP";
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                
+                document.getElementById('vocab-interface').classList.remove('hidden');
+                document.getElementById('idiom-interface').classList.add('hidden');
+
+                this.startTime = Date.now();
+                this.startTimer();
+                this.showVocabQuestion();
+            }
+            
+            openTelemetry() {
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('telemetry-screen').classList.remove('hidden');
+                const mistakes = this.allMistakes || [];
+                const worstWords = [...mistakes].sort((a, b) => (a.easeFactor || 2.5) - (b.easeFactor || 2.5)).slice(0, 20);
+                const listContainer = document.getElementById('worst-words-list');
+                if (worstWords.length === 0) listContainer.innerHTML = `<div class="text-gray-500 text-xs italic">No degradation.</div>`;
+                else {
+                    listContainer.innerHTML = worstWords.map(item => `
+                        <div class="flex justify-between items-center bg-gray-900/40 p-3 rounded-lg border-l-2 border-red-500 mb-1">
+                            <span class="font-bold text-gray-200 text-xs f1-font">${item.word || item.w}</span>
+                            <span class="text-[10px] text-gray-500 font-mono">EF:${(item.easeFactor||2.5).toFixed(2)}</span>
+                        </div>`).join('');
+                }
+                const ctx = document.getElementById('weaknessRadarChart').getContext('2d');
+                if (this.telemetryChart) this.telemetryChart.destroy();
+                const buckets = [0, 0, 0, 0, 0];
+                mistakes.forEach(m => {
+                    const int = m.interval || 0;
+                    if (int <= 1) buckets[0]++; else if (int <= 6) buckets[1]++; else if (int <= 14) buckets[2]++; else if (int <= 30) buckets[3]++; else buckets[4]++;
+                });
+                this.telemetryChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: ['1d', '2-6d', '2w', '1mo', 'Master'], datasets: [{ data: buckets, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'], borderColor: '#333', borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } }
+                });
+            }
+            closeOverlay(id) {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+            }
+        }
+
+        window.quiz = new HybridQuiz();
+    </script>
+    
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+      import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
+        authDomain: "english-test-8ad4a.firebaseapp.com",
+        projectId: "english-test-8ad4a",
+        storageBucket: "english-test-8ad4a.firebasestorage.app",
+        messagingSenderId: "998730699699",
+        appId: "1:998730699699:web:8245c7259cec7dd20231c6",
+        measurementId: "G-FC2LRFVFGF"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      
+      const db = initializeFirestore(app, {
+          localCache: persistentLocalCache({
+              tabManager: persistentMultipleTabManager()
+          })
+      });
+
+      const gateScreen = document.getElementById('gate-screen');
+      const startScreen = document.getElementById('start-screen');
+      const gateLoginBtn = document.getElementById('gate-login-btn');
+      const logoutBtn = document.getElementById('logout-btn');
+      const userNameSpan = document.getElementById('user-name');
+      const loginStatus = document.getElementById('login-status');
+
+      window.currentUser = null;
+
+      gateLoginBtn.addEventListener('click', async () => {
+        loginStatus.innerText = "Connecting to Paddock...";
+        const provider = new GoogleAuthProvider();
+        try { await signInWithPopup(auth, provider); } 
+        catch (error) { console.error(error); loginStatus.innerText = "Access Denied. Try Again."; }
+      });
+
+      logoutBtn.addEventListener('click', () => { 
+        if(window.currentUser) {
+            localStorage.removeItem(`srs_data_${window.currentUser.uid}`);
+            localStorage.removeItem(`srs_time_${window.currentUser.uid}`);
+        }
+        signOut(auth); 
+      });
+
+      const statsRef = doc(db, "stats", "daily_global");
+      
+      onSnapshot(statsRef, (doc) => {
+          if (doc.exists()) {
+              const data = doc.data();
+              const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
+              if (data.date === todayStr) {
+                  document.getElementById('daily-laps-display').innerText = data.count;
+              } else {
+                  document.getElementById('daily-laps-display').innerText = 0;
+              }
+          }
+      });
+
+      window.incrementDailyLaps = async () => {
+          const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
+          try {
+              await runTransaction(db, async (transaction) => {
+                  const sfDoc = await transaction.get(statsRef);
+                  if (!sfDoc.exists()) {
+                      transaction.set(statsRef, { date: todayStr, count: 1 });
+                  } else {
+                      const data = sfDoc.data();
+                      if (data.date !== todayStr) {
+                          transaction.update(statsRef, { date: todayStr, count: 1 });
+                      } else {
+                          transaction.update(statsRef, { count: data.count + 1 });
+                      }
+                  }
+              });
+          } catch (e) {
+              console.error("Stats Error:", e);
+          }
+      };
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            window.currentUser = user;
+            gateScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            userNameSpan.textContent = user.displayName || "TEST DRIVER";
+            window.fetchSRSItems();
+        } else {
+            window.currentUser = null;
+            gateScreen.classList.remove('hidden');
+            startScreen.classList.add('hidden');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            loginStatus.innerText = "Waiting for connection...";
+        }
+      });
+
+      window.fetchSRSItems = async () => {
+        if (!window.currentUser) return;
+        const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
+        const TIME_KEY = `srs_time_${window.currentUser.uid}`;
+        const CACHE_DURATION = 12 * 60 * 60 * 1000; 
+
+        const now = Date.now();
+        const lastFetch = parseInt(localStorage.getItem(TIME_KEY) || '0');
+        let allItems = [];
+
+        if (now - lastFetch < CACHE_DURATION && localStorage.getItem(CACHE_KEY)) {
+            const rawData = JSON.parse(localStorage.getItem(CACHE_KEY));
+            allItems = rawData.map(item => ({
+                ...item,
+                nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) }, 
+                seconds: item.nextReviewSeconds 
+            }));
+        } else {
+            try {
+                const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
+                const snapshot = await getDocs(mistakesRef);
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    allItems.push({ 
+                        id: doc.id, 
+                        ...d,
+                        nextReviewSeconds: d.nextReview.seconds 
+                    });
+                });
+                localStorage.setItem(CACHE_KEY, JSON.stringify(allItems));
+                localStorage.setItem(TIME_KEY, now.toString());
+                allItems = allItems.map(item => ({
+                    ...item,
+                    nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) }
+                }));
+            } catch (e) { console.error("Telemetry Error:", e); }
+        }
+
+        if (window.quiz.masterList.length === 0 && allItems.length > 0) {
+            window.quiz.masterList = allItems.map(i => ({ w: i.word || i.w, m: i.meaning || i.m }));
+            window.quiz.generateRounds();
+            window.quiz.initUI();
+        }
+
+        const dueItems = [];
+        const nowTs = Date.now() / 1000;
+        allItems.forEach(item => { if (item.nextReviewSeconds <= nowTs) dueItems.push(item); });
+
+        window.quiz.allMistakes = allItems;
+        window.quiz.dueMistakes = dueItems;
+        window.quiz.updatePitStopButton(dueItems.length);
+      };
+
+      window.handleSRSUpdate = async (questionObj, isCorrect) => {
+        if (!window.currentUser) return;
+        const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
+        const now = new Date();
+        const safeWordId = btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
+        const targetRef = questionObj.docId ? doc(mistakesRef, questionObj.docId) : doc(mistakesRef, safeWordId);
+        
+        const currentParams = { interval: questionObj.interval || 0, repetitions: questionObj.repetitions || 0, easeFactor: questionObj.easeFactor || 2.5 };
+        let nextInterval, nextRepetitions, nextEaseFactor;
+
+        if (!isCorrect) {
+            nextRepetitions = 0; nextInterval = 1; nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2);
+        } else {
+            nextRepetitions = currentParams.repetitions + 1;
+            if (nextRepetitions === 1) nextInterval = 1; else if (nextRepetitions === 2) nextInterval = 6; else nextInterval = Math.round(currentParams.interval * currentParams.easeFactor);
+            nextEaseFactor = currentParams.easeFactor + 0.1;
+        }
+
+        const nextDate = new Date(); nextDate.setDate(now.getDate() + nextInterval);
+
+        // Optimistic Update
+        const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
+        let cachedData = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+        const targetIndex = cachedData.findIndex(i => i.word === questionObj.w);
+        const newItemData = { id: questionObj.docId || safeWordId, word: questionObj.w, meaning: questionObj.meaning || questionObj.m, nextReviewSeconds: Math.floor(nextDate.getTime() / 1000), interval: nextInterval, repetitions: nextRepetitions, easeFactor: nextEaseFactor };
+        if (targetIndex > -1) cachedData[targetIndex] = { ...cachedData[targetIndex], ...newItemData }; else cachedData.push(newItemData);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cachedData));
+
+        await setDoc(targetRef, { word: questionObj.w, meaning: questionObj.meaning || questionObj.m, nextReview: Timestamp.fromDate(nextDate), interval: nextInterval, repetitions: nextRepetitions, easeFactor: nextEaseFactor, lastReviewed: Timestamp.fromDate(now) }, { merge: true });
+      };
+
+      window.recordLapTime = async (acc, time, round, score, streak) => {
+        if (!window.currentUser) return;
+        try {
+            await addDoc(collection(db, "leaderboard"), {
+                uid: window.currentUser.uid,
+                driver: window.currentUser.displayName || "Unknown",
+                accuracy: parseFloat(acc.toFixed(1)),
+                time: parseFloat(time.toFixed(2)),
+                round: round,
+                score: score,
+                streak: streak || 0,
+                date: Timestamp.now()
+            });
+            console.log("Lap time sent to Leaderboard");
+        } catch(e) {
+            console.error("Leaderboard Error:", e);
+        }
+      };
+
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js')
+            .then(reg => console.log('Service Worker Registered!', reg.scope))
+            .catch(err => console.log('Service Worker Failed:', err));
+        });
+      }
+    </script>
+</body>
+</html>
+
