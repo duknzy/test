@@ -27,19 +27,12 @@
             --neon-green: #39ff14;
         }
 
-        /* 1. 基本設定：重複を避けるため、ここにまとめる */
         html, body {
-            height: 100dvh; /* 画面の高さいっぱい */
+            height: 100%;
             width: 100%;
-            margin: 0;
-            
-            /* ★重要：ここでパディングを「0」にする */
-            padding: 0;
-            
-            /* ★最重要：背景色を「透明」にする。これを黒(#0b0e14)にすると背景画像が見えなくなる */
-            background-color: transparent; 
-            
-            overflow: hidden;
+            overflow: hidden; 
+            background-color: var(--rb-navy);
+            color: #e2e8f0;
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             touch-action: manipulation;
@@ -49,46 +42,30 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 2. 背景画像の設定：回転と位置調整 */
+        body {
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+
+        .f1-font { font-family: 'Chakra Petch', sans-serif; }
+
         .carbon-bg {
             background-image: 
-                /* グラデーション：回転後に「下」が暗くなるように調整済み */
-                linear-gradient(rgba(11, 14, 20, 0.9), rgba(11, 14, 20, 0.4)), 
-                url('verstappen.png');
-            
+                linear-gradient(rgba(11, 14, 20, 0.9), rgba(11, 14, 20, 0.95)),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            background-attachment: fixed;
             background-size: cover;
-            background-position: center center; 
-            background-repeat: no-repeat;
-            
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100dvh;
-            z-index: -1; 
-
-            /* ★ここが抜けていた！画像を180度回して、正しい向きにする */
-            transform: rotate(180deg);
-            transform-origin: center center;
-            scale: 1.02; /* 隙間対策の拡大 */
         }
-        
-        /* 元の #app 設定を探して、paddingの部分をこう書き換える */
-#app {
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    position: relative;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 
-    /* ★ここが変更点：余白設定を body からここに移植 */
-    /* 上下の安全マージン + デザイン的な余白(1rem) を確保 */
-    padding-top: max(1rem, env(safe-area-inset-top));
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
+        #app {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 1rem;
+            position: relative;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
         #app::-webkit-scrollbar { display: none; }
 
         .race-card {
@@ -218,24 +195,6 @@
             opacity: 1;
             pointer-events: auto;  /* クリックを確実に受け付ける */
         }
-        /* チャンピオン・レッドの特別仕様 */
-        .btn-start-engine {
-            background: linear-gradient(135deg, #e10600 0%, #aa0500 100%) !important;
-            color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 
-                0 4px 0 #800400, /* ボタンの厚み */
-                0 0 20px rgba(225, 6, 0, 0.5) !important; /* レッドブル・グロウ */
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
-            transition: all 0.1s active;
-        }
-
-        .btn-start-engine:active {
-            transform: translateY(3px) !important; /* 押し込む感触 */
-            box-shadow: 
-                0 1px 0 #800400,
-                0 0 30px rgba(225, 6, 0, 0.8) !important; /* 押した時に発光が強まる */
-        }
     </style>
 </head>
 <body class="carbon-bg">
@@ -293,9 +252,10 @@
                 </button>
             </div>
 
-            <button onclick="quiz.start()" class="w-full f1-font btn-start-engine py-5 rounded-xl font-bold tracking-[0.2em] uppercase shadow-lg text-xl mt-2">
-    START ENGINE
-</button>
+            <button onclick="quiz.start()" class="w-full f1-font bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white py-5 rounded-xl font-bold tracking-[0.2em] uppercase transition-all transform active:scale-95 shadow-lg shadow-red-900/30 text-xl border-b-4 border-red-900 mt-2">
+                Start Engine
+            </button>
+
             <div class="text-center">
                 <p id="strategy-summary" class="text-[10px] text-gray-500 font-mono">Setup: Standard / Medium Tires</p>
             </div>
