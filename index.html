@@ -61,29 +61,28 @@
         .carbon-bg {
             /* 2. 背景画像を「画面」に対して固定し、要素の高さに引きずられないようにする */
             background-image: 
-                linear-gradient(rgba(11, 14, 20, 0.6), rgba(11, 14, 20, 0.85)), 
+                /* グラデーションの順序を調整: 回転後に下が暗くなるように設定 */
+                linear-gradient(rgba(11, 14, 20, 0.9), rgba(11, 14, 20, 0.4)), 
                 url('verstappen.png');
             
             background-size: cover;
-            background-position: center bottom; /* 下端を基準にする */
+            /* 修正: bottom基準だと切れる可能性があるため、centerに変更して全体をカバーさせる */
+            background-position: center center; 
             background-repeat: no-repeat;
             
-            /* 3. 背景の固定方法を「fixed」から「絶対配置」に近い形に変更 */
+            /* 3. 背景の固定設定 */
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1; /* コンテンツの背後に配置 */
-        }
+            width: 100vw;  /* 画面幅いっぱい */
+            height: 100dvh; /* 画面高さいっぱい */
+            z-index: -1; 
 
-        /* 4. アプリ本体のコンテナにだけスクロールを許可する */
-        #app {
-            height: 100dvh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            position: relative;
-            z-index: 1;
+            /* ★修正: 画像を180度回転させて正位置に戻す */
+            transform: rotate(180deg);
+            /* 回転によって端に隙間ができないよう、わずかに拡大してマージンを稼ぐ */
+            transform-origin: center center;
+            scale: 1.02; 
         }
         
         #app {
