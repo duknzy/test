@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RB Hybrid GP">
-    <link rel="apple-touch-icon" href="icon.jpg">
+    <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
 
     <title>RB Hybrid Learning System</title>
@@ -87,7 +87,7 @@
         .option-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.1); }
         .option-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        /* Idiom Chips */
+        /* Idiom & Spelling Chips */
         .chip-btn {
             transition: all 0.15s;
             position: relative;
@@ -115,6 +115,19 @@
             color: black !important; 
             border-color: var(--neon-green) !important; 
             box-shadow: 0 0 15px var(--neon-green); 
+        }
+        
+        /* Letter Chips for Spelling */
+        .letter-chip {
+            min-width: 40px;
+            height: 45px;
+            font-size: 1.25rem;
+            font-family: 'Chakra Petch', monospace;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
         }
 
         .answer-slot {
@@ -168,6 +181,20 @@
         .wb-scroll::-webkit-scrollbar { width: 4px; }
         .wb-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
         .wb-scroll::-webkit-scrollbar-thumb { background: #e10600; border-radius: 4px; }
+        
+        /* Accordion Transition */
+        .strategy-panel {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .strategy-panel.open {
+            max-height: 80vh;      /* 画面の80%まで広がるように変更 */
+            overflow-y: auto;      /* 内容が溢れたらスクロールできるようにする */
+            opacity: 1;
+            pointer-events: auto;  /* クリックを確実に受け付ける */
+        }
     </style>
 </head>
 <body class="carbon-bg">
@@ -175,7 +202,7 @@
     <div id="app" class="w-full max-w-2xl mx-auto flex flex-col justify-center">
         
         <div id="gate-screen" class="race-card p-8 rounded-2xl shadow-2xl text-center relative overflow-hidden animate-slide-in my-auto">
-            <h1 class="f1-font text-5xl mb-2 font-bold text-white tracking-wider">RB<span class="text-red-600">-26</span></h1>
+            <h1 class="f1-font text-5xl mb-2 font-bold text-white tracking-wider">RB<span class="text-red-600">-28</span></h1>
             <p class="text-gray-400 font-mono text-xs uppercase tracking-[0.4em] mb-12">Hybrid Learning System</p>
             <button id="gate-login-btn" class="w-full f1-font bg-white hover:bg-gray-200 text-black px-8 py-4 rounded-xl font-bold tracking-widest uppercase transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95">
                 <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.2,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.1,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.25,22C17.6,22 21.5,18.33 21.5,12.91C21.5,11.76 21.35,11.1 21.35,11.1V11.1Z" /></svg>
@@ -184,59 +211,128 @@
             <p id="login-status" class="mt-6 text-[10px] text-gray-600 font-mono">System Standby...</p>
         </div>
 
-        <div id="start-screen" class="hidden race-card p-6 rounded-2xl relative z-10 animate-slide-in my-auto">
+        <div id="start-screen" class="hidden race-card p-6 rounded-2xl relative z-10 animate-slide-in my-auto flex flex-col gap-4">
             
-            <div class="flex justify-between items-end mb-6 border-b border-gray-800 pb-4">
-                <div class="text-left">
-                    <div class="flex items-center gap-2 mb-1">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                <div>
+                    <div class="flex items-center gap-2">
                         <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Driver</p>
+                        <p id="user-name" class="f1-font text-sm text-gray-300 font-bold truncate max-w-[150px]">DRIVER</p>
                     </div>
-                    <p id="user-name" class="f1-font text-2xl text-white font-bold truncate max-w-[180px]">TEST DRIVER</p>
                 </div>
-                <button id="logout-btn" class="text-[10px] text-red-500 hover:text-white border border-red-900/50 hover:bg-red-600 px-3 py-1 rounded transition-colors uppercase tracking-wider">Sign Out</button>
+                <div class="text-right">
+                    <span class="text-[9px] text-gray-500 uppercase">Daily Laps</span>
+                    <span id="daily-laps-display" class="f1-font text-lg text-white font-bold ml-1">0</span>
+                </div>
             </div>
 
-            <div class="flex bg-black/40 p-1 rounded-xl mb-6 border border-gray-800">
-                <button onclick="quiz.switchMode('vocab')" id="mode-vocab" class="mode-btn active flex-1 py-3 text-xs font-bold uppercase tracking-widest f1-font">Vocab</button>
-                <button onclick="quiz.switchMode('idiom')" id="mode-idiom" class="mode-btn flex-1 py-3 text-xs font-bold uppercase tracking-widest f1-font">Idiom</button>
+            <div class="flex bg-black/40 p-1 rounded-xl border border-gray-800">
+                <button onclick="quiz.switchMode('vocab')" id="mode-vocab" class="mode-btn active flex-1 py-2 text-xs font-bold uppercase tracking-widest f1-font">Vocab</button>
+                <button onclick="quiz.switchMode('idiom')" id="mode-idiom" class="mode-btn flex-1 py-2 text-xs font-bold uppercase tracking-widest f1-font">Idiom</button>
             </div>
 
-            <div id="vocab-settings" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4 mb-2">
-                    <div class="bg-black/30 p-3 rounded-xl border border-gray-800 text-center">
-                        <p class="text-[9px] text-gray-500 uppercase mb-1">Daily Laps</p>
-                        <span id="daily-laps-display" class="f1-font text-2xl text-white font-bold">0</span>
+            <div id="idiom-settings" class="hidden">
+                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800 text-center">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest">Total Idioms</p>
+                    <div class="f1-font text-3xl text-white font-bold" id="idiom-count-display">0</div>
+                </div>
+            </div>
+
+            <div id="vocab-status-area" class="grid grid-cols-2 gap-3">
+                <div id="tire-status-box" class="bg-black/30 p-3 rounded-xl border border-gray-800 text-center relative overflow-hidden group">
+                    <p class="text-[9px] text-gray-500 uppercase">Condition</p>
+                    <span id="mistake-count-display" class="f1-font text-lg text-green-500 font-bold">OPTIMAL</span>
+                    <div id="pit-alert-overlay" class="hidden absolute inset-0 bg-red-900/95 flex items-center justify-center cursor-pointer active:bg-red-800 transition-colors">
+                        <span class="f1-font text-white font-bold animate-pulse text-xs">PIT STOP REQ</span>
                     </div>
-                    <div id="tire-status-box" class="bg-black/30 p-3 rounded-xl border border-gray-800 text-center relative overflow-hidden">
-                        <p class="text-[9px] text-gray-500 uppercase mb-1">Condition</p>
-                        <span id="mistake-count-display" class="f1-font text-xl text-green-500 font-bold">OPTIMAL</span>
-                        <div id="pit-alert-overlay" class="hidden absolute inset-0 bg-red-900/95 flex items-center justify-center cursor-pointer active:bg-red-800 transition-colors">
-                            <span class="f1-font text-white font-bold animate-pulse text-xs">PIT STOP REQ</span>
+                </div>
+                <button onclick="quiz.openTelemetry()" class="bg-black/30 p-3 rounded-xl border border-gray-800 flex flex-col items-center justify-center hover:bg-gray-800 transition-colors">
+                    <span class="text-xl">📊</span>
+                    <span class="text-[8px] text-gray-400 uppercase mt-1">Telemetry</span>
+                </button>
+            </div>
+
+            <button onclick="quiz.start()" class="w-full f1-font bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white py-5 rounded-xl font-bold tracking-[0.2em] uppercase transition-all transform active:scale-95 shadow-lg shadow-red-900/30 text-xl border-b-4 border-red-900 mt-2">
+                Start Engine
+            </button>
+
+            <div class="text-center">
+                <p id="strategy-summary" class="text-[10px] text-gray-500 font-mono">Setup: Standard / Medium Tires</p>
+            </div>
+
+            <button onclick="quiz.toggleStrategyMenu()" id="strategy-toggle-btn" class="w-full bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-400 py-3 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2 transition-colors">
+                <span>⚙️</span> Race Strategy (Settings) <span>▼</span>
+            </button>
+
+            <div id="strategy-panel" class="strategy-panel bg-gray-900/30 rounded-xl border border-gray-800 mt-1">
+                <div class="p-4 space-y-4">
+                    
+                    <div class="flex border-b border-gray-700 pb-2 mb-2">
+                        <button onclick="quiz.switchStrategyTab('normal')" id="tab-normal" class="flex-1 text-xs font-bold text-white border-b-2 border-red-500 pb-1">NORMAL GP</button>
+                        <button onclick="quiz.switchStrategyTab('random')" id="tab-random" class="flex-1 text-xs font-bold text-gray-500 border-b-2 border-transparent pb-1">RANDOM GP</button>
+                    </div>
+
+                    <div id="strategy-normal" class="space-y-4">
+                        <div>
+                            <label class="text-gray-500 text-[10px] uppercase tracking-widest block mb-1">Circuit Selection</label>
+                            <div class="relative">
+                                <select id="round-selector" class="w-full bg-black/50 text-white p-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-sm appearance-none" onchange="quiz.updateSummary()"></select>
+                                <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-gray-500 uppercase">Custom:</span>
+                            <input type="number" id="custom-start" placeholder="1" class="w-14 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-sm font-mono">
+                            <span class="text-gray-500">-</span>
+                            <input type="number" id="custom-end" placeholder="50" class="w-14 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-sm font-mono">
+                            <button onclick="quiz.createCustomRound()" class="flex-1 bg-gray-800 active:bg-gray-700 text-white text-[9px] font-bold uppercase rounded-lg py-2 border border-gray-600">Set Range</button>
                         </div>
                     </div>
-                </div>
 
-                <div>
-                    <label class="text-gray-500 text-[10px] uppercase tracking-widest block mb-1 pl-1">Circuit Selection</label>
-                    <div class="relative">
-                        <select id="round-selector" class="w-full bg-black/50 text-white p-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-base appearance-none"></select>
-                        <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                    <div id="strategy-random" class="hidden space-y-4">
+                        <p class="text-[10px] text-gray-400">Generate a random race from a specific range.</p>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1">
+                                <label class="text-[9px] text-gray-500 uppercase block">Range Start</label>
+                                <input type="number" id="rand-start" placeholder="1" class="w-full bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-sm font-mono">
+                            </div>
+                            <span class="text-gray-500 pt-4">-</span>
+                            <div class="flex-1">
+                                <label class="text-[9px] text-gray-500 uppercase block">Range End</label>
+                                <input type="number" id="rand-end" placeholder="Max" class="w-full bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-sm font-mono">
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-[9px] text-yellow-500 uppercase block font-bold">Qty (Laps)</label>
+                                <input type="number" id="rand-qty" placeholder="20" class="w-full bg-black text-white p-2 rounded-lg border border-yellow-600/50 focus:border-yellow-500 text-center text-sm font-mono">
+                            </div>
+                        </div>
+                        <button onclick="quiz.createRandomRound()" class="w-full bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 border border-indigo-700 py-3 rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2">
+                            <span>🎲</span> Create Random Grid
+                        </button>
                     </div>
-                </div>
 
-                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
-                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-3 pl-1">Tire Compound (Length)</p>
-                    <div class="flex justify-between gap-2 mb-4">
-                        <button onclick="quiz.setTireStrategy(10, 'soft')" id="tire-soft" class="tire-btn tire-soft flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">🔴 Soft<br><span class="text-[10px] opacity-70">10 Qs</span></button>
-                        <button onclick="quiz.setTireStrategy(20, 'medium')" id="tire-medium" class="tire-btn tire-medium active flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">🟡 Med<br><span class="text-[10px] opacity-70">20 Qs</span></button>
-                        <button onclick="quiz.setTireStrategy(50, 'hard')" id="tire-hard" class="tire-btn tire-hard flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">⚪ Hard<br><span class="text-[10px] opacity-70">50 Qs</span></button>
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Tire Strategy (Base Qty)</p>
+                        <div class="flex justify-between gap-2">
+                            <button onclick="quiz.setTireStrategy(10, 'soft')" id="tire-soft" class="tire-btn tire-soft flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">🔴 S (10)</button>
+                            <button onclick="quiz.setTireStrategy(20, 'medium')" id="tire-medium" class="tire-btn tire-medium active flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">🟡 M (20)</button>
+                            <button onclick="quiz.setTireStrategy(50, 'hard')" id="tire-hard" class="tire-btn tire-hard flex-1 bg-black/40 text-gray-400 p-2 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider active:bg-gray-800">⚪ H (50)</button>
+                        </div>
                     </div>
-                    <div class="flex flex-col gap-3 border-t border-gray-800 pt-3">
+
+                    <div class="flex flex-col gap-3 border-t border-gray-700 pt-3">
                         <label class="flex items-center justify-between cursor-pointer group p-1">
                             <span class="text-xs font-bold text-gray-300 group-hover:text-cyan-400 transition-colors flex items-center gap-2"><span class="text-cyan-400">🔄</span> REVERSE GRID</span>
-                            <input type="checkbox" id="reverse-mode" class="accent-f1 w-5 h-5 cursor-pointer">
+                            <input type="checkbox" id="reverse-mode" class="accent-f1 w-5 h-5 cursor-pointer" onchange="quiz.toggleSpellingOption(); quiz.updateSummary()">
                         </label>
+                        <div id="spelling-option-container" class="hidden pl-4 border-l border-gray-700 ml-1">
+                             <label class="flex items-center justify-between cursor-pointer group p-1">
+                                <span class="text-xs font-bold text-gray-400 group-hover:text-pink-400 transition-colors flex items-center gap-2">
+                                    <span class="text-pink-500">🔠</span> MANUAL SHIFT (SPELL)
+                                </span>
+                                <input type="checkbox" id="spelling-mode" class="accent-f1 w-5 h-5 cursor-pointer" onchange="quiz.updateSummary()">
+                            </label>
+                        </div>
                         <label class="flex items-center justify-between cursor-pointer group p-1">
                             <span class="text-xs font-bold text-gray-300 group-hover:text-green-400 transition-colors flex items-center gap-2"><span class="text-green-500">🔊</span> RACE ENGINEER</span>
                             <input type="checkbox" id="audio-mode" class="accent-f1 w-5 h-5 cursor-pointer" checked>
@@ -246,42 +342,15 @@
                             <input type="checkbox" id="instant-mode" class="accent-f1 w-5 h-5 cursor-pointer">
                         </label>
                     </div>
-                </div>
 
-                <div class="pt-4 border-t border-gray-800">
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Garage Tools</p>
-                    <div class="mb-3 relative group">
-                        <input type="text" id="search-input" placeholder="Quick Scan (Search)..." class="w-full bg-black text-white p-3 pl-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-base transition-colors shadow-inner">
-                        <div id="search-results" class="hidden absolute bottom-full left-0 w-full mb-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"></div>
+                    <div class="pt-2 border-t border-gray-700">
+                        <input type="text" id="search-input" placeholder="Quick Scan (Search)..." class="w-full bg-black text-white p-2 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-sm mb-2">
+                        <div id="search-results" class="hidden absolute left-4 right-4 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"></div>
+                        <button onclick="quiz.openWordBook()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600 py-2 rounded-lg font-bold transition-all uppercase text-xs flex items-center justify-center gap-2">
+                            <span>📁</span> DATA CENTER
+                        </button>
                     </div>
-                    <div class="flex items-center gap-2 mb-3">
-                        <input type="number" id="custom-start" placeholder="1" class="w-16 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-base font-mono">
-                        <span class="text-gray-500">-</span>
-                        <input type="number" id="custom-end" placeholder="50" class="w-16 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-base font-mono">
-                        <button onclick="quiz.createCustomRound()" class="flex-1 bg-gray-800 active:bg-gray-700 text-white text-[10px] font-bold uppercase rounded-lg py-2 border border-gray-600">Set Custom</button>
-                    </div>
-                    <button onclick="quiz.openWordBook()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600 py-3 rounded-xl font-bold transition-all uppercase text-xs flex items-center justify-center gap-2">
-                        <span>📁</span> Component List (Word Book)
-                    </button>
                 </div>
-            </div>
-
-            <div id="idiom-settings" class="hidden space-y-4">
-                <div class="bg-gray-900/50 p-6 rounded-xl border border-gray-800 text-center">
-                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Total Idioms</p>
-                    <div class="f1-font text-5xl text-white font-bold" id="idiom-count-display">0</div>
-                    <p class="text-xs text-gray-500 mt-2">Sorting Challenge Mode</p>
-                </div>
-                <div class="bg-black/30 p-4 rounded-xl border border-gray-800 text-xs text-gray-400 leading-relaxed">
-                    <strong class="text-white block mb-1">INSTRUCTION:</strong>
-                    Arrange the shuffled chips to complete the sentence. Incorrect ordering will cause a temporary "Crash" penalty.
-                </div>
-            </div>
-
-            <button onclick="quiz.start()" class="mt-6 w-full f1-font bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white py-5 rounded-xl font-bold tracking-[0.2em] uppercase transition-all transform active:scale-95 shadow-lg shadow-red-900/30 text-xl border-b-4 border-red-900">Start Engine</button>
-            
-            <div id="vocab-tools" class="mt-4 pt-4 border-t border-gray-800">
-                <button onclick="quiz.openTelemetry()" class="w-full border border-gray-700 active:bg-gray-800 text-gray-400 py-4 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"><span>📊</span> Telemetry Data</button>
             </div>
         </div>
         
@@ -343,7 +412,16 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
                     </button>
                 </div>
+                
                 <div id="options-container" class="grid grid-cols-1 gap-3"></div>
+
+                <div id="spelling-interface" class="hidden w-full flex flex-col items-center">
+                    <div id="spelling-slots" class="flex flex-wrap gap-2 justify-center mb-6 min-h-[60px] p-2 bg-black/30 rounded-lg border-b-2 border-dashed border-gray-600 w-full transition-all">
+                        </div>
+                    <div id="spelling-pool" class="flex flex-wrap gap-2 justify-center w-full">
+                        </div>
+                    <p class="text-[10px] text-gray-500 mt-4 uppercase">Tip: Tap slot to Undo</p>
+                </div>
             </div>
 
             <div id="idiom-interface" class="flex-grow flex flex-col justify-between hidden">
@@ -400,7 +478,7 @@
     // ==========================================
     // DATA LOAD (Placeholders)
     // ==========================================
-    // 単語データ (ここにデータを貼り付けてくれ)
+    // 単語データ
     const rawData = `
     follow: ～の後に続く、～に従う
 consider: ～を考慮する
@@ -2538,9 +2616,14 @@ lest: ～しないように
             this.allMistakes = []; 
             this.bookmarkedOnly = false; // WB Filter
 
+            // Feature Flags & States
             this.isPitStopMode = false;
             this.isReverseMode = false;
             this.isInstantMode = false; 
+            this.isSpellingMode = false; 
+            this.spellingAns = []; // User's built word
+            this.spellingPoolState = []; // Track used letters
+
             const instantCheck = document.getElementById('instant-mode');
             if(instantCheck) {
                 instantCheck.addEventListener('change', (e) => {
@@ -2648,6 +2731,69 @@ lest: ～しないように
                 });
             }
             document.getElementById('idiom-count-display').innerText = idiomData.length;
+
+            // ★ Telemetry Recall: Resume Last Played Round
+            const lastPlayed = localStorage.getItem('rb26_last_round');
+            if (lastPlayed) {
+                const roundIdx = parseInt(lastPlayed);
+                if (!isNaN(roundIdx) && roundIdx < this.vocabRounds.length) {
+                    selector.value = roundIdx;
+                    const option = selector.options[roundIdx];
+                    if (option) option.text = "◀ LAST ▶ " + option.text;
+                }
+            }
+            this.updateSummary();
+        }
+
+        updateSummary() {
+            const selector = document.getElementById('round-selector');
+            let roundName = "Custom / Random";
+            if (selector.selectedIndex >= 0) {
+                roundName = selector.options[selector.selectedIndex].text;
+            }
+            
+            const tire = this.wordsPerRound;
+            const rev = document.getElementById('reverse-mode').checked ? "REV" : "STD";
+            const spell = document.getElementById('spelling-mode').checked && document.getElementById('reverse-mode').checked ? "+MANUAL" : "";
+            
+            document.getElementById('strategy-summary').innerText = `${roundName} | ${tire} Qs | ${rev}${spell}`;
+        }
+
+        toggleStrategyMenu() {
+            const panel = document.getElementById('strategy-panel');
+            const btn = document.getElementById('strategy-toggle-btn');
+            if (panel.classList.contains('open')) {
+                panel.classList.remove('open');
+                btn.classList.remove('bg-gray-800', 'text-white');
+                btn.classList.add('bg-gray-900', 'text-gray-400');
+            } else {
+                panel.classList.add('open');
+                btn.classList.remove('bg-gray-900', 'text-gray-400');
+                btn.classList.add('bg-gray-800', 'text-white');
+            }
+        }
+
+        switchStrategyTab(tab) {
+            const normalDiv = document.getElementById('strategy-normal');
+            const randomDiv = document.getElementById('strategy-random');
+            const tabNorm = document.getElementById('tab-normal');
+            const tabRand = document.getElementById('tab-random');
+
+            if (tab === 'normal') {
+                normalDiv.classList.remove('hidden');
+                randomDiv.classList.add('hidden');
+                tabNorm.classList.add('text-white', 'border-red-500');
+                tabNorm.classList.remove('text-gray-500', 'border-transparent');
+                tabRand.classList.remove('text-white', 'border-red-500');
+                tabRand.classList.add('text-gray-500', 'border-transparent');
+            } else {
+                normalDiv.classList.add('hidden');
+                randomDiv.classList.remove('hidden');
+                tabRand.classList.add('text-white', 'border-red-500');
+                tabRand.classList.remove('text-gray-500', 'border-transparent');
+                tabNorm.classList.remove('text-white', 'border-red-500');
+                tabNorm.classList.add('text-gray-500', 'border-transparent');
+            }
         }
 
         initSearch() {
@@ -2682,6 +2828,43 @@ lest: ～しないように
             this.vocabRounds.unshift({ id: 'custom', name: `CUSTOM (No.${s+1}-${e})`, words: customWords });
             this.initUI();
             document.getElementById('round-selector').value = 0;
+            this.updateSummary();
+        }
+
+        // ★ NEW: Random GP Feature (Updated with Qty)
+        createRandomRound() {
+            const sVal = document.getElementById('rand-start').value;
+            const eVal = document.getElementById('rand-end').value;
+            const qVal = document.getElementById('rand-qty').value;
+            
+            let s = parseInt(sVal) - 1;
+            let e = parseInt(eVal);
+            let qty = parseInt(qVal);
+
+            // Defaults
+            if (isNaN(s)) s = 0;
+            if (isNaN(e)) e = this.masterList.length;
+            if (isNaN(qty) || qty <= 0) qty = this.wordsPerRound; // Use tire setting if empty
+
+            if (s < 0 || e > this.masterList.length || s >= e) { alert("Invalid Range for Random GP"); return; }
+
+            // Extract range
+            const rangePool = this.masterList.slice(s, e);
+            
+            // Shuffle
+            this.shuffle(rangePool);
+            
+            // Pick Qty words
+            const selectedWords = rangePool.slice(0, qty);
+            
+            this.vocabRounds.unshift({ id: 'random', name: `🎲 RANDOM (Range: ${s+1}-${e})`, words: selectedWords });
+            this.initUI();
+            document.getElementById('round-selector').value = 0;
+            
+            // Auto start & Close menu
+            this.updateSummary();
+            this.toggleStrategyMenu();
+            this.start();
         }
         
         setTireStrategy(count, type) {
@@ -2690,21 +2873,44 @@ lest: ～しないように
             this.initUI();
             document.querySelectorAll('.tire-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tire-${type}`).classList.add('active');
+            this.updateSummary();
+        }
+
+        toggleSpellingOption() {
+            const isRev = document.getElementById('reverse-mode').checked;
+            const spellOpt = document.getElementById('spelling-option-container');
+            if (isRev) {
+                spellOpt.classList.remove('hidden');
+            } else {
+                spellOpt.classList.add('hidden');
+                document.getElementById('spelling-mode').checked = false;
+            }
         }
 
         switchMode(newMode) {
             this.mode = newMode;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`mode-${newMode}`).classList.add('active');
             
+            // 安全装置: ボタンが存在するか確認してからクラスを操作
+            const activeBtn = document.getElementById(`mode-${newMode}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            // 安全装置: 要素取得を変数に入れ、存在チェックを行う
+            const vocabSettings = document.getElementById('vocab-settings');
+            const vocabTools = document.getElementById('vocab-tools');
+            const idiomSettings = document.getElementById('idiom-settings');
+            const vocabStatus = document.getElementById('vocab-status-area');
+
             if (newMode === 'vocab') {
-                document.getElementById('vocab-settings').classList.remove('hidden');
-                document.getElementById('vocab-tools').classList.remove('hidden');
-                document.getElementById('idiom-settings').classList.add('hidden');
+                if (vocabSettings) vocabSettings.classList.remove('hidden');
+                if (vocabTools) vocabTools.classList.remove('hidden');
+                if (idiomSettings) idiomSettings.classList.add('hidden');
+                if (vocabStatus) vocabStatus.classList.remove('hidden');
             } else {
-                document.getElementById('vocab-settings').classList.add('hidden');
-                document.getElementById('vocab-tools').classList.add('hidden');
-                document.getElementById('idiom-settings').classList.remove('hidden');
+                if (vocabSettings) vocabSettings.classList.add('hidden');
+                if (vocabTools) vocabTools.classList.add('hidden');
+                if (idiomSettings) idiomSettings.classList.remove('hidden');
+                if (vocabStatus) vocabStatus.classList.add('hidden');
             }
         }
 
@@ -2740,16 +2946,29 @@ lest: ～しないように
             this.currentRoundIndex = parseInt(selector.value);
             const selectedRound = this.vocabRounds[this.currentRoundIndex];
             
+            // Save Last Played Round (Telemetry Recall)
+            if (selectedRound.id !== 'custom' && selectedRound.id !== 'random') {
+                localStorage.setItem('rb26_last_round', this.currentRoundIndex);
+            }
+
             this.isReverseMode = document.getElementById('reverse-mode').checked;
+            this.isSpellingMode = document.getElementById('spelling-mode').checked && this.isReverseMode;
             
-            document.getElementById('circuit-name').innerText = selectedRound.name + (this.isReverseMode ? " [REV]" : "");
+            let modeTitle = "";
+            if (this.isSpellingMode) modeTitle = " [MANUAL SHIFT]";
+            else if (this.isReverseMode) modeTitle = " [REV]";
+
+            document.getElementById('circuit-name').innerText = selectedRound.name + modeTitle;
             document.getElementById('question-label').innerText = this.isReverseMode ? "TRANSLATE" : "MEANING";
 
             this.questions = selectedRound.words.map(target => {
                 const qText = this.isReverseMode ? target.m : target.w;
                 const aText = this.isReverseMode ? target.w : target.m;
-                const distractors = this.getDistractors(target, this.isReverseMode);
-                const options = [aText, ...distractors].sort(() => Math.random() - 0.5);
+                
+                const options = this.isSpellingMode 
+                    ? [] // No options needed for spelling
+                    : [aText, ...this.getDistractors(target, this.isReverseMode)].sort(() => Math.random() - 0.5);
+                
                 return { w: target.w, m: target.m, qText: qText, aText: aText, o: options };
             });
             this.questions.sort(() => Math.random() - 0.5);
@@ -2815,12 +3034,173 @@ lest: ～しないように
             
             const speakBtn = document.getElementById('speak-btn');
             speakBtn.onclick = () => this.speak(q.w);
-            if (this.isAutoAudio && !this.isReverseMode) setTimeout(() => this.speak(q.w), 200);
+            if (this.isAutoAudio && !this.isReverseMode && !this.isSpellingMode) setTimeout(() => this.speak(q.w), 200);
 
-            const container = document.getElementById('options-container');
-            container.innerHTML = ''; 
+            // UI Elements
+            const stdContainer = document.getElementById('options-container');
+            const spellContainer = document.getElementById('spelling-interface');
+
+            if (this.isSpellingMode) {
+                // --- SPELLING MODE ---
+                stdContainer.classList.add('hidden');
+                spellContainer.classList.remove('hidden');
+                this.renderSpellingInterface(q);
+            } else {
+                // --- STANDARD MODE ---
+                stdContainer.classList.remove('hidden');
+                spellContainer.classList.add('hidden');
+                this.renderStandardOptions(q, stdContainer);
+            }
+        }
+
+        // ★ SPELLING MODE RENDERER (With Undo Support)
+        renderSpellingInterface(q) {
+            const slotsEl = document.getElementById('spelling-slots');
+            const poolEl = document.getElementById('spelling-pool');
             
-            const renderOptions = () => {
+            // Clean slate if fresh
+            if (this.spellingAns.length === 0) {
+                slotsEl.innerHTML = '';
+                poolEl.innerHTML = '';
+                slotsEl.classList.remove('correct-lane', 'wrong-lane');
+                this.isLocked = false;
+                
+                // Initialize state
+                const targetWord = q.w.trim();
+                const letters = targetWord.split('');
+                // Store original indices to handle duplicate letters correctly
+                this.spellingPoolState = letters.map((char, i) => ({ char, id: i, used: false })).sort(() => Math.random() - 0.5);
+            } else {
+                // Re-render based on state (for undo)
+                slotsEl.innerHTML = '';
+                poolEl.innerHTML = '';
+            }
+
+            // Render Slots
+            const targetLen = q.w.trim().length;
+            for(let i=0; i<targetLen; i++) {
+                const slot = document.createElement('div');
+                const charObj = this.spellingAns[i]; // May be undefined if not filled
+                
+                if (charObj) {
+                    // Filled Slot
+                    slot.className = "w-8 h-10 border border-white bg-gray-800 rounded mx-1 flex items-center justify-center text-xl font-bold text-white cursor-pointer active:scale-95 transition-transform";
+                    slot.innerText = charObj.char;
+                    // UNDO ACTION: Click filled slot to return to pool
+                    slot.onclick = () => this.handleSpellingUndo(i, q);
+                } else {
+                    // Empty Slot
+                    slot.className = "w-8 h-10 border-b-2 border-gray-600 mx-1 flex items-center justify-center text-xl font-bold text-gray-600";
+                    slot.innerText = "_";
+                }
+                slotsEl.appendChild(slot);
+            }
+
+            // Render Pool
+            this.spellingPoolState.forEach((item) => {
+                const btn = document.createElement('button');
+                btn.className = "letter-chip bg-gray-800 text-white rounded shadow-md border border-gray-600 active:bg-gray-600 transition-all";
+                btn.innerText = item.char;
+                
+                if (item.used) {
+                    btn.classList.add('opacity-0', 'pointer-events-none');
+                } else {
+                    btn.onclick = () => this.handleSpellingClick(item, q);
+                }
+                poolEl.appendChild(btn);
+            });
+        }
+
+        handleSpellingClick(item, q) {
+            if (this.isLocked) return;
+
+            // Mark as used
+            item.used = true;
+            this.spellingAns.push(item);
+            
+            // Re-render interface
+            this.renderSpellingInterface(q);
+
+            // Check if full
+            if (this.spellingAns.length === q.w.trim().length) {
+                this.checkSpellingWin(q);
+            }
+        }
+
+        handleSpellingUndo(index, q) {
+            if (this.isLocked) return; // Prevent undo after win/loss determination
+
+            // Remove from answer
+            const removedItem = this.spellingAns.splice(index, 1)[0];
+            
+            // Mark as unused in pool state
+            const poolItem = this.spellingPoolState.find(p => p.id === removedItem.id);
+            if (poolItem) poolItem.used = false;
+
+            // Re-render interface
+            this.renderSpellingInterface(q);
+        }
+
+        checkSpellingWin(q) {
+            const userWord = this.spellingAns.map(a => a.char).join('');
+            const targetWord = q.w.trim();
+            const slotsEl = document.getElementById('spelling-slots');
+
+            if (userWord === targetWord) {
+                // Correct
+                this.isLocked = true;
+                slotsEl.classList.add('correct-lane');
+                const feedback = document.getElementById('feedback');
+                feedback.innerHTML = `<span class="text-[#39ff14] text-xs font-bold animate-pulse">🟣 PERFECT SHIFT</span>`;
+                this.speak(q.w);
+                
+                this.currentStreak++;
+                if (this.currentStreak > this.maxStreak) this.maxStreak = this.currentStreak;
+                
+                const timeTaken = (Date.now() - this.lapStartTime) / 1000;
+                if (window.handleSRSUpdate) {
+                    window.handleSRSUpdate({ ...q, timeTaken: timeTaken }, true);
+                }
+
+                setTimeout(() => {
+                    this.currentIndex++;
+                    this.spellingAns = []; // Reset for next
+                    if (this.currentIndex < this.questions.length) this.showVocabQuestion();
+                    else this.finish();
+                }, 600);
+
+            } else {
+                // Wrong
+                this.isLocked = true; // Lock momentarily
+                this.missCount++;
+                this.currentStreak = 0;
+                
+                slotsEl.classList.add('wrong-lane', 'animate-shake');
+                document.getElementById('feedback').innerHTML = `<span class="text-red-500 text-xs font-bold">GEARBOX DAMAGE</span>`;
+
+                if (!this.missedWordsLog.find(item => item.w === q.w)) this.missedWordsLog.push({ w: q.w, m: q.m });
+                
+                if (window.handleSRSUpdate) {
+                    window.handleSRSUpdate({ ...q, timeTaken: 5.0 }, false);
+                }
+
+                setTimeout(() => {
+                    this.isLocked = false;
+                    slotsEl.classList.remove('wrong-lane', 'animate-shake');
+                    document.getElementById('feedback').innerText = '';
+                    
+                    // Reset all for retry
+                    this.spellingAns = [];
+                    this.spellingPoolState.forEach(p => p.used = false);
+                    this.renderSpellingInterface(q); 
+                }, 1000);
+            }
+        }
+
+        renderStandardOptions(q, container) {
+            container.innerHTML = '';
+            
+            const renderBtns = () => {
                 container.innerHTML = '';
                 q.o.forEach(opt => {
                     const btn = document.createElement('button');
@@ -2833,13 +3213,13 @@ lest: ～しないように
             };
 
             if (this.isInstantMode) {
-                renderOptions();
+                renderBtns();
             } else {
                 const revealBtn = document.createElement('button');
                 revealBtn.className = 'col-span-1 md:col-span-2 w-full h-24 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded-xl text-gray-400 f1-font text-lg uppercase tracking-widest active:border-yellow-500 active:text-yellow-500 transition-all flex flex-col items-center justify-center gap-1 animate-pulse';
                 revealBtn.innerHTML = `<span>VISUALIZE MEANING</span><span class="text-[10px] text-gray-500 font-mono">TAP TO UNLOCK</span>`;
                 revealBtn.onclick = () => { 
-                    renderOptions();
+                    renderBtns();
                 };
                 container.appendChild(revealBtn);
             }
@@ -3148,7 +3528,7 @@ lest: ～しないように
             if (!this.dueMistakes || this.dueMistakes.length === 0) return;
             
             // ★ Filter out idioms just in case they slipped in
-            const vocabDue = this.dueMistakes.filter(item => !item.id.startsWith('idiom_'));
+            const vocabDue = this.dueMistakes.filter(item => !item.id.toString().startsWith('idiom_'));
             
             if (!vocabDue || vocabDue.length === 0) return;
 
@@ -3339,7 +3719,6 @@ lest: ～しないように
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-      // ★ UPDATED IMPORT: Added initializeFirestore, persistentLocalCache, indexedDbLocalCache
       import { 
           getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, 
           Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, increment,
@@ -3359,8 +3738,6 @@ lest: ～しないように
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       
-      // ★ OFFLINE PERSISTENCE ENABLED ★
-      // Replaced standard getFirestore(app) with initializeFirestore
       const db = initializeFirestore(app, {
           localCache: persistentLocalCache({
               tabManager: undefined 
@@ -3371,12 +3748,18 @@ lest: ～しないように
       const startScreen = document.getElementById('start-screen');
       const loginStatus = document.getElementById('login-status');
       const gateLoginBtn = document.getElementById('gate-login-btn');
-      const logoutBtn = document.getElementById('logout-btn');
+      
+      // ログアウトボタンが存在しない場合の対策（念の為）
+      const logoutBtn = document.getElementById('logout-btn') || document.createElement('button'); 
 
       window.currentUser = null;
+      
+      // ★ 修正ポイント1: リスナー解除用変数を定義
+      let unsubscribeStats = null;
+      const statsRef = doc(db, "stats", "daily_global");
 
       // ---------------------------------------------------------
-      // 1. AUTH & PERSISTENCE
+      // 1. AUTH & PERSISTENCE & SNAPSHOT CONTROL
       // ---------------------------------------------------------
       onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -3384,10 +3767,31 @@ lest: ～しないように
           window.currentUser = user;
           loginStatus.innerText = "Syncing Telemetry Data...";
           
+          // ★ 修正ポイント2: ログイン確認後にデータ監視(onSnapshot)を開始
+          if (!unsubscribeStats) {
+              unsubscribeStats = onSnapshot(statsRef, (docSnap) => {
+                  if (docSnap.exists()) {
+                      const data = docSnap.data();
+                      const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
+                      if (data.date === todayStr) {
+                          const display = document.getElementById('daily-laps-display');
+                          if(display) display.innerText = data.count;
+                      } else {
+                          const display = document.getElementById('daily-laps-display');
+                          if(display) display.innerText = 0;
+                      }
+                  }
+              }, (error) => {
+                  console.warn("Stats sync warning:", error.message);
+              });
+          }
+
           try {
               await window.fetchSRSItems();
               
-              document.getElementById('user-name').innerText = user.displayName || "RACING DRIVER";
+              const userNameDisplay = document.getElementById('user-name');
+              if(userNameDisplay) userNameDisplay.innerText = user.displayName || "RACING DRIVER";
+              
               gateScreen.classList.add('hidden');
               
               const isQuizActive = !document.getElementById('quiz-screen').classList.contains('hidden');
@@ -3403,11 +3807,19 @@ lest: ～しないように
           }
 
         } else {
+          // ★ 修正ポイント3: ログアウト時にリスナーを停止
+          if (unsubscribeStats) {
+              unsubscribeStats();
+              unsubscribeStats = null;
+          }
+
           window.currentUser = null;
           startScreen.classList.add('hidden');
           gateScreen.classList.remove('hidden');
           loginStatus.innerText = "System Standby...";
-          document.getElementById('user-name').innerText = "TEST DRIVER";
+          
+          const userNameDisplay = document.getElementById('user-name');
+          if(userNameDisplay) userNameDisplay.innerText = "TEST DRIVER";
         }
       });
 
@@ -3418,30 +3830,20 @@ lest: ～しないように
         catch (error) { console.error(error); loginStatus.innerText = "Access Denied."; }
       });
 
-      logoutBtn.addEventListener('click', () => { 
-        if(window.currentUser) {
-            localStorage.removeItem(`srs_data_${window.currentUser.uid}`);
-            localStorage.removeItem(`srs_time_${window.currentUser.uid}`);
-        }
-        signOut(auth).then(() => { alert("Signed Out Successfully"); location.reload(); }); 
-      });
+      // HTML内にログアウトボタンがある場合のみ動作
+      if(document.getElementById('logout-btn')) {
+          document.getElementById('logout-btn').addEventListener('click', () => { 
+            if(window.currentUser) {
+                localStorage.removeItem(`srs_data_${window.currentUser.uid}`);
+                localStorage.removeItem(`srs_time_${window.currentUser.uid}`);
+            }
+            signOut(auth).then(() => { alert("Signed Out Successfully"); location.reload(); }); 
+          });
+      }
 
       // ---------------------------------------------------------
-      // 2. DATA SYNC
+      // 2. DATA FETCH (Legacy wrapper)
       // ---------------------------------------------------------
-      const statsRef = doc(db, "stats", "daily_global");
-      onSnapshot(statsRef, (doc) => {
-          if (doc.exists()) {
-              const data = doc.data();
-              const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
-              if (data.date === todayStr) {
-                  document.getElementById('daily-laps-display').innerText = data.count;
-              } else {
-                  document.getElementById('daily-laps-display').innerText = 0;
-              }
-          }
-      });
-
       window.fetchSRSItems = async () => {
         if (!window.currentUser) return;
         const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
@@ -3477,9 +3879,11 @@ lest: ～しないように
                 const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
                 const snapshot = await getDocs(mistakesRef);
                 allItems = [];
-                snapshot.forEach(doc => {
-                    const d = doc.data();
-                    allItems.push({ id: doc.id, ...d, nextReviewSeconds: d.nextReview.seconds });
+                snapshot.forEach(docSnap => {
+                    const d = docSnap.data();
+                    // nextReviewがTimestamp型か確認して変換
+                    const nrSec = d.nextReview && d.nextReview.seconds ? d.nextReview.seconds : (Date.now()/1000);
+                    allItems.push({ id: docSnap.id, ...d, nextReviewSeconds: nrSec });
                 });
                 localStorage.setItem(CACHE_KEY, JSON.stringify(allItems));
                 localStorage.setItem(TIME_KEY, now.toString());
@@ -3490,9 +3894,7 @@ lest: ～しないように
         const dueItems = [];
         const nowTs = Date.now() / 1000;
         
-        // ★ IDIOM EXCLUSION LOGIC (Filter out items starting with 'idiom_')
         allItems.forEach(item => { 
-            // If item.id starts with 'idiom_', do not push to dueItems
             if (item.nextReviewSeconds <= nowTs && !item.id.toString().startsWith('idiom_')) {
                 dueItems.push(item); 
             }
@@ -3508,14 +3910,19 @@ lest: ～しないように
       // ---------------------------------------------------------
       // 3. SRS ALGORITHM v2.0
       // ---------------------------------------------------------
+      // ---------------------------------------------------------
+      // 3. SRS ALGORITHM v2.1 (Cache Sync Fix)
+      // ---------------------------------------------------------
       window.handleSRSUpdate = async (questionObj, isCorrect) => {
         if (!window.currentUser) return;
         
+        // 1. Setup Firestore Refs
         const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
         const now = new Date();
         const safeWordId = questionObj.docId || btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
         const targetRef = doc(mistakesRef, safeWordId);
         
+        // 2. Calculate Next Interval
         const currentParams = { 
             interval: questionObj.interval || 0, 
             repetitions: questionObj.repetitions || 0, 
@@ -3526,19 +3933,19 @@ lest: ～しないように
         let nextInterval, nextRepetitions, nextEaseFactor;
 
         if (!isCorrect) {
-            // CRASH
+            // CRASH (Reset)
             nextRepetitions = 0; 
             nextInterval = 1; 
             nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2); 
         } else {
-            // FINISH
+            // FINISH (Progress)
             nextRepetitions = currentParams.repetitions + 1;
             
-            // Speed Factor
+            // Speed Bonus
             let easeBonus = 0;
-            if (timeTaken < 1.2) easeBonus = 0.3;      // Fast
-            else if (timeTaken > 5.0) easeBonus = -0.15; // Slow
-            else easeBonus = 0.1;                      // Normal
+            if (timeTaken < 1.2) easeBonus = 0.3;
+            else if (timeTaken > 5.0) easeBonus = -0.15;
+            else easeBonus = 0.1;
 
             let rawEase = currentParams.easeFactor + easeBonus;
             nextEaseFactor = Math.min(3.0, Math.max(1.3, rawEase));
@@ -3546,13 +3953,16 @@ lest: ～しないように
             if (nextRepetitions === 1) nextInterval = 1; 
             else if (nextRepetitions === 2) nextInterval = 6; 
             else nextInterval = Math.max(1, Math.round(currentParams.interval * nextEaseFactor));
-            
-            console.log(`[SRS] Time: ${timeTaken.toFixed(2)}s | EF: ${currentParams.easeFactor.toFixed(2)} -> ${nextEaseFactor.toFixed(2)}`);
         }
 
         const nextDate = new Date(); 
         nextDate.setDate(now.getDate() + nextInterval);
+        // ★重要: キャッシュ更新用にUNIX時間を計算
+        const nextReviewSeconds = Math.floor(nextDate.getTime() / 1000);
 
+        console.log(`[SRS] Time: ${timeTaken.toFixed(2)}s | Next: ${nextInterval} days`);
+
+        // 3. FIRESTORE UPDATE (Server Side)
         setDoc(targetRef, { 
             word: questionObj.w, 
             meaning: questionObj.meaning || questionObj.m, 
@@ -3563,6 +3973,63 @@ lest: ～しないように
             lastReviewed: Timestamp.fromDate(now) 
         }, { merge: true })
         .catch((e) => console.error("Telemetry Failed:", e));
+
+        // 4. ★ LOCAL CACHE UPDATE (Client Side Fix) ★
+        // ここで手元のデータも強制的に書き換えることで、リロードなしで反映させる
+        try {
+            const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
+            const rawString = localStorage.getItem(CACHE_KEY);
+            let localData = [];
+            if (rawString) localData = JSON.parse(rawString);
+
+            // キャッシュ内の該当アイテムを探す
+            const index = localData.findIndex(item => item.word === questionObj.w || item.id === safeWordId);
+            
+            const newItemState = {
+                id: safeWordId,
+                word: questionObj.w,
+                meaning: questionObj.meaning || questionObj.m,
+                nextReviewSeconds: nextReviewSeconds, // 次回日時の更新
+                interval: nextInterval,
+                repetitions: nextRepetitions,
+                easeFactor: nextEaseFactor
+            };
+
+            if (index !== -1) {
+                // 既存データの更新（ブックマーク情報などを維持するためマージ）
+                localData[index] = { ...localData[index], ...newItemState };
+            } else {
+                // 新規データの場合
+                localData.push(newItemState);
+            }
+
+            // LocalStorageに保存
+            localStorage.setItem(CACHE_KEY, JSON.stringify(localData));
+
+            // ★ メモリ上のデータも即時更新 (UIのボタン表示用)
+            if(window.quiz && window.quiz.allMistakes) {
+                const memIndex = window.quiz.allMistakes.findIndex(m => m.id === safeWordId || m.word === questionObj.w);
+                
+                if(memIndex !== -1) {
+                     // メモリ内のデータを更新
+                     window.quiz.allMistakes[memIndex] = { 
+                         ...window.quiz.allMistakes[memIndex], 
+                         ...newItemState,
+                         nextReview: { toDate: () => new Date(nextReviewSeconds * 1000) }
+                     };
+                }
+                
+                // 「Due（要復習）」リストを再計算してボタンの表示を更新
+                const nowTs = Date.now() / 1000;
+                window.quiz.dueMistakes = window.quiz.allMistakes.filter(item => 
+                    item.nextReviewSeconds <= nowTs && !item.id.toString().startsWith('idiom_')
+                );
+                window.quiz.updatePitStopButton(window.quiz.dueMistakes.length);
+            }
+
+        } catch(e) {
+            console.error("Cache Update Failed:", e);
+        }
       };
       
       // ---------------------------------------------------------
@@ -3570,7 +4037,6 @@ lest: ～しないように
       // ---------------------------------------------------------
       window.saveRaceResult = async (data) => {
           if (!window.currentUser) return;
-          
           try {
               const leaderboardRef = collection(db, "leaderboard");
               const now = new Date();
@@ -3583,21 +4049,18 @@ lest: ～しないように
                   timestamp: Timestamp.now(), 
                   ...data                   
               };
-
               await addDoc(leaderboardRef, payload);
               console.log("[RACE CONTROL] Result saved to Leaderboard:", payload);
-              
           } catch (e) {
               console.error("[RACE CONTROL] Failed to save result:", e);
           }
       };
 
       // ---------------------------------------------------------
-      // 5. BOOKMARK TOGGLER (FIXED VERSION)
+      // 5. BOOKMARK TOGGLER
       // ---------------------------------------------------------
       window.toggleBookmark = async (safeWord, safeMeaning) => {
           if (!window.currentUser) { alert("Sign in required."); return; }
-          
           const word = decodeURIComponent(safeWord);
           const meaning = decodeURIComponent(safeMeaning);
 
@@ -3605,30 +4068,24 @@ lest: ～しないように
           const isCurrentlyBookmarked = currentItem && currentItem.bookmarked === true;
           const newValue = !isCurrentlyBookmarked;
 
-          // 1. Memory Update (UI即時反映)
           if (currentItem) {
               currentItem.bookmarked = newValue;
           } else {
               window.quiz.allMistakes.push({ 
                    word: word, meaning: meaning, bookmarked: newValue, 
                    interval: 0, repetitions: 0, easeFactor: 2.5,
-                   // 新規の場合はダミーの秒数を入れておく
                    nextReviewSeconds: Date.now() / 1000 
               });
-              // 新規作成したアイテムを再取得
               currentItem = window.quiz.allMistakes.find(m => m.word === word);
           }
           window.quiz.renderWordBook(); 
 
-          // 2. Prepare Data for Firestore
           const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
           const docId = btoa(encodeURIComponent(word)).replace(/\//g, '_').replace(/\+/g, '-');
           const targetRef = doc(mistakesRef, docId);
 
-          // ★ CRITICAL FIX: 関数を含まないクリーンなTimestampを生成する ★
           let safeNextReview = Timestamp.now();
           if (currentItem && currentItem.nextReviewSeconds) {
-              // キャッシュの秒数データから正規のTimestampを復元
               safeNextReview = Timestamp.fromDate(new Date(currentItem.nextReviewSeconds * 1000));
           }
 
@@ -3640,28 +4097,42 @@ lest: ～しないように
                   interval: currentItem ? (currentItem.interval || 0) : 0,
                   repetitions: currentItem ? (currentItem.repetitions || 0) : 0,
                   easeFactor: currentItem ? (currentItem.easeFactor || 2.5) : 2.5,
-                  // ここで修正済みの safeNextReview を使う
                   nextReview: safeNextReview
               }, { merge: true });
-              
               console.log(`[Flag] Saved: ${word}`);
-
           } catch(e) {
               console.error("Bookmark Error:", e);
-              // ロールバック
               if(currentItem) currentItem.bookmarked = !newValue;
               window.quiz.renderWordBook();
           }
       };
 
-      window.incrementDailyLaps = () => {
+      // ---------------------------------------------------------
+      // Daily Laps Logic (Global Transaction)
+      // ---------------------------------------------------------
+      window.incrementDailyLaps = async () => {
+          if (!window.currentUser) return; 
           const statsRef = doc(db, "stats", "daily_global");
           const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
-          
-          setDoc(statsRef, { 
-              count: increment(1), 
-              date: todayStr 
-          }, { merge: true });
+
+          try {
+              await runTransaction(db, async (transaction) => {
+                  const sfDoc = await transaction.get(statsRef);
+                  if (!sfDoc.exists()) {
+                      transaction.set(statsRef, { count: 1, date: todayStr });
+                  } else {
+                      const data = sfDoc.data();
+                      if (data.date === todayStr) {
+                          transaction.update(statsRef, { count: increment(1) });
+                      } else {
+                          transaction.set(statsRef, { count: 1, date: todayStr });
+                      }
+                  }
+              });
+              console.log("[Global Lap] Count Updated");
+          } catch (e) {
+              console.error("Lap Count Error:", e);
+          }
       };
     </script>
     
