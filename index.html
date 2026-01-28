@@ -317,7 +317,7 @@
                 <button id="wb-filter-btn" class="bg-gray-800 text-white px-3 rounded border border-gray-600 text-xs font-bold uppercase" onclick="quiz.toggleBookFilter()">ALL</button>
             </div>
             <div id="wb-list" class="flex-1 overflow-y-auto wb-scroll text-left space-y-2 pr-1">
-                </div>
+            </div>
         </div>
 
         <div id="quiz-screen" class="hidden race-card p-6 rounded-2xl shadow-2xl relative flex flex-col justify-between my-auto min-h-[500px]">
@@ -400,7 +400,7 @@
     // ==========================================
     // DATA LOAD (Placeholders)
     // ==========================================
-    // 単語データ
+    // 単語データ (ここにデータを貼り付けてくれ)
     const rawData = `
     follow: ～の後に続く、～に従う
 consider: ～を考慮する
@@ -2433,7 +2433,7 @@ lest: ～しないように
 
     // 熟語データ（プレースホルダー）
     const idiomData = [
-   { id: 1215, japanese: "手間をかけて〜する", prefix: "We (", suffix: ") prepare for the school event.", parts: ["took", "the", "trouble", "to"] },
+    { id: 1215, japanese: "手間をかけて〜する", prefix: "We (", suffix: ") prepare for the school event.", parts: ["took", "the", "trouble", "to"] },
     { id: 1216, japanese: "〜を楽しむ", prefix: "We should not (", suffix: ") the misfortunes of others.", parts: ["take", "delight", "in"] },
     { id: 1217, japanese: "Aに電話をかける", prefix: "I'll (", suffix: ") tomorrow morning.", parts: ["give", "you", "a", "call"] },
     { id: 1218, japanese: "〜を引き起こす", prefix: "The population decline will (", suffix: ") several problems.", parts: ["give", "rise", "to"] },
@@ -3146,10 +3146,16 @@ lest: ～しないように
         
         startPitStop() {
             if (!this.dueMistakes || this.dueMistakes.length === 0) return;
+            
+            // ★ Filter out idioms just in case they slipped in
+            const vocabDue = this.dueMistakes.filter(item => !item.id.startsWith('idiom_'));
+            
+            if (!vocabDue || vocabDue.length === 0) return;
+
             this.isPitStopMode = true; 
             this.switchMode('vocab'); 
             
-            this.questions = this.dueMistakes.map(item => {
+            this.questions = vocabDue.map(item => {
                 const word = item.word || item.w;
                 const meaning = item.meaning || item.m;
                 const targetWord = { w: word, m: meaning };
@@ -3289,8 +3295,6 @@ lest: ～しないように
 
                 const isBookmarked = item.srs && item.srs.bookmarked;
 
-                // (前略... divを作成する部分)
-
                 // 特殊文字があっても壊れないようにエンコードして渡す
                 const safeW = encodeURIComponent(item.w);
                 const safeM = encodeURIComponent(item.m);
@@ -3333,9 +3337,14 @@ lest: ～しないように
     </script>
     
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-      import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+      // ★ UPDATED IMPORT: Added initializeFirestore, persistentLocalCache, indexedDbLocalCache
+      import { 
+          getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, 
+          Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, increment,
+          initializeFirestore, persistentLocalCache, 
+      } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
@@ -3349,7 +3358,14 @@ lest: ～しないように
 
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
-      const db = getFirestore(app);
+      
+      // ★ OFFLINE PERSISTENCE ENABLED ★
+      // Replaced standard getFirestore(app) with initializeFirestore
+      const db = initializeFirestore(app, {
+          localCache: persistentLocalCache({
+              tabManager: undefined 
+          })
+      });
 
       const gateScreen = document.getElementById('gate-screen');
       const startScreen = document.getElementById('start-screen');
@@ -3473,7 +3489,14 @@ lest: ～しないように
 
         const dueItems = [];
         const nowTs = Date.now() / 1000;
-        allItems.forEach(item => { if (item.nextReviewSeconds <= nowTs) dueItems.push(item); });
+        
+        // ★ IDIOM EXCLUSION LOGIC (Filter out items starting with 'idiom_')
+        allItems.forEach(item => { 
+            // If item.id starts with 'idiom_', do not push to dueItems
+            if (item.nextReviewSeconds <= nowTs && !item.id.toString().startsWith('idiom_')) {
+                dueItems.push(item); 
+            }
+        });
 
         if(window.quiz) {
             window.quiz.allMistakes = allItems;
@@ -3570,12 +3593,6 @@ lest: ～しないように
       };
 
       // ---------------------------------------------------------
-      // 5. BOOKMARK TOGGLER (NEW!)
-      // ---------------------------------------------------------
-      // ---------------------------------------------------------
-      // 5. BOOKMARK TOGGLER (INSTANT RESPONSE Ver.)
-      // ---------------------------------------------------------
-      // ---------------------------------------------------------
       // 5. BOOKMARK TOGGLER (FIXED VERSION)
       // ---------------------------------------------------------
       window.toggleBookmark = async (safeWord, safeMeaning) => {
@@ -3636,7 +3653,7 @@ lest: ～しないように
               window.quiz.renderWordBook();
           }
       };
-        
+
       window.incrementDailyLaps = () => {
           const statsRef = doc(db, "stats", "daily_global");
           const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
@@ -3659,5 +3676,3 @@ lest: ～しないように
     </script>
 </body>
 </html>
-
-
