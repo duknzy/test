@@ -49,39 +49,43 @@
 
         .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
-                        .carbon-bg {
-            /* 1. 写真を背景に設定（オーバーレイを少し調整） */
-            background-image: 
-                linear-gradient(rgba(11, 14, 20, 0.6), rgba(11, 14, 20, 0.85)), 
-                url('verstappen.png'); /* ファイル名に注意 */
-
-            /* 2. モバイルの隙間を殺すための重要設定 */
-            background-size: cover;
-            background-position: center 20%; /* 少し上に寄せて、下の空白を物理的に消す */
-            background-repeat: no-repeat;
-            
-            /* モバイルブラウザの高さ変動に対応 */
-            background-attachment: scroll; 
-            min-height: 100vh;
-            min-height: -webkit-fill-available; /* iOS Safari用 */
-            
-            background-color: #0b0e14; /* 万が一の時の暗黒色 */
-            
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        /* htmlとbodyも高さを固定し、隙間を許さない */
+                        /* 1. 画面全体の高さを、ブラウザのバーに関わらず「見える範囲」に固定する */
         html, body {
-            height: 100vh;
-            height: -webkit-fill-available;
+            height: 100dvh; /* 動的ビューポート単位を使用 */
             margin: 0;
             padding: 0;
             background-color: #0b0e14;
+            overflow: hidden;
         }
 
+        .carbon-bg {
+            /* 2. 背景画像を「画面」に対して固定し、要素の高さに引きずられないようにする */
+            background-image: 
+                linear-gradient(rgba(11, 14, 20, 0.6), rgba(11, 14, 20, 0.85)), 
+                url('image.png');
+            
+            background-size: cover;
+            background-position: center bottom; /* 下端を基準にする */
+            background-repeat: no-repeat;
+            
+            /* 3. 背景の固定方法を「fixed」から「絶対配置」に近い形に変更 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* コンテンツの背後に配置 */
+        }
 
-
+        /* 4. アプリ本体のコンテナにだけスクロールを許可する */
+        #app {
+            height: 100dvh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            z-index: 1;
+        }
+        
         #app {
             height: 100%;
             overflow-y: auto;
