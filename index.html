@@ -6,15 +6,19 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RB Hybrid">
-    <link rel="apple-touch-icon" href="./icon.jpg">
+    <meta name="apple-mobile-web-app-title" content="RB Hybrid GP">
+    <link rel="apple-touch-icon" href="icon.jpg">
+    <link rel="manifest" href="manifest.json">
+
+    <title>RB Hybrid Learning System</title>
     
-    <title>RB Hybrid GP - 2026 Final Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' blob: data: gap:; style-src * 'self' 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * 'self' 'unsafe-inline' blob: data: gap:; connect-src 'self' * 'unsafe-inline' blob: data: gap:; frame-src * 'self' blob: data: gap:;">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;600;800&family=Orbitron:wght@900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
         
         :root {
             --f1-red: #e10600;
@@ -71,20 +75,6 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border-top: 4px solid var(--f1-red);
-        }
-
-        /* --- SIMPLE PASS BOX --- */
-        .simple-pass-box {
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #444;
-            border-left: 4px solid var(--neon-green);
-            border-radius: 4px;
-            padding: 1.2rem;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.1);
         }
 
         /* --- UI COMPONENTS --- */
@@ -144,6 +134,7 @@
             background: rgba(225, 6, 0, 0.1);
         }
 
+        /* Mode Switcher */
         .mode-btn { transition: all 0.2s; opacity: 0.5; border-bottom: 2px solid transparent; }
         .mode-btn.active { opacity: 1; border-bottom-color: var(--f1-red); color: white; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
 
@@ -172,6 +163,11 @@
         .animate-shake { animation: shake 0.4s ease-in-out; }
         
         .locked { opacity: 0.5; pointer-events: none; }
+        
+        /* Word Book Scrollbar */
+        .wb-scroll::-webkit-scrollbar { width: 4px; }
+        .wb-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
+        .wb-scroll::-webkit-scrollbar-thumb { background: #e10600; border-radius: 4px; }
     </style>
 </head>
 <body class="carbon-bg">
@@ -245,6 +241,10 @@
                             <span class="text-xs font-bold text-gray-300 group-hover:text-green-400 transition-colors flex items-center gap-2"><span class="text-green-500">🔊</span> RACE ENGINEER</span>
                             <input type="checkbox" id="audio-mode" class="accent-f1 w-5 h-5 cursor-pointer" checked>
                         </label>
+                        <label class="flex items-center justify-between cursor-pointer group p-1">
+                            <span class="text-xs font-bold text-gray-300 group-hover:text-yellow-400 transition-colors flex items-center gap-2"><span class="text-yellow-400">⚡</span> INSTANT DRS</span>
+                            <input type="checkbox" id="instant-mode" class="accent-f1 w-5 h-5 cursor-pointer">
+                        </label>
                     </div>
                 </div>
 
@@ -254,12 +254,15 @@
                         <input type="text" id="search-input" placeholder="Quick Scan (Search)..." class="w-full bg-black text-white p-3 pl-3 rounded-lg border border-gray-700 focus:border-red-500 outline-none font-mono text-base transition-colors shadow-inner">
                         <div id="search-results" class="hidden absolute bottom-full left-0 w-full mb-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"></div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 mb-3">
                         <input type="number" id="custom-start" placeholder="1" class="w-16 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-base font-mono">
                         <span class="text-gray-500">-</span>
                         <input type="number" id="custom-end" placeholder="50" class="w-16 bg-black text-white p-2 rounded-lg border border-gray-700 text-center text-base font-mono">
                         <button onclick="quiz.createCustomRound()" class="flex-1 bg-gray-800 active:bg-gray-700 text-white text-[10px] font-bold uppercase rounded-lg py-2 border border-gray-600">Set Custom</button>
                     </div>
+                    <button onclick="quiz.openWordBook()" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600 py-3 rounded-xl font-bold transition-all uppercase text-xs flex items-center justify-center gap-2">
+                        <span>📁</span> Component List (Word Book)
+                    </button>
                 </div>
             </div>
 
@@ -282,7 +285,7 @@
             </div>
         </div>
         
-        <div id="telemetry-screen" class="hidden race-card p-6 rounded-2xl text-center border-t-4 border-blue-500 h-full overflow-y-auto my-auto">
+        <div id="telemetry-screen" class="hidden race-card p-6 rounded-2xl text-center border-t-4 border-blue-500 h-full overflow-y-auto my-auto z-40 relative">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="f1-font text-2xl font-bold text-blue-400 tracking-widest">TELEMETRY</h2>
                 <button onclick="quiz.closeOverlay('telemetry-screen')" class="text-gray-400 active:text-white text-3xl p-2">&times;</button>
@@ -294,6 +297,27 @@
                 <h3 class="text-xs text-red-500 font-bold uppercase tracking-widest mb-2">Degradation Report</h3>
                 <div id="worst-words-list" class="space-y-1 max-h-60 overflow-y-auto pr-2"></div>
             </div>
+        </div>
+        
+        <div id="wordbook-screen" class="hidden race-card p-6 rounded-2xl text-center border-t-4 border-yellow-500 h-[90%] my-auto z-50 flex flex-col absolute inset-4">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h2 class="f1-font text-2xl font-bold text-yellow-500 tracking-widest">DATA CENTER</h2>
+                <button onclick="quiz.closeOverlay('wordbook-screen')" class="text-gray-400 active:text-white text-3xl p-2">&times;</button>
+            </div>
+            <div class="flex gap-2 mb-2 flex-shrink-0 justify-center items-center">
+                <div class="bg-gray-900 p-2 rounded border border-gray-700 flex items-center gap-2">
+                    <span class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">SECTOR</span>
+                    <input type="number" id="wb-start" placeholder="1" class="w-16 bg-black text-white p-1 text-sm rounded border border-gray-700 font-mono text-center focus:border-yellow-500 outline-none">
+                    <span class="text-gray-500">-</span>
+                    <input type="number" id="wb-end" placeholder="END" class="w-16 bg-black text-white p-1 text-sm rounded border border-gray-700 font-mono text-center focus:border-yellow-500 outline-none">
+                </div>
+            </div>
+            <div class="flex gap-2 mb-4 flex-shrink-0">
+                <input type="text" id="wb-search" placeholder="Search components..." class="flex-1 bg-black text-white p-2 text-sm rounded border border-gray-700 font-mono focus:border-yellow-500 outline-none">
+                <button id="wb-filter-btn" class="bg-gray-800 text-white px-3 rounded border border-gray-600 text-xs font-bold uppercase" onclick="quiz.toggleBookFilter()">ALL</button>
+            </div>
+            <div id="wb-list" class="flex-1 overflow-y-auto wb-scroll text-left space-y-2 pr-1">
+                </div>
         </div>
 
         <div id="quiz-screen" class="hidden race-card p-6 rounded-2xl shadow-2xl relative flex flex-col justify-between my-auto min-h-[500px]">
@@ -349,21 +373,22 @@
             <div id="accuracy-display" class="f1-font text-7xl font-bold mb-2 text-white glitch-text">95.0%</div>
             <p id="rank-text" class="f1-font text-sm mb-8 text-gray-400 font-mono">P1: MAX VERSTAPPEN</p>
             
-            <div id="pass-issue-area" class="hidden mb-8 transform transition-all hover:scale-105 cursor-pointer active:scale-95">
-                <div class="simple-pass-box">
-                    <div class="text-left">
-                        <div class="text-[10px] text-gray-400 uppercase font-bold mb-1">SUPER LICENSE</div>
-                        <div id="license-id-display" class="f1-font text-2xl text-[#39ff14] font-bold tracking-widest">perfect</div>
-                    </div>
-                    <button id="copy-pass-btn" class="bg-gray-800 text-white text-[10px] px-6 py-3 rounded border border-gray-600 uppercase font-bold active:bg-white active:text-black">
-                        TAP TO COPY
+            <div id="pass-area" class="hidden mb-6 animate-slide-in">
+                <p class="text-[#39ff14] font-bold f1-font text-xl mb-2">LICENSE ACQUIRED</p>
+                <div class="bg-green-900/20 border border-green-500/50 p-4 rounded-xl">
+                    <p class="text-xs text-green-400 mb-2 uppercase tracking-widest">Secret Key</p>
+                    <button id="pass-btn" class="w-full bg-black text-white border border-gray-600 font-mono py-3 rounded-lg hover:bg-gray-800 transition-all flex items-center justify-center gap-2">
+                        <span>COPY LICENSE ID</span>
                     </button>
                 </div>
             </div>
-
-            <div id="fail-message" class="hidden mb-6 p-4 border border-red-500 bg-red-900/20 text-red-500 font-bold text-xs uppercase tracking-widest">Session Stopped: Accuracy Too Low</div>
             
+            <div id="fail-msg" class="hidden mb-6">
+                <p class="text-red-500 font-bold f1-font text-sm">LICENSE DENIED (Req: 90%)</p>
+            </div>
+
             <div class="bg-black/40 p-4 rounded-xl mb-8 text-left max-h-48 overflow-y-auto border border-gray-800" id="review-list"></div>
+            
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="quiz.returnToGrid()" class="f1-font border border-gray-600 active:bg-white active:text-black text-white py-4 rounded-xl font-bold transition-all uppercase text-sm">Garage</button>
                 <button id="next-round-btn" class="f1-font bg-red-600 active:bg-red-700 text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-red-900/50 uppercase text-sm">Next Sector</button>
@@ -372,11 +397,12 @@
     </div>
 
     <script>
-// ==========================================
-// 1. DATA CONFIGURATION (Paste your words here)
-// ==========================================
-const rawData = `
-follow: ～の後に続く、～に従う
+    // ==========================================
+    // DATA LOAD (Placeholders)
+    // ==========================================
+    // 単語データ
+    const rawData = `
+    follow: ～の後に続く、～に従う
 consider: ～を考慮する
 increase: 増える、～を増やす
 expect: ～を予期する
@@ -2403,636 +2429,913 @@ abruptly: 不意に
 conversely: 逆に
 predominantly: 主に
 lest: ～しないように
-`;
+    `; 
 
-// 熟語モード用データ
-const idiomData = [
-    { id: 1, japanese: "10分間休憩にしましょう", prefix: "Let's (", suffix: ")", parts: ["take", "a", "ten-minute", "break"] },
-    { id: 2, japanese: "彼はそのニュースに驚いたようだ", prefix: "He seems (", suffix: ") at the news.", parts: ["to", "have", "been", "surprised"] },
-    { id: 3, japanese: "できるだけ早く", prefix: "Please come (", suffix: ").", parts: ["as", "soon", "as", "possible"] },
-    { id: 4, japanese: "私はこの歌を聞くと必ず学生時代を思い出す", prefix: "I never hear this song (", suffix: ") of my school days.", parts: ["without", "being", "reminded"] },
-    { id: 5, japanese: "雨が降っていたにもかかわらず", prefix: "(", suffix: ") the rain, they went out.", parts: ["In", "spite", "of"] },
-    { id: 6, japanese: "彼女はプライドが高すぎてその仕事ができない", prefix: "She is (", suffix: ") to do the work.", parts: ["too", "proud"] },
-    { id: 7, japanese: "彼は始発列車に乗れるように早く起きた", prefix: "He got up early (", suffix: ") the first train.", parts: ["so", "as", "to", "catch"] },
-    { id: 8, japanese: "これは私が今まで読んだ中で最も面白い本だ", prefix: "This is (", suffix: ") I have ever read.", parts: ["the", "most", "interesting", "book"] }
-];
+    // 熟語データ（プレースホルダー）
+    const idiomData = [
+   { id: 1215, japanese: "手間をかけて〜する", prefix: "We (", suffix: ") prepare for the school event.", parts: ["took", "the", "trouble", "to"] },
+    { id: 1216, japanese: "〜を楽しむ", prefix: "We should not (", suffix: ") the misfortunes of others.", parts: ["take", "delight", "in"] },
+    { id: 1217, japanese: "Aに電話をかける", prefix: "I'll (", suffix: ") tomorrow morning.", parts: ["give", "you", "a", "call"] },
+    { id: 1218, japanese: "〜を引き起こす", prefix: "The population decline will (", suffix: ") several problems.", parts: ["give", "rise", "to"] },
+    { id: 1219, japanese: "〜を産む", prefix: "My sister (", suffix: ") a baby girl this spring.", parts: ["gave", "birth", "to"] },
+    { id: 1220, japanese: "〜に注意を払う", prefix: "I (", suffix: ") what the others were saying.", parts: ["paid", "attention", "to"] },
+    { id: "1221-1", japanese: "〜を訪れる", prefix: "We (", suffix: ") the Hiroshima Peace Memorial Museum.", parts: ["paid", "a", "visit", "to"] },
+    { id: "1221-2", japanese: "〜を訪れる", prefix: "I (", suffix: ") in Wakayama last weekend.", parts: ["paid", "my", "grandparents", "a", "visit"] },
+    { id: 1222, japanese: "面目を失う", prefix: "If I fail, I will (", suffix: ").", parts: ["lose", "face"] },
+    { id: 1223, japanese: "かっとなる", prefix: "I apologize for (", suffix: ").", parts: ["losing", "my", "temper"] },
+    { id: 1224, japanese: "〜から目を離さない", prefix: "Can you (", suffix: ") for me?", parts: ["keep", "an", "eye", "on", "my", "bag"] },
+    { id: 1225, japanese: "規則正しい生活を送る", prefix: "Everyone in my family (", suffix: ").", parts: ["keeps", "regular", "hours"] },
+    { id: 1226, japanese: "成人になる", prefix: "When I (", suffix: "), I will be able to vote.", parts: ["come", "of", "age"] },
+    { id: 1227, japanese: "〜を受け入れる", prefix: "It took me a long time to (", suffix: ") my sister's death.", parts: ["come", "to", "terms", "with"] },
+    { id: 1228, japanese: "明るみに出る", prefix: "The leak of personal information (", suffix: ").", parts: ["came", "to", "light"] },
+    { id: 1229, japanese: "誕生する", prefix: "I want to know how the universe (", suffix: ").", parts: ["came", "into", "being"] },
+    { id: 1230, japanese: "ダイエット中だ", prefix: "No, thank you. I'm (", suffix: ").", parts: ["on", "a", "diet"] },
+    { id: 1231, japanese: "ストライキをする", prefix: "The workers (", suffix: ") for the first time in 20 years.", parts: ["went", "on", "strike"] },
+    { id: 1232, japanese: "実を結ぶ", prefix: "My efforts finally (", suffix: ").", parts: ["bore", "fruit"] },
+    { id: 1233, japanese: "〜を利用できる", prefix: "Students (", suffix: ") online resources for their research projects.", parts: ["have", "access", "to"] },
+    { id: 1234, japanese: "〜のあら探しをする", prefix: "He (", suffix: ") everything I do.", parts: ["finds", "fault", "with"] },
+    { id: 1235, japanese: "食器を洗う", prefix: "I'll (", suffix: ") after dinner.", parts: ["do", "the", "dishes"] },
+    { id: 1236, japanese: "締め切りに間に合わせる", prefix: "I'm working hard to (", suffix: ").", parts: ["meet", "the", "deadline"] },
+    { id: 1237, japanese: "〜に打ち勝つ", prefix: "My curiosity (", suffix: "), and I opened the box.", parts: ["got", "the", "better", "of", "me"] },
+    { id: 1238, japanese: "〜する危険を冒す", prefix: "If I don't study, I (", suffix: ") my exams.", parts: ["run", "the", "risk", "of", "failing"] },
+    { id: 1239, japanese: "遠回しに言う", prefix: "Don't (", suffix: "). Get to the point.", parts: ["beat", "around", "the", "bush"] },
+    { id: 1240, japanese: "〜をいらいらさせる", prefix: "Construction noise (", suffix: ").", parts: ["gets", "on", "my", "nerves"] },
+    { id: 1241, japanese: "ぱっと立ち上がる", prefix: "Ken (", suffix: ") when the teacher called his name.", parts: ["jumped", "to", "his", "feet"] },
+    { id: 1242, japanese: "約束を守る", prefix: "I trust you to (", suffix: ").", parts: ["keep", "your", "word"] },
+    { id: 1243, japanese: "約束を破る", prefix: "He always (", suffix: "), so I don't trust him.", parts: ["breaks", "his", "word"] },
+    { id: 1244, japanese: "Aを暗記する", prefix: "I have to (", suffix: ") for the math test.", parts: ["learn", "all", "these", "formulas", "by", "heart"] },
+    { id: 1245, japanese: "〜を実行する", prefix: "I want to (", suffix: ").", parts: ["put", "my", "idea(s)", "into", "practice"] },
+    { id: 1246, japanese: "ちょうど今", prefix: "I'm busy (", suffix: "). Can we talk later?", parts: ["right", "now"] },
+    { id: 1247, japanese: "すぐに", prefix: "Can you come (", suffix: ")?", parts: ["right", "away"] },
+    { id: 1248, japanese: "すぐに", prefix: "I have to leave (", suffix: ") to catch the bus.", parts: ["at", "once"] },
+    { id: 1249, japanese: "その場で", prefix: "I decided to join the team (", suffix: ").", parts: ["on", "the", "spot"] },
+    { id: 1250, japanese: "すぐに", prefix: "I'll be with you (", suffix: ").", parts: ["in", "a", "minute"] },
+    { id: 1251, japanese: "まもなく", prefix: "That law will be passed (", suffix: ").", parts: ["before", "long"] },
+    { id: 1252, japanese: "現在は", prefix: "(", suffix: "), the increase in social security costs is a big problem.", parts: ["At", "present"] },
+    { id: 1253, japanese: "過去に", prefix: "(", suffix: "), we used more plastic bags than we do today.", parts: ["In", "the", "past"] },
+    { id: 1254, japanese: "将来は", prefix: "This trend of online shopping will continue (", suffix: ").", parts: ["in", "the", "future"] },
+    { id: 1255, japanese: "当分の間", prefix: "Let's put this topic aside (", suffix: ").", parts: ["for", "the", "time", "being"] },
+    { id: 1256, japanese: "しばらくの間", prefix: "I haven't seen her (", suffix: ").", parts: ["for", "a", "while"] },
+    { id: 1257, japanese: "しばらくして", prefix: "(", suffix: "), I felt much better.", parts: ["After", "a", "while"] },
+    { id: 1258, japanese: "長い間", prefix: "I haven't been to the beach (", suffix: ").", parts: ["for", "ages"] },
+    { id: 1259, japanese: "永久に", prefix: "My father said he quit smoking (", suffix: ").", parts: ["for", "good"] },
+    { id: 1260, japanese: "これを最後に", prefix: "We need to settle this matter (", suffix: ").", parts: ["once", "and", "for", "all"] },
+    { id: 1261, japanese: "ずっと", prefix: "I realized that my keys were in the bag (", suffix: ").", parts: ["all", "along"] },
+    { id: 1262, japanese: "今までのところ", prefix: "(", suffix: "), five students have come together for this project.", parts: ["So", "far"] },
+    { id: 1263, japanese: "これまでのところ", prefix: "(", suffix: "), there is no information about the missing tourist.", parts: ["As", "yet"] },
+    { id: "1264-1", japanese: "時々", prefix: "We still text each other (", suffix: ").", parts: ["from", "time", "to", "time"] },
+    { id: "1264-2", japanese: "たまに", prefix: "Everyone makes mistakes (", suffix: ").", parts: ["once", "in", "a", "while"] },
+    { id: 1265, japanese: "断続的に", prefix: "It's been raining (", suffix: ") all day today.", parts: ["on", "and", "off"] },
+    { id: "1266-1", japanese: "一般的に", prefix: "(", suffix: "), summers in Japan are hot and humid.", parts: ["In", "general"] },
+    { id: "1266-2", japanese: "全体として", prefix: "(", suffix: "), I did well in my exams.", parts: ["On", "the", "whole"] },
+    { id: "1267-1", japanese: "概して", prefix: "(", suffix: "), I take the bus to school, but sometimes I walk.", parts: ["As", "a", "rule"] },
+    { id: "1267-2", japanese: "概して", prefix: "(", suffix: "), it rains a lot in June in Japan.", parts: ["By", "and", "large"] },
+    { id: 1268, japanese: "偶然に", prefix: "I met my old friend (", suffix: ") at the mall.", parts: ["by", "chance"] },
+    { id: 1269, japanese: "ひょっとして", prefix: "Are you Ms. Harris, (", suffix: ")?", parts: ["by", "any", "chance"] },
+    { id: 1270, japanese: "誤って", prefix: "I've deleted an important file (", suffix: ").", parts: ["by", "mistake"] },
+    { id: 1271, japanese: "人の手で", prefix: "These wooden bowls are crafted (", suffix: ").", parts: ["by", "hand"] },
+    { id: 1272, japanese: "生まれつき", prefix: "Cats are independent (", suffix: ").", parts: ["by", "nature"] },
+    { id: 1273, japanese: "生まれは", prefix: "Mari is Japanese (", suffix: "), but has lived in France for a long time.", parts: ["by", "birth"] },
+    { id: 1274, japanese: "海路で／空路で", prefix: "It is more environmentally friendly to ship goods (", suffix: ").", parts: ["by", "sea", "than", "by", "air"] },
+    { id: 1275, japanese: "徐々に", prefix: "(", suffix: "), our friendship grew stronger.", parts: ["By", "degrees"] },
+    { id: 1276, japanese: "ぜひとも", prefix: "(", suffix: "), please let us know what you think about the matter.", parts: ["By", "all", "means"] },
+    { id: 1277, japanese: "ところで", prefix: "(", suffix: "), have you read that book yet?", parts: ["By", "the", "way"] },
+    { id: 1278, japanese: "ついに", prefix: "(", suffix: "), the war ended.", parts: ["At", "last"] },
+    { id: 1279, japanese: "長々と", prefix: "He talked (", suffix: ") about his hobbies.", parts: ["at", "length"] },
+    { id: 1280, japanese: "最初は", prefix: "(", suffix: "), I could not follow their English, but gradually I began to understand what they were saying.", parts: ["At", "first"] },
+    { id: 1281, japanese: "直接", prefix: "I hope to see the Eiffel Tower (", suffix: ").", parts: ["first", "hand"] },
+    { id: 1282, japanese: "思いのままに", prefix: "The cat comes and goes (", suffix: ").", parts: ["at", "will"] },
+    { id: 1283, japanese: "どんな犠牲を払っても", prefix: "We must avoid war (", suffix: ").", parts: ["at", "all", "costs"] }
+    ];
 
 // ==========================================
-// 2. MAIN LOGIC
+// MAIN LOGIC
 // ==========================================
+    document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(event) { if (event.scale !== 1) { event.preventDefault(); } }, { passive: false });
 
-        document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
-        document.addEventListener('touchmove', function(event) { if (event.scale !== 1) { event.preventDefault(); } }, { passive: false });
+    class HybridQuiz {
+        constructor() {
+            this.mode = 'vocab'; 
+            this.wordsPerRound = 20; 
+            this.masterList = [];
+            this.vocabRounds = [];
+            this.currentRoundIndex = 0;
+            this.currentIdiomParts = [];
+            this.shuffledIdiomParts = [];
+            this.userAns = [];
+            this.isLocked = false;
+            this.questions = [];
+            this.currentIndex = 0;
+            this.missCount = 0;
+            this.missedWordsLog = [];
+            this.startTime = 0;
+            this.lapStartTime = 0; 
+            this.timerInterval = null;
+            this.currentStreak = 0;
+            this.maxStreak = 0; 
+            this.dueMistakes = [];
+            this.allMistakes = []; 
+            this.bookmarkedOnly = false; // WB Filter
 
-        class HybridQuiz {
-            constructor() {
-                this.mode = 'vocab'; 
-                this.wordsPerRound = 20; 
-                this.masterList = [];
-                this.vocabRounds = [];
-                this.currentRoundIndex = 0;
-                this.currentIdiomParts = [];
-                this.shuffledIdiomParts = [];
-                this.userAns = [];
-                this.isLocked = false;
-                this.questions = [];
-                this.currentIndex = 0;
-                this.missCount = 0;
-                this.missedWordsLog = [];
-                this.startTime = 0;
-                this.timerInterval = null;
-                this.currentStreak = 0;
-                this.maxStreak = 0; 
-                this.dueMistakes = [];
-                this.allMistakes = []; 
-                this.isPitStopMode = false;
-                this.isReverseMode = false;
-                this.isAutoAudio = localStorage.getItem('vocab_auto_audio') !== 'false';
-                this.generatedLicenseId = "perfect"; 
-
-                this.synth = window.speechSynthesis;
-                this.englishVoices = [];
-                if (this.synth) { this.synth.onvoiceschanged = () => this.loadVoices(); this.loadVoices(); }
-
-                const audioCheck = document.getElementById('audio-mode');
-                if(audioCheck) {
-                    audioCheck.checked = this.isAutoAudio;
-                    audioCheck.addEventListener('change', (e) => {
-                        this.isAutoAudio = e.target.checked;
-                        localStorage.setItem('vocab_auto_audio', this.isAutoAudio);
-                    });
-                }
-
-                this.parseData();
-                this.generateRounds();
-                this.initUI();
-                this.initSearch(); 
+            this.isPitStopMode = false;
+            this.isReverseMode = false;
+            this.isInstantMode = false; 
+            const instantCheck = document.getElementById('instant-mode');
+            if(instantCheck) {
+                instantCheck.addEventListener('change', (e) => {
+                    this.isInstantMode = e.target.checked;
+                });
             }
+            this.isAutoAudio = localStorage.getItem('vocab_auto_audio') !== 'false';
+            this.synth = window.speechSynthesis;
+            this.englishVoices = [];
+            if (this.synth) { this.synth.onvoiceschanged = () => this.loadVoices(); this.loadVoices(); }
 
-            loadVoices() {
-                if(!this.synth) return;
+            const audioCheck = document.getElementById('audio-mode');
+            if(audioCheck) {
+                audioCheck.checked = this.isAutoAudio;
+                audioCheck.addEventListener('change', (e) => {
+                    this.isAutoAudio = e.target.checked;
+                    localStorage.setItem('vocab_auto_audio', this.isAutoAudio);
+                });
+            }
+            
+            // WB Search & Filter Listeners
+            document.getElementById('wb-search').addEventListener('input', () => this.renderWordBook());
+            document.getElementById('wb-start').addEventListener('input', () => this.renderWordBook());
+            document.getElementById('wb-end').addEventListener('input', () => this.renderWordBook());
+
+            this.parseData();
+            this.generateRounds();
+            this.initUI();
+            this.initSearch(); 
+        }
+
+        loadVoices() {
+            if(!this.synth) return;
+            let attempts = 0;
+            const load = () => {
                 const allVoices = this.synth.getVoices();
                 this.englishVoices = allVoices.filter(v => v.lang.startsWith('en'));
-            }
-
-            parseData() {
-                if(!rawData.trim()) { this.masterList = []; return; }
-                const lines = rawData.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('[source'));
-                this.masterList = [];
-                lines.forEach(line => {
-                    let sep = -1;
-                    if (line.indexOf('\t') !== -1) sep = line.indexOf('\t');
-                    else if (line.indexOf(':') !== -1) sep = line.indexOf(':');
-                    else if (line.indexOf('：') !== -1) sep = line.indexOf('：');
-                    if (sep !== -1) {
-                        this.masterList.push({ w: line.substring(0, sep).trim(), m: line.substring(sep + 1).trim() });
-                    }
-                });
-            }
-
-            generateRounds() {
-                const wordCopy = [...this.masterList]; 
-                this.vocabRounds = [];
-                let roundNum = 1;
-                let currentWordIndex = 1; 
-                while (wordCopy.length > 0) {
-                    const chunk = wordCopy.splice(0, this.wordsPerRound);
-                    if (chunk.length > 0) {
-                        this.vocabRounds.push({ id: roundNum, name: `ROUND ${roundNum} (No.${currentWordIndex} - ${currentWordIndex + chunk.length - 1})`, words: chunk });
-                        roundNum++;
-                        currentWordIndex += chunk.length;
-                    }
-                }
-            }
-
-            initUI() {
-                const selector = document.getElementById('round-selector');
-                selector.innerHTML = '';
-                if(this.vocabRounds.length === 0) { selector.innerHTML = '<option>Load Data or Login</option>'; }
-                else {
-                    this.vocabRounds.forEach((round, index) => {
-                        const opt = document.createElement('option');
-                        opt.value = index;
-                        opt.text = round.name;
-                        selector.appendChild(opt);
-                    });
-                }
-                document.getElementById('idiom-count-display').innerText = idiomData.length;
-            }
-
-            initSearch() {
-                const input = document.getElementById('search-input');
-                const results = document.getElementById('search-results');
-                input.addEventListener('input', (e) => {
-                    const q = e.target.value.toLowerCase().trim();
-                    if (!q) { results.classList.add('hidden'); return; }
-                    const hits = this.masterList.map((item, index) => ({ ...item, i: index + 1 }))
-                        .filter(item => item.w.toLowerCase().includes(q) || item.m.toLowerCase().includes(q))
-                        .slice(0, 50);
-                    if (hits.length > 0) {
-                        results.classList.remove('hidden');
-                        results.innerHTML = hits.map(h => `
-                            <div onclick="quiz.speak('${h.w.replace(/'/g, "\\'")}')" class="p-3 border-b border-gray-800 active:bg-gray-800 cursor-pointer flex justify-between items-center group transition-colors">
-                                <div class="text-left"><div class="flex items-baseline gap-2"><span class="text-[10px] text-yellow-500 font-mono opacity-70">No.${h.i}</span><span class="text-red-400 font-bold text-xs f1-font">${h.w}</span></div><span class="text-gray-400 text-[10px] pl-1">${h.m}</span></div>
-                                <button class="text-[8px] bg-gray-700 text-white px-2 py-1 rounded-full uppercase">Listen</button>
-                            </div>`).join('');
-                    } else {
-                        results.classList.remove('hidden');
-                        results.innerHTML = `<div class="p-3 text-gray-500 text-[10px] text-center">NO DATA</div>`;
-                    }
-                });
-                document.addEventListener('click', (e) => { if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden'); });
-            }
-
-            createCustomRound() {
-                const s = parseInt(document.getElementById('custom-start').value) - 1;
-                const e = parseInt(document.getElementById('custom-end').value);
-                if(isNaN(s) || isNaN(e) || s < 0 || e > this.masterList.length || s >= e) { alert("Invalid Range"); return; }
-                const customWords = this.masterList.slice(s, e);
-                this.vocabRounds.unshift({ id: 'custom', name: `CUSTOM (No.${s+1}-${e})`, words: customWords });
-                this.initUI();
-                document.getElementById('round-selector').value = 0;
-            }
-            
-            setTireStrategy(count, type) {
-                this.wordsPerRound = count;
-                this.generateRounds();
-                this.initUI();
-                document.querySelectorAll('.tire-btn').forEach(b => b.classList.remove('active'));
-                document.getElementById(`tire-${type}`).classList.add('active');
-            }
-
-            switchMode(newMode) {
-                this.mode = newMode;
-                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                document.getElementById(`mode-${newMode}`).classList.add('active');
-                
-                if (newMode === 'vocab') {
-                    document.getElementById('vocab-settings').classList.remove('hidden');
-                    document.getElementById('vocab-tools').classList.remove('hidden');
-                    document.getElementById('idiom-settings').classList.add('hidden');
-                } else {
-                    document.getElementById('vocab-settings').classList.add('hidden');
-                    document.getElementById('vocab-tools').classList.add('hidden');
-                    document.getElementById('idiom-settings').classList.remove('hidden');
-                }
-            }
-
-            speak(text) {
-                if (!this.synth) return;
-                this.synth.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                if (this.englishVoices.length > 0) utterance.voice = this.englishVoices[0];
-                utterance.rate = 1.3; 
-                this.synth.speak(utterance);
-            }
-
-            start() {
-                this.currentIndex = 0;
-                this.missCount = 0;
-                this.missedWordsLog = [];
-                this.currentStreak = 0;
-                this.maxStreak = 0;
-                this.startTime = Date.now();
-                this.startTimer();
-                
-                document.getElementById('start-screen').classList.add('hidden');
-                document.getElementById('result-screen').classList.add('hidden');
-                document.getElementById('quiz-screen').classList.remove('hidden');
-                
-                document.getElementById('vocab-interface').classList.add('hidden');
-                document.getElementById('idiom-interface').classList.add('hidden');
-
-                if (this.mode === 'vocab') {
-                    this.startVocabMode();
-                } else {
-                    this.startIdiomMode();
-                }
-            }
-
-            startVocabMode() {
-                if(this.vocabRounds.length === 0) { alert("Data not loaded"); this.returnToGrid(); return; }
-                this.isPitStopMode = false;
-                document.getElementById('vocab-interface').classList.remove('hidden');
-                
-                const selector = document.getElementById('round-selector');
-                this.currentRoundIndex = parseInt(selector.value);
-                const selectedRound = this.vocabRounds[this.currentRoundIndex];
-                
-                this.isReverseMode = document.getElementById('reverse-mode').checked;
-                
-                document.getElementById('circuit-name').innerText = selectedRound.name + (this.isReverseMode ? " [REV]" : "");
-                document.getElementById('question-label').innerText = this.isReverseMode ? "TRANSLATE" : "MEANING";
-
-                this.questions = selectedRound.words.map(target => {
-                    const qText = this.isReverseMode ? target.m : target.w;
-                    const aText = this.isReverseMode ? target.w : target.m;
-                    const distractors = this.getDistractors(target, this.isReverseMode);
-                    const options = [aText, ...distractors].sort(() => Math.random() - 0.5);
-                    return { w: target.w, m: target.m, qText: qText, aText: aText, o: options };
-                });
-                this.questions.sort(() => Math.random() - 0.5);
-                this.showVocabQuestion();
-            }
-
-            startIdiomMode() {
-                document.getElementById('idiom-interface').classList.remove('hidden');
-                document.getElementById('circuit-name').innerText = "IDIOM SORTING";
-                
-                this.questions = [...idiomData].sort(() => Math.random() - 0.5);
-                this.showIdiomQuestion();
-            }
-            
-            getDistractors(targetWord, isReverse) {
-                const distractors = [];
-                let attempts = 0;
-                if (this.masterList.length < 4) return ["Option A", "Option B", "Option C"]; 
-
-                while (distractors.length < 3 && attempts < 100) {
-                    const r = this.masterList[Math.floor(Math.random() * this.masterList.length)];
-                    const candidate = isReverse ? r.w : r.m;
-                    const forbidden = isReverse ? targetWord.w : targetWord.m;
-                    if (candidate !== forbidden && !distractors.includes(candidate)) distractors.push(candidate);
+                if (this.englishVoices.length === 0 && attempts < 10) {
                     attempts++;
+                    setTimeout(load, 100);
+                } else {
+                    console.log(`[TTS] Engine Ready: ${this.englishVoices.length} voices found.`);
                 }
-                return distractors;
+            };
+            load();
+        }
+
+        speak(text) {
+            if (!this.synth || this.englishVoices.length === 0) {
+                console.warn("[TTS] Engine warming up...");
+                return; 
+            }
+            this.synth.cancel(); 
+            const utterance = new SpeechSynthesisUtterance(text);
+            const preferredVoice = this.englishVoices.find(v => v.name.includes('Google US English')) 
+                                || this.englishVoices.find(v => v.name.includes('Samantha'))
+                                || this.englishVoices.find(v => v.name.includes('Zira'))
+                                || this.englishVoices[0]; 
+            utterance.voice = preferredVoice;
+            utterance.rate = 1.1; 
+            utterance.pitch = 1.0;
+            this.synth.speak(utterance);
+        }
+
+        parseData() {
+            if(!rawData.trim()) { this.masterList = []; return; }
+            const lines = rawData.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('[source'));
+            this.masterList = [];
+            lines.forEach(line => {
+                let sep = -1;
+                if (line.indexOf('\t') !== -1) sep = line.indexOf('\t');
+                else if (line.indexOf(':') !== -1) sep = line.indexOf(':');
+                else if (line.indexOf('：') !== -1) sep = line.indexOf('：');
+                if (sep !== -1) {
+                    this.masterList.push({ w: line.substring(0, sep).trim(), m: line.substring(sep + 1).trim() });
+                }
+            });
+        }
+
+        generateRounds() {
+            const wordCopy = [...this.masterList]; 
+            this.vocabRounds = [];
+            let roundNum = 1;
+            let currentWordIndex = 1; 
+            while (wordCopy.length > 0) {
+                const chunk = wordCopy.splice(0, this.wordsPerRound);
+                if (chunk.length > 0) {
+                    this.vocabRounds.push({ id: roundNum, name: `ROUND ${roundNum} (No.${currentWordIndex} - ${currentWordIndex + chunk.length - 1})`, words: chunk });
+                    roundNum++;
+                    currentWordIndex += chunk.length;
+                }
+            }
+        }
+
+        initUI() {
+            const selector = document.getElementById('round-selector');
+            selector.innerHTML = '';
+            if(this.vocabRounds.length === 0) { selector.innerHTML = '<option>Load Data or Login</option>'; }
+            else {
+                this.vocabRounds.forEach((round, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.text = round.name;
+                    selector.appendChild(opt);
+                });
+            }
+            document.getElementById('idiom-count-display').innerText = idiomData.length;
+        }
+
+        initSearch() {
+            const input = document.getElementById('search-input');
+            const results = document.getElementById('search-results');
+            input.addEventListener('input', (e) => {
+                const q = e.target.value.toLowerCase().trim();
+                if (!q) { results.classList.add('hidden'); return; }
+                const hits = this.masterList.map((item, index) => ({ ...item, i: index + 1 }))
+                    .filter(item => item.w.toLowerCase().includes(q) || item.m.toLowerCase().includes(q))
+                    .slice(0, 50);
+                if (hits.length > 0) {
+                    results.classList.remove('hidden');
+                    results.innerHTML = hits.map(h => `
+                        <div onclick="quiz.speak('${h.w.replace(/'/g, "\\'")}')" class="p-3 border-b border-gray-800 active:bg-gray-800 cursor-pointer flex justify-between items-center group">
+                            <div class="text-left"><div class="flex items-baseline gap-2"><span class="text-[10px] text-yellow-500 font-mono opacity-70">No.${h.i}</span><span class="text-red-400 font-bold text-xs f1-font">${h.w}</span></div><span class="text-gray-400 text-[10px] pl-1">${h.m}</span></div>
+                            <button class="text-[8px] bg-gray-700 text-white px-2 py-1 rounded-full uppercase">Listen</button>
+                        </div>`).join('');
+                } else {
+                    results.classList.remove('hidden');
+                    results.innerHTML = `<div class="p-3 text-gray-500 text-[10px] text-center">NO DATA</div>`;
+                }
+            });
+            document.addEventListener('click', (e) => { if (!input.contains(e.target) && !results.contains(e.target)) results.classList.add('hidden'); });
+        }
+
+        createCustomRound() {
+            const s = parseInt(document.getElementById('custom-start').value) - 1;
+            const e = parseInt(document.getElementById('custom-end').value);
+            if(isNaN(s) || isNaN(e) || s < 0 || e > this.masterList.length || s >= e) { alert("Invalid Range"); return; }
+            const customWords = this.masterList.slice(s, e);
+            this.vocabRounds.unshift({ id: 'custom', name: `CUSTOM (No.${s+1}-${e})`, words: customWords });
+            this.initUI();
+            document.getElementById('round-selector').value = 0;
+        }
+        
+        setTireStrategy(count, type) {
+            this.wordsPerRound = count;
+            this.generateRounds();
+            this.initUI();
+            document.querySelectorAll('.tire-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tire-${type}`).classList.add('active');
+        }
+
+        switchMode(newMode) {
+            this.mode = newMode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`mode-${newMode}`).classList.add('active');
+            
+            if (newMode === 'vocab') {
+                document.getElementById('vocab-settings').classList.remove('hidden');
+                document.getElementById('vocab-tools').classList.remove('hidden');
+                document.getElementById('idiom-settings').classList.add('hidden');
+            } else {
+                document.getElementById('vocab-settings').classList.add('hidden');
+                document.getElementById('vocab-tools').classList.add('hidden');
+                document.getElementById('idiom-settings').classList.remove('hidden');
+            }
+        }
+
+        start() {
+            this.currentIndex = 0;
+            this.missCount = 0;
+            this.currentStreak = 0; 
+            this.maxStreak = 0;     
+            this.missedWordsLog = [];
+            this.startTime = Date.now();
+            this.startTimer();
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            
+            document.getElementById('vocab-interface').classList.add('hidden');
+            document.getElementById('idiom-interface').classList.add('hidden');
+
+            if (this.mode === 'vocab') {
+                this.startVocabMode();
+            } else {
+                this.startIdiomMode();
+            }
+        }
+
+        startVocabMode() {
+            if(this.vocabRounds.length === 0) { alert("Data not loaded"); this.returnToGrid(); return; }
+            this.isPitStopMode = false;
+            document.getElementById('vocab-interface').classList.remove('hidden');
+            
+            const selector = document.getElementById('round-selector');
+            this.currentRoundIndex = parseInt(selector.value);
+            const selectedRound = this.vocabRounds[this.currentRoundIndex];
+            
+            this.isReverseMode = document.getElementById('reverse-mode').checked;
+            
+            document.getElementById('circuit-name').innerText = selectedRound.name + (this.isReverseMode ? " [REV]" : "");
+            document.getElementById('question-label').innerText = this.isReverseMode ? "TRANSLATE" : "MEANING";
+
+            this.questions = selectedRound.words.map(target => {
+                const qText = this.isReverseMode ? target.m : target.w;
+                const aText = this.isReverseMode ? target.w : target.m;
+                const distractors = this.getDistractors(target, this.isReverseMode);
+                const options = [aText, ...distractors].sort(() => Math.random() - 0.5);
+                return { w: target.w, m: target.m, qText: qText, aText: aText, o: options };
+            });
+            this.questions.sort(() => Math.random() - 0.5);
+            this.showVocabQuestion();
+        }
+
+        startIdiomMode() {
+            if(idiomData.length === 0) { alert("No idiom data found."); this.returnToGrid(); return; }
+            document.getElementById('idiom-interface').classList.remove('hidden');
+            document.getElementById('circuit-name').innerText = "IDIOM SORTING";
+            
+            this.questions = [...idiomData].sort(() => Math.random() - 0.5);
+            this.showIdiomQuestion();
+        }
+        
+       getDistractors(targetWord, isReverse) {
+            const distractors = [];
+            if (this.masterList.length < 4) return ["Option A", "Option B", "Option C"]; 
+
+            const targetString = isReverse ? targetWord.w : targetWord.m;
+            const targetLen = targetString.length;
+
+            let smartPool = this.masterList.filter(item => {
+                const str = isReverse ? item.w : item.m;
+                if (str === targetString) return false;
+                return Math.abs(str.length - targetLen) <= 2;
+            });
+
+            if (smartPool.length < 10) {
+                smartPool = this.masterList.filter(item => {
+                    const str = isReverse ? item.w : item.m;
+                    return str !== targetString;
+                });
             }
 
-            showVocabQuestion() {
-                const q = this.questions[this.currentIndex];
-                document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
-                
-                const targetDisplay = document.getElementById('target-word');
-                targetDisplay.innerText = q.qText;
-                targetDisplay.className = (this.isReverseMode && q.qText.length > 8) 
-                    ? "f1-font text-3xl font-bold text-white tracking-wide break-words px-2"
-                    : "f1-font text-5xl font-bold text-white tracking-wide drop-shadow-lg break-words px-2";
+            let attempts = 0;
+            while (distractors.length < 3 && attempts < 100) {
+                const r = smartPool[Math.floor(Math.random() * smartPool.length)];
+                const candidate = isReverse ? r.w : r.m;
+                if (!distractors.includes(candidate)) {
+                    distractors.push(candidate);
+                }
+                attempts++;
+            }
+            while (distractors.length < 3) distractors.push("---");
+            return distractors;
+        }
 
-                document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
-                document.getElementById('feedback').innerText = '';
-                
-                const speakBtn = document.getElementById('speak-btn');
-                speakBtn.onclick = () => this.speak(q.w);
-                if (this.isAutoAudio && !this.isReverseMode) setTimeout(() => this.speak(q.w), 200);
+        showVocabQuestion() {
+            const q = this.questions[this.currentIndex];
+            document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
+            
+            const targetDisplay = document.getElementById('target-word');
+            targetDisplay.innerText = q.qText;
+            targetDisplay.className = (this.isReverseMode && q.qText.length > 8) 
+                ? "f1-font text-3xl font-bold text-white tracking-wide break-words px-2"
+                : "f1-font text-5xl font-bold text-white tracking-wide drop-shadow-lg break-words px-2";
 
-                const container = document.getElementById('options-container');
-                container.innerHTML = ''; 
-                
+            this.lapStartTime = Date.now(); 
+
+            document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
+            document.getElementById('feedback').innerText = '';
+            
+            const speakBtn = document.getElementById('speak-btn');
+            speakBtn.onclick = () => this.speak(q.w);
+            if (this.isAutoAudio && !this.isReverseMode) setTimeout(() => this.speak(q.w), 200);
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = ''; 
+            
+            const renderOptions = () => {
+                container.innerHTML = '';
+                q.o.forEach(opt => {
+                    const btn = document.createElement('button');
+                    const fontClass = this.isReverseMode ? "f1-font tracking-wider text-xl" : "text-lg";
+                    btn.className = `option-btn w-full text-left p-5 rounded-xl bg-white/5 border border-white/10 active:border-red-500 font-bold shadow-lg ${fontClass}`;
+                    btn.innerText = opt;
+                    btn.onclick = () => this.handleVocabAnswer(opt, q);
+                    container.appendChild(btn);
+                });
+            };
+
+            if (this.isInstantMode) {
+                renderOptions();
+            } else {
                 const revealBtn = document.createElement('button');
                 revealBtn.className = 'col-span-1 md:col-span-2 w-full h-24 bg-gray-900/50 border-2 border-dashed border-gray-600 rounded-xl text-gray-400 f1-font text-lg uppercase tracking-widest active:border-yellow-500 active:text-yellow-500 transition-all flex flex-col items-center justify-center gap-1 animate-pulse';
                 revealBtn.innerHTML = `<span>VISUALIZE MEANING</span><span class="text-[10px] text-gray-500 font-mono">TAP TO UNLOCK</span>`;
                 revealBtn.onclick = () => { 
-                    container.innerHTML = '';
-                    q.o.forEach(opt => {
-                        const btn = document.createElement('button');
-                        const fontClass = this.isReverseMode ? "f1-font tracking-wider text-xl" : "text-lg";
-                        btn.className = `option-btn w-full text-left p-5 rounded-xl bg-white/5 border border-white/10 active:border-red-500 font-bold shadow-lg ${fontClass}`;
-                        btn.innerText = opt;
-                        btn.onclick = () => this.handleVocabAnswer(opt, q);
-                        container.appendChild(btn);
-                    });
+                    renderOptions();
                 };
                 container.appendChild(revealBtn);
             }
+        }
 
-            handleVocabAnswer(selected, q) {
-                const feedback = document.getElementById('feedback');
-                const isCorrect = (selected === q.aText);
-                const streakDisp = document.getElementById('streak-display');
+        handleVocabAnswer(selected, q) {
+            const btns = document.querySelectorAll('.option-btn');
+            if (btns.length > 0 && btns[0].disabled) return;
+            btns.forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById('feedback');
+            const timeTaken = (Date.now() - this.lapStartTime) / 1000;
+            const isCorrect = (selected === q.aText);
+
+            if (window.handleSRSUpdate) {
+                window.handleSRSUpdate({ ...q, timeTaken: timeTaken }, isCorrect);
+            }
+
+            if (isCorrect) {
+                this.currentStreak++;
+                if (this.currentStreak > this.maxStreak) {
+                    this.maxStreak = this.currentStreak;
+                }
+
+                if(this.isReverseMode) this.speak(q.w);
                 
-                // ★ CRITICAL FIX: Use 'q' not 'questionObj'
-                if (window.handleSRSUpdate) window.handleSRSUpdate(q, isCorrect);
+                if (timeTaken < 1.2) {
+                    feedback.innerHTML = `<span class="text-[#39ff14] text-xs font-bold animate-pulse">🟣 PURPLE SECTOR (${timeTaken.toFixed(2)}s)</span>`;
+                } else if (timeTaken > 5.0) {
+                    feedback.innerHTML = `<span class="text-yellow-500 text-xs font-bold">🟡 SLOW (${timeTaken.toFixed(2)}s)</span>`;
+                }
 
-                if (isCorrect) {
-                    this.currentStreak++;
-                    if(this.currentStreak > this.maxStreak) this.maxStreak = this.currentStreak;
-                    
-                    if (this.currentStreak >= 2) { 
-                        streakDisp.innerText = `COMBO: ${this.currentStreak}`; 
-                        streakDisp.classList.remove('hidden'); 
-                    }
-
-                    if(this.isReverseMode) this.speak(q.w);
+                setTimeout(() => {
                     this.currentIndex++;
                     if (this.currentIndex < this.questions.length) this.showVocabQuestion();
                     else this.finish();
-                } else {
-                    this.currentStreak = 0;
-                    streakDisp.classList.add('hidden');
-                    this.missCount++;
-                    feedback.innerText = `WRONG: ${q.w} = ${q.m}`;
-                    feedback.className = "mt-4 text-center h-6 font-bold text-red-500 animate-pulse";
-                    if (!this.missedWordsLog.find(item => item.w === q.w)) this.missedWordsLog.push({ w: q.w, m: q.m });
-                    
-                    this.questions.push(q);
-                    const btns = document.querySelectorAll('.option-btn');
-                    btns.forEach(b => b.disabled = true);
-                    setTimeout(() => { this.currentIndex++; this.showVocabQuestion(); }, 1200);
-                }
-            }
+                }, 400); 
 
-            // --- IDIOM ENGINE ---
-            showIdiomQuestion() {
-                const data = this.questions[this.currentIndex];
-                document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1}/${this.questions.length}`;
-                document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
-                document.getElementById('feedback').innerHTML = "";
-                document.getElementById('idiom-next-btn').classList.add('hidden');
+            } else {
+                this.missCount++;
+                this.currentStreak = 0; 
                 
-                document.getElementById('idiom-japanese').innerText = data.japanese;
-                document.getElementById('idiom-prefix').innerText = data.prefix;
-                document.getElementById('idiom-suffix').innerText = data.suffix;
+                feedback.innerText = `WRONG: ${q.w} = ${q.m}`;
+                feedback.className = "mt-4 text-center h-6 font-bold text-red-500 animate-pulse";
+                if (!this.missedWordsLog.find(item => item.w === q.w)) this.missedWordsLog.push({ w: q.w, m: q.m });
                 
-                document.getElementById('answer-slot').classList.remove('correct-lane', 'wrong-lane');
-                document.getElementById('answer-slot').innerHTML = '';
-
-                this.userAns = [];
-                this.currentIdiomParts = [...data.parts];
-                this.shuffledIdiomParts = [...data.parts];
-                this.shuffle(this.shuffledIdiomParts);
-                
-                this.isLocked = false;
-                this.renderIdiomPool();
-            }
-
-            renderIdiomPool() {
-                const poolEl = document.getElementById('word-pool');
-                poolEl.innerHTML = '';
-                const remaining = this.getRemainingParts(this.shuffledIdiomParts, this.userAns);
-                
-                remaining.forEach((word) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'chip-btn chip-pool f1-font px-4 py-3 rounded-lg text-lg border border-gray-700 shadow-md active:bg-gray-700';
-                    btn.innerText = word;
-                    if(this.isLocked) btn.classList.add('locked');
-                    btn.onclick = () => { if(!this.isLocked) this.moveWordToSlot(word); };
-                    poolEl.appendChild(btn);
-                });
-            }
-
-            renderIdiomSlot() {
-                const slotEl = document.getElementById('answer-slot');
-                slotEl.innerHTML = '';
-                this.userAns.forEach((word, idx) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'chip-btn chip-slot f1-font px-3 py-2 rounded-md text-lg';
-                    btn.innerText = word;
-                    if(this.isLocked) btn.classList.add('locked');
-                    btn.onclick = () => { if(!this.isLocked) this.moveWordToPool(idx); };
-                    slotEl.appendChild(btn);
-                });
-                this.checkIdiomWin();
-            }
-
-            moveWordToSlot(word) {
-                this.userAns.push(word);
-                this.renderIdiomPool();
-                this.renderIdiomSlot();
-            }
-
-            moveWordToPool(idx) {
-                this.userAns.splice(idx, 1);
-                this.renderIdiomPool();
-                this.renderIdiomSlot();
-            }
-
-            getRemainingParts(allParts, usedParts) {
-                const pool = [...allParts];
-                const used = [...usedParts];
-                used.forEach(u => {
-                    const i = pool.indexOf(u);
-                    if (i > -1) pool.splice(i, 1);
-                });
-                return pool;
-            }
-
-            checkIdiomWin() {
-                const correctOrder = this.questions[this.currentIndex].parts;
-                const slotEl = document.getElementById('answer-slot');
-                if (this.userAns.length !== correctOrder.length) return;
-                const isCorrect = this.userAns.every((val, index) => val === correctOrder[index]);
-
-                if (isCorrect) {
-                    slotEl.classList.add('correct-lane');
-                    document.getElementById('feedback').innerHTML = "<span class='text-[#39ff14] text-lg'>✅ PURPLE SECTOR</span>";
-                    slotEl.querySelectorAll('.chip-btn').forEach(c => c.classList.add('chip-correct'));
-                    
-                    const nextBtn = document.getElementById('idiom-next-btn');
-                    nextBtn.classList.remove('hidden');
-                    nextBtn.onclick = () => {
-                        this.currentIndex++;
-                        if (this.currentIndex < this.questions.length) this.showIdiomQuestion();
-                        else this.finish();
-                    };
-                } else {
-                    this.missCount++;
-                    if (!this.missedWordsLog.find(item => item.w === "Idiom Order")) {
-                        this.missedWordsLog.push({ w: "Idiom Order Error", m: this.questions[this.currentIndex].japanese });
-                    }
-                    this.isLocked = true;
-                    document.getElementById('feedback').innerHTML = "<span class='text-[#e10600]'>⚠️ CRASHED! RESETTING...</span>";
-                    slotEl.classList.add('wrong-lane', 'animate-shake');
-                    setTimeout(() => {
-                        slotEl.classList.remove('animate-shake', 'wrong-lane');
-                        document.getElementById('feedback').innerHTML = "";
-                        this.userAns = [];
-                        this.isLocked = false;
-                        this.renderIdiomPool();
-                        this.renderIdiomSlot();
-                    }, 800);
-                }
-            }
-
-            // --- COMMON UTILS ---
-            startTimer() {
-                if (this.timerInterval) clearInterval(this.timerInterval);
-                this.timerInterval = setInterval(() => { document.getElementById('timer').innerText = ((Date.now() - this.startTime) / 1000).toFixed(2) + 's'; }, 50);
-            }
-
-            shuffle(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-            }
-
-            // ★ HELPER FOR PASS COPY
-            copyToClipboard(text, btnElement) {
-                navigator.clipboard.writeText(text).then(() => {
-                    btnElement.innerText = "AUTO-COPIED!";
-                    btnElement.classList.remove("bg-black", "text-white");
-                    btnElement.classList.add("bg-green-500", "text-black", "border", "border-green-400");
-                    setTimeout(() => {
-                        btnElement.innerText = "COPY LICENSE ID";
-                        btnElement.classList.add("bg-black", "text-white");
-                        btnElement.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
-                    }, 3000);
-                }).catch(err => {
-                    console.log("Auto-copy blocked:", err);
-                    btnElement.innerText = "COPY LICENSE ID";
-                });
-            }
-
-            finish() {
-                clearInterval(this.timerInterval);
-                document.getElementById('quiz-screen').classList.add('hidden');
-                document.getElementById('result-screen').classList.remove('hidden');
-                
-                const totalTime = (Date.now() - this.startTime) / 1000;
-                
-                // ★ FIXED ACCURACY FORMULA
-                const totalQs = this.questions.length;
-                let accuracy = (totalQs > 0) ? Math.max(0, ((totalQs - this.missCount) / totalQs) * 100) : 0;
-
-                const accDisplay = document.getElementById('accuracy-display');
-                accDisplay.innerText = `${accuracy.toFixed(1)}%`;
-                
-                document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
-                document.getElementById('result-title').innerText = "CHECKERED FLAG";
-                
-                const passArea = document.getElementById('pass-issue-area');
-                const failMsg = document.getElementById('fail-message');
-                const passBtn = document.getElementById('copy-pass-btn');
-
-                // ★ AUTO-COPY LOGIC
-                if (accuracy >= 90) {
-                    accDisplay.style.color = "#4ade80"; 
-                    passArea.classList.remove('hidden');
-                    failMsg.classList.add('hidden');
-                    
-                    const licenseId = `barcelona`;
-                    
-                    navigator.clipboard.writeText(licenseId).then(() => {
-                        passBtn.innerText = "AUTO-COPIED!";
-                        passBtn.classList.remove("bg-black", "text-white");
-                        passBtn.classList.add("bg-green-500", "text-black", "border", "border-green-400");
-                        setTimeout(() => {
-                            passBtn.innerText = "COPY LICENSE ID";
-                            passBtn.classList.add("bg-black", "text-white");
-                            passBtn.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
-                        }, 3000);
-                    }).catch(err => {
-                        console.log("Auto-copy blocked:", err);
-                        passBtn.innerText = "COPY LICENSE ID"; 
-                    });
-
-                    passBtn.onclick = () => this.copyToClipboard(licenseId, passBtn);
-
-                } else {
-                    accDisplay.style.color = "#ef4444"; 
-                    passArea.classList.add('hidden');
-                    failMsg.classList.remove('hidden');
-                }
-                
-                const review = document.getElementById('review-list');
-                let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Lap Analysis</div>`;
-                if (this.missedWordsLog.length > 0) { summaryHtml += this.missedWordsLog.map(item => `<div class="mb-2 text-sm p-2 bg-red-900/10 border border-red-900/30 rounded"><span class="font-bold text-white block">${item.w}</span><span class="text-gray-400">${item.m}</span></div>`).join(''); } else { summaryHtml += '<p class="text-green-500 font-bold">Perfect Lap. No Issues Detected.</p>'; }
-                review.innerHTML = summaryHtml;
-                
-                const nextBtn = document.getElementById('next-round-btn');
-                if (this.mode === 'vocab' && !this.isPitStopMode && this.currentRoundIndex + 1 < this.vocabRounds.length) {
-                    nextBtn.classList.remove('hidden');
-                    nextBtn.onclick = () => { document.getElementById('round-selector').value = this.currentRoundIndex + 1; this.start(); };
-                } else { nextBtn.classList.add('hidden'); }
-                
-                if (window.fetchSRSItems) window.fetchSRSItems();
-                if (window.incrementDailyLaps) window.incrementDailyLaps(); 
-
-                if (this.mode === 'vocab' && !this.isPitStopMode && window.recordLapTime && window.currentUser) {
-                    const roundName = this.vocabRounds[this.currentRoundIndex] ? this.vocabRounds[this.currentRoundIndex].name : "Custom";
-                    const correct = Math.max(0, totalQs - this.missCount);
-                    const scoreStr = `${correct}/${totalQs}`;
-                    window.recordLapTime(accuracy, totalTime, roundName, scoreStr, this.maxStreak);
-                }
-            }
-
-            returnToGrid() {
-                document.getElementById('result-screen').classList.add('hidden');
-                document.getElementById('start-screen').classList.remove('hidden');
-                if (window.fetchSRSItems) window.fetchSRSItems();
-            }
-            
-            updatePitStopButton(count) {
-                const text = document.getElementById('mistake-count-display');
-                const overlay = document.getElementById('pit-alert-overlay');
-                if (count > 0) {
-                    text.innerText = "CRITICAL"; text.classList.remove('text-green-500'); text.classList.add('text-red-500');
-                    overlay.classList.remove('hidden'); overlay.onclick = () => this.startPitStop();
-                } else {
-                    text.innerText = "OPTIMAL"; text.classList.add('text-green-500'); text.classList.remove('text-red-500');
-                    overlay.classList.add('hidden');
-                }
-            }
-            
-            startPitStop() {
-                if (!this.dueMistakes || this.dueMistakes.length === 0) return;
-                this.isPitStopMode = true; 
-                this.switchMode('vocab'); 
-                
-                this.questions = this.dueMistakes.map(item => {
-                    const word = item.word || item.w;
-                    const meaning = item.meaning || item.m;
-                    const targetWord = { w: word, m: meaning };
-                    
-                    const distractors = this.getDistractors(targetWord, false);
-                    const options = [targetWord.m, ...distractors].sort(() => Math.random() - 0.5);
-                    return { w: targetWord.w, m: targetWord.m, qText: targetWord.w, aText: targetWord.m, o: options, docId: item.id, interval: item.interval || 0, repetitions: item.repetitions || 0, easeFactor: item.easeFactor || 2.5 };
-                });
-                
-                this.questions.sort(() => Math.random() - 0.5);
-                this.currentIndex = 0; this.missCount = 0; this.missedWordsLog = [];
-                document.getElementById('circuit-name').innerText = "SRS PIT STOP";
-                document.getElementById('start-screen').classList.add('hidden');
-                document.getElementById('quiz-screen').classList.remove('hidden');
-                
-                document.getElementById('vocab-interface').classList.remove('hidden');
-                document.getElementById('idiom-interface').classList.add('hidden');
-
-                this.startTime = Date.now();
-                this.startTimer();
-                this.showVocabQuestion();
-            }
-            
-            openTelemetry() {
-                document.getElementById('start-screen').classList.add('hidden');
-                document.getElementById('telemetry-screen').classList.remove('hidden');
-                const mistakes = this.allMistakes || [];
-                const worstWords = [...mistakes].sort((a, b) => (a.easeFactor || 2.5) - (b.easeFactor || 2.5)).slice(0, 20);
-                const listContainer = document.getElementById('worst-words-list');
-                if (worstWords.length === 0) listContainer.innerHTML = `<div class="text-gray-500 text-xs italic">No degradation.</div>`;
-                else {
-                    listContainer.innerHTML = worstWords.map(item => `
-                        <div class="flex justify-between items-center bg-gray-900/40 p-3 rounded-lg border-l-2 border-red-500 mb-1">
-                            <span class="font-bold text-gray-200 text-xs f1-font">${item.word || item.w}</span>
-                            <span class="text-[10px] text-gray-500 font-mono">EF:${(item.easeFactor||2.5).toFixed(2)}</span>
-                        </div>`).join('');
-                }
-                const ctx = document.getElementById('weaknessRadarChart').getContext('2d');
-                if (this.telemetryChart) this.telemetryChart.destroy();
-                const buckets = [0, 0, 0, 0, 0];
-                mistakes.forEach(m => {
-                    const int = m.interval || 0;
-                    if (int <= 1) buckets[0]++; else if (int <= 6) buckets[1]++; else if (int <= 14) buckets[2]++; else if (int <= 30) buckets[3]++; else buckets[4]++;
-                });
-                this.telemetryChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: { labels: ['1d', '2-6d', '2w', '1mo', 'Master'], datasets: [{ data: buckets, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'], borderColor: '#333', borderWidth: 1 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } }
-                });
-            }
-            closeOverlay(id) {
-                document.getElementById(id).classList.add('hidden');
-                document.getElementById('start-screen').classList.remove('hidden');
+                this.questions.push(q);
+                setTimeout(() => { 
+                    this.currentIndex++; 
+                    this.showVocabQuestion(); 
+                }, 1500);
             }
         }
 
-        window.quiz = new HybridQuiz();
+        // --- IDIOM ENGINE ---
+        showIdiomQuestion() {
+            const data = this.questions[this.currentIndex];
+            document.getElementById('question-number').innerText = `LAP ${this.currentIndex + 1} / ${this.questions.length}`;
+            document.getElementById('progress-fill').style.width = `${(this.currentIndex / this.questions.length) * 100}%`;
+            document.getElementById('feedback').innerHTML = "";
+            document.getElementById('idiom-next-btn').classList.add('hidden');
+            
+            document.getElementById('idiom-japanese').innerText = data.japanese;
+            document.getElementById('idiom-prefix').innerText = data.prefix;
+            document.getElementById('idiom-suffix').innerText = data.suffix;
+            
+            document.getElementById('answer-slot').classList.remove('correct-lane', 'wrong-lane');
+            document.getElementById('answer-slot').innerHTML = '';
+
+            this.userAns = [];
+            this.currentIdiomParts = [...data.parts];
+            this.shuffledIdiomParts = [...data.parts];
+            this.shuffle(this.shuffledIdiomParts);
+            
+            this.isLocked = false;
+            this.renderIdiomPool();
+        }
+
+        renderIdiomPool() {
+            const poolEl = document.getElementById('word-pool');
+            poolEl.innerHTML = '';
+            const remaining = this.getRemainingParts(this.shuffledIdiomParts, this.userAns);
+            
+            remaining.forEach((word) => {
+                const btn = document.createElement('button');
+                btn.className = 'chip-btn chip-pool f1-font px-4 py-3 rounded-lg text-lg border border-gray-700 shadow-md active:bg-gray-700';
+                btn.innerText = word;
+                if(this.isLocked) btn.classList.add('locked');
+                btn.onclick = () => { if(!this.isLocked) this.moveWordToSlot(word); };
+                poolEl.appendChild(btn);
+            });
+        }
+
+        renderIdiomSlot() {
+            const slotEl = document.getElementById('answer-slot');
+            slotEl.innerHTML = '';
+            this.userAns.forEach((word, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'chip-btn chip-slot f1-font px-3 py-2 rounded-md text-lg';
+                btn.innerText = word;
+                if(this.isLocked) btn.classList.add('locked');
+                btn.onclick = () => { if(!this.isLocked) this.moveWordToPool(idx); };
+                slotEl.appendChild(btn);
+            });
+            this.checkIdiomWin();
+        }
+
+        moveWordToSlot(word) {
+            this.userAns.push(word);
+            this.renderIdiomPool();
+            this.renderIdiomSlot();
+        }
+
+        moveWordToPool(idx) {
+            this.userAns.splice(idx, 1);
+            this.renderIdiomPool();
+            this.renderIdiomSlot();
+        }
+
+        getRemainingParts(allParts, usedParts) {
+            const pool = [...allParts];
+            const used = [...usedParts];
+            used.forEach(u => {
+                const i = pool.indexOf(u);
+                if (i > -1) pool.splice(i, 1);
+            });
+            return pool;
+        }
+
+        checkIdiomWin() {
+            const correctOrder = this.questions[this.currentIndex].parts;
+            const slotEl = document.getElementById('answer-slot');
+            if (this.userAns.length !== correctOrder.length) return;
+            const isCorrect = this.userAns.every((val, index) => val === correctOrder[index]);
+
+            if (isCorrect) {
+                // Streak Update (Idiom)
+                this.currentStreak++;
+                if (this.currentStreak > this.maxStreak) this.maxStreak = this.currentStreak;
+
+                slotEl.classList.add('correct-lane');
+                document.getElementById('feedback').innerHTML = "<span class='text-[#39ff14] text-lg'>✅ PURPLE SECTOR</span>";
+                slotEl.querySelectorAll('.chip-btn').forEach(c => c.classList.add('chip-correct'));
+                
+                const nextBtn = document.getElementById('idiom-next-btn');
+                nextBtn.classList.remove('hidden');
+                nextBtn.onclick = () => {
+                    this.currentIndex++;
+                    if (this.currentIndex < this.questions.length) this.showIdiomQuestion();
+                    else this.finish();
+                };
+                
+                if (window.handleSRSUpdate) {
+                    const q = this.questions[this.currentIndex];
+                    window.handleSRSUpdate({ w: q.japanese, m: q.parts.join(' '), docId: 'idiom_' + q.id }, true);
+                }
+
+            } else {
+                this.missCount++;
+                this.currentStreak = 0; // Streak Reset
+
+                const q = this.questions[this.currentIndex];
+                if (!this.missedWordsLog.find(item => item.w === "Idiom Order")) {
+                    this.missedWordsLog.push({ w: "Idiom Order Error", m: q.japanese });
+                }
+                if (window.handleSRSUpdate) {
+                    window.handleSRSUpdate({ w: q.japanese, m: q.parts.join(' '), docId: 'idiom_' + q.id }, false);
+                }
+
+                this.isLocked = true;
+                document.getElementById('feedback').innerHTML = "<span class='text-[#e10600]'>⚠️ CRASHED! RESETTING...</span>";
+                slotEl.classList.add('wrong-lane', 'animate-shake');
+                setTimeout(() => {
+                    slotEl.classList.remove('animate-shake', 'wrong-lane');
+                    document.getElementById('feedback').innerHTML = "";
+                    this.userAns = [];
+                    this.isLocked = false;
+                    this.renderIdiomPool();
+                    this.renderIdiomSlot();
+                }, 800);
+            }
+        }
+
+        // --- COMMON UTILS ---
+        startTimer() {
+            if (this.timerInterval) clearInterval(this.timerInterval);
+            this.timerInterval = setInterval(() => { document.getElementById('timer').innerText = ((Date.now() - this.startTime) / 1000).toFixed(2) + 's'; }, 50);
+        }
+
+        shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                btn.innerText = "AUTO-COPIED!";
+                btn.classList.remove("bg-black", "text-white");
+                btn.classList.add("bg-green-500", "text-black", "border", "border-green-400");
+                setTimeout(() => {
+                    btn.innerText = "COPY LICENSE ID";
+                    btn.classList.add("bg-black", "text-white");
+                    btn.classList.remove("bg-green-500", "text-black", "border", "border-green-400");
+                }, 3000);
+            }).catch(err => {
+                console.log("Copy failed", err);
+                btn.innerText = "COPY LICENSE ID";
+            });
+        }
+
+        finish() {
+            clearInterval(this.timerInterval);
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            
+            const totalTime = (Date.now() - this.startTime) / 1000;
+            // 正答率計算
+            let totalQs = this.questions.length;
+            if (totalQs === 0) totalQs = 1; 
+            
+            // シンプルな正答率計算 (正解数/総数)
+            let correctCount = totalQs - this.missCount;
+            if (correctCount < 0) correctCount = 0;
+            let accuracy = (correctCount / totalQs) * 100;
+            
+            const accDisplay = document.getElementById('accuracy-display');
+            accDisplay.innerText = `${accuracy.toFixed(1)}%`;
+
+            if (window.saveRaceResult) {
+                let roundName = "UNKNOWN ROUND";
+                if (this.isPitStopMode) {
+                    roundName = "SRS PIT STOP";
+                } else if (this.mode === 'idiom') {
+                    roundName = "IDIOM CHALLENGE";
+                } else if (this.vocabRounds[this.currentRoundIndex]) {
+                    roundName = this.vocabRounds[this.currentRoundIndex].name;
+                }
+
+                const resultData = {
+                    accuracy: parseFloat(accuracy.toFixed(1)),
+                    round: roundName,
+                    score: `${correctCount}/${totalQs}`,
+                    streak: this.maxStreak,
+                    time: parseFloat(totalTime.toFixed(2))
+                };
+                window.saveRaceResult(resultData);
+            }
+            
+            const passArea = document.getElementById('pass-area');
+            const failMsg = document.getElementById('fail-msg');
+            const passBtn = document.getElementById('pass-btn');
+            const licenseId = `barcelona`;
+
+            if (accuracy >= 90) {
+                accDisplay.style.color = "#4ade80"; 
+                passArea.classList.remove('hidden');
+                failMsg.classList.add('hidden');
+                this.copyToClipboard(licenseId, passBtn);
+                passBtn.onclick = () => this.copyToClipboard(licenseId, passBtn);
+
+            } else {
+                accDisplay.style.color = "#ef4444"; 
+                passArea.classList.add('hidden');
+                failMsg.classList.remove('hidden');
+            }
+
+            document.getElementById('rank-text').innerText = `Time: ${totalTime.toFixed(2)}s | Misses: ${this.missCount}`;
+            document.getElementById('result-title').innerText = "CHECKERED FLAG";
+            
+            const review = document.getElementById('review-list');
+            let summaryHtml = `<div class="mb-4 font-bold text-white uppercase text-sm tracking-widest border-b border-gray-700 pb-2">Lap Analysis</div>`;
+            if (this.missedWordsLog.length > 0) { summaryHtml += this.missedWordsLog.map(item => `<div class="mb-2 text-sm p-2 bg-red-900/10 border border-red-900/30 rounded"><span class="font-bold text-white block">${item.w}</span><span class="text-gray-400">${item.m}</span></div>`).join(''); } else { summaryHtml += '<p class="text-green-500 font-bold">Perfect Lap. No Issues Detected.</p>'; }
+            review.innerHTML = summaryHtml;
+            
+            const nextBtn = document.getElementById('next-round-btn');
+            if (this.mode === 'vocab' && !this.isPitStopMode && this.currentRoundIndex + 1 < this.vocabRounds.length) {
+                nextBtn.classList.remove('hidden');
+                nextBtn.onclick = () => { document.getElementById('round-selector').value = this.currentRoundIndex + 1; this.start(); };
+            } else { nextBtn.classList.add('hidden'); }
+            
+            if (window.fetchSRSItems) window.fetchSRSItems();
+            if (window.incrementDailyLaps) window.incrementDailyLaps(); 
+        }
+
+        returnToGrid() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            if (window.fetchSRSItems) window.fetchSRSItems();
+        }
+        
+        updatePitStopButton(count) {
+            const text = document.getElementById('mistake-count-display');
+            const overlay = document.getElementById('pit-alert-overlay');
+            if (count > 0) {
+                text.innerText = "CRITICAL"; text.classList.remove('text-green-500'); text.classList.add('text-red-500');
+                overlay.classList.remove('hidden'); overlay.onclick = () => this.startPitStop();
+            } else {
+                text.innerText = "OPTIMAL"; text.classList.add('text-green-500'); text.classList.remove('text-red-500');
+                overlay.classList.add('hidden');
+            }
+        }
+        
+        startPitStop() {
+            if (!this.dueMistakes || this.dueMistakes.length === 0) return;
+            this.isPitStopMode = true; 
+            this.switchMode('vocab'); 
+            
+            this.questions = this.dueMistakes.map(item => {
+                const word = item.word || item.w;
+                const meaning = item.meaning || item.m;
+                const targetWord = { w: word, m: meaning };
+                
+                const distractors = this.getDistractors(targetWord, false);
+                const options = [targetWord.m, ...distractors].sort(() => Math.random() - 0.5);
+                return { w: targetWord.w, m: targetWord.m, qText: targetWord.w, aText: targetWord.m, o: options, docId: item.id, interval: item.interval || 0, repetitions: item.repetitions || 0, easeFactor: item.easeFactor || 2.5 };
+            });
+            
+            this.questions.sort(() => Math.random() - 0.5);
+            this.currentIndex = 0; this.missCount = 0; this.missedWordsLog = [];
+            this.currentStreak = 0; this.maxStreak = 0;
+            document.getElementById('circuit-name').innerText = "SRS PIT STOP";
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            
+            document.getElementById('vocab-interface').classList.remove('hidden');
+            document.getElementById('idiom-interface').classList.add('hidden');
+
+            this.startTime = Date.now();
+            this.startTimer();
+            this.showVocabQuestion();
+        }
+        
+        openTelemetry() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('telemetry-screen').classList.remove('hidden');
+            const mistakes = this.allMistakes || [];
+            const worstWords = [...mistakes].sort((a, b) => (a.easeFactor || 2.5) - (b.easeFactor || 2.5)).slice(0, 20);
+            const listContainer = document.getElementById('worst-words-list');
+            if (worstWords.length === 0) listContainer.innerHTML = `<div class="text-gray-500 text-xs italic">No degradation.</div>`;
+            else {
+                listContainer.innerHTML = worstWords.map(item => `
+                    <div class="flex justify-between items-center bg-gray-900/40 p-3 rounded-lg border-l-2 border-red-500 mb-1">
+                        <span class="font-bold text-gray-200 text-xs f1-font">${item.word || item.w}</span>
+                        <span class="text-[10px] text-gray-500 font-mono">EF:${(item.easeFactor||2.5).toFixed(2)}</span>
+                    </div>`).join('');
+            }
+            const ctx = document.getElementById('weaknessRadarChart').getContext('2d');
+            if (this.telemetryChart) this.telemetryChart.destroy();
+            const buckets = [0, 0, 0, 0, 0];
+            mistakes.forEach(m => {
+                const int = m.interval || 0;
+                if (int <= 1) buckets[0]++; else if (int <= 6) buckets[1]++; else if (int <= 14) buckets[2]++; else if (int <= 30) buckets[3]++; else buckets[4]++;
+            });
+            this.telemetryChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: ['1d', '2-6d', '2w', '1mo', 'Master'], datasets: [{ data: buckets, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'], borderColor: '#333', borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } }
+            });
+        }
+        closeOverlay(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // NEW FEATURE: WORD BOOK (DATA CENTER)
+        // ==========================================
+        openWordBook() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('wordbook-screen').classList.remove('hidden');
+            this.bookmarkedOnly = false;
+            document.getElementById('wb-filter-btn').innerText = "ALL";
+            this.renderWordBook();
+        }
+
+        toggleBookFilter() {
+            this.bookmarkedOnly = !this.bookmarkedOnly;
+            document.getElementById('wb-filter-btn').innerText = this.bookmarkedOnly ? "FLAGGED" : "ALL";
+            document.getElementById('wb-filter-btn').className = this.bookmarkedOnly 
+                ? "bg-red-600 text-white px-3 rounded border border-red-800 text-xs font-bold uppercase" 
+                : "bg-gray-800 text-white px-3 rounded border border-gray-600 text-xs font-bold uppercase";
+            this.renderWordBook();
+        }
+
+        renderWordBook() {
+            const listEl = document.getElementById('wb-list');
+            const query = document.getElementById('wb-search').value.toLowerCase().trim();
+            const startVal = parseInt(document.getElementById('wb-start').value);
+            const endVal = parseInt(document.getElementById('wb-end').value);
+
+            listEl.innerHTML = '';
+
+            let dataSrc = this.masterList.length > 0 ? this.masterList : (this.allMistakes || []);
+            
+            // Merge local master list with remote SRS data to get status
+            let merged = dataSrc.map((item, idx) => {
+                const srs = this.allMistakes.find(m => m.word === item.w || m.w === item.w);
+                return {
+                    w: item.w || item.word,
+                    m: item.m || item.meaning,
+                    id: idx,
+                    srs: srs || null
+                };
+            });
+
+            // Filter
+            const filtered = merged.filter(item => {
+                // 1. Text Search
+                const matchQ = item.w.toLowerCase().includes(query) || item.m.toLowerCase().includes(query);
+                
+                // 2. Bookmark Filter
+                const matchBook = this.bookmarkedOnly ? (item.srs && item.srs.bookmarked) : true;
+                
+                // 3. Range Filter
+                // item.id is 0-based index. User inputs 1-based index (e.g., No.1500)
+                const wordNum = item.id + 1;
+                const matchRange = (!startVal || wordNum >= startVal) && (!endVal || wordNum <= endVal);
+
+                return matchQ && matchBook && matchRange;
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div class="text-gray-500 text-xs text-center py-4">No components found.</div>`;
+                return;
+            }
+
+            // Render Limits (Performance)
+            // If range is specified, we might want to show more, but let's keep a safety limit for now.
+            // But if user specified "1500-1600", that's 100 items, so it fits perfectly.
+            const displayLimit = 100;
+            const viewData = filtered.slice(0, displayLimit);
+
+            viewData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-gray-900/50 p-3 rounded-lg border border-gray-800 hover:border-gray-600 transition-colors group";
+                
+                // Status Indicator
+                let statusColor = "bg-gray-700"; // No data
+                let statusText = "NEW";
+                if (item.srs) {
+                    if (item.srs.interval > 14) { statusColor = "bg-green-500"; statusText = "OK"; }
+                    else if (item.srs.interval > 3) { statusColor = "bg-yellow-500"; statusText = "WARN"; }
+                    else { statusColor = "bg-red-500"; statusText = "CRIT"; }
+                }
+
+                const isBookmarked = item.srs && item.srs.bookmarked;
+
+                // (前略... divを作成する部分)
+
+                // 特殊文字があっても壊れないようにエンコードして渡す
+                const safeW = encodeURIComponent(item.w);
+                const safeM = encodeURIComponent(item.m);
+                // エスケープ処理（念のため）
+                const displayW = item.w.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const displayM = item.m.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-1 h-8 ${statusColor} rounded-full shrink-0"></div>
+                        <div class="text-left overflow-hidden">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] text-yellow-500 font-mono opacity-70">No.${item.id + 1}</span>
+                                <span class="font-bold text-gray-200 text-sm f1-font truncate">${displayW}</span>
+                                <span class="text-[9px] text-gray-500 font-mono border border-gray-700 px-1 rounded">${statusText}</span>
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate">${displayM}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button class="text-gray-500 hover:text-cyan-400 p-2" onclick="quiz.speak(decodeURIComponent('${safeW}').replace(/'/g, '\\''))">🔊</button>
+                        <button class="${isBookmarked ? 'text-red-500' : 'text-gray-600 hover:text-gray-400'} p-2" onclick="window.toggleBookmark('${safeW}', '${safeM}')">
+                            ${isBookmarked ? '🚩' : '🏳️'}
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+            
+            if(filtered.length > displayLimit) {
+                 const more = document.createElement('div');
+                 more.className = "text-center text-xs text-gray-600 py-2";
+                 more.innerText = `...and ${filtered.length - displayLimit} more. Refine sector or search.`;
+                 listEl.appendChild(more);
+            }
+        }
+    }
+
+    window.quiz = new HybridQuiz();
     </script>
     
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-      import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
@@ -3046,27 +3349,57 @@ const idiomData = [
 
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
-      
-      const db = initializeFirestore(app, {
-          localCache: persistentLocalCache({
-              tabManager: persistentMultipleTabManager()
-          })
-      });
+      const db = getFirestore(app);
 
       const gateScreen = document.getElementById('gate-screen');
       const startScreen = document.getElementById('start-screen');
+      const loginStatus = document.getElementById('login-status');
       const gateLoginBtn = document.getElementById('gate-login-btn');
       const logoutBtn = document.getElementById('logout-btn');
-      const userNameSpan = document.getElementById('user-name');
-      const loginStatus = document.getElementById('login-status');
 
       window.currentUser = null;
+
+      // ---------------------------------------------------------
+      // 1. AUTH & PERSISTENCE
+      // ---------------------------------------------------------
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          console.log("Authorized Driver:", user.displayName);
+          window.currentUser = user;
+          loginStatus.innerText = "Syncing Telemetry Data...";
+          
+          try {
+              await window.fetchSRSItems();
+              
+              document.getElementById('user-name').innerText = user.displayName || "RACING DRIVER";
+              gateScreen.classList.add('hidden');
+              
+              const isQuizActive = !document.getElementById('quiz-screen').classList.contains('hidden');
+              const isResultActive = !document.getElementById('result-screen').classList.contains('hidden');
+              
+              if (!isQuizActive && !isResultActive) {
+                  startScreen.classList.remove('hidden');
+              }
+          } catch (error) {
+              console.error("Init Error:", error);
+              loginStatus.innerText = "Data Sync Failed. Retrying...";
+              setTimeout(() => location.reload(), 3000);
+          }
+
+        } else {
+          window.currentUser = null;
+          startScreen.classList.add('hidden');
+          gateScreen.classList.remove('hidden');
+          loginStatus.innerText = "System Standby...";
+          document.getElementById('user-name').innerText = "TEST DRIVER";
+        }
+      });
 
       gateLoginBtn.addEventListener('click', async () => {
         loginStatus.innerText = "Connecting to Paddock...";
         const provider = new GoogleAuthProvider();
         try { await signInWithPopup(auth, provider); } 
-        catch (error) { console.error(error); loginStatus.innerText = "Access Denied. Try Again."; }
+        catch (error) { console.error(error); loginStatus.innerText = "Access Denied."; }
       });
 
       logoutBtn.addEventListener('click', () => { 
@@ -3074,11 +3407,13 @@ const idiomData = [
             localStorage.removeItem(`srs_data_${window.currentUser.uid}`);
             localStorage.removeItem(`srs_time_${window.currentUser.uid}`);
         }
-        signOut(auth); 
+        signOut(auth).then(() => { alert("Signed Out Successfully"); location.reload(); }); 
       });
 
+      // ---------------------------------------------------------
+      // 2. DATA SYNC
+      // ---------------------------------------------------------
       const statsRef = doc(db, "stats", "daily_global");
-      
       onSnapshot(statsRef, (doc) => {
           if (doc.exists()) {
               const data = doc.data();
@@ -3091,44 +3426,6 @@ const idiomData = [
           }
       });
 
-      window.incrementDailyLaps = async () => {
-          const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
-          try {
-              await runTransaction(db, async (transaction) => {
-                  const sfDoc = await transaction.get(statsRef);
-                  if (!sfDoc.exists()) {
-                      transaction.set(statsRef, { date: todayStr, count: 1 });
-                  } else {
-                      const data = sfDoc.data();
-                      if (data.date !== todayStr) {
-                          transaction.update(statsRef, { date: todayStr, count: 1 });
-                      } else {
-                          transaction.update(statsRef, { count: data.count + 1 });
-                      }
-                  }
-              });
-          } catch (e) {
-              console.error("Stats Error:", e);
-          }
-      };
-
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            window.currentUser = user;
-            gateScreen.classList.add('hidden');
-            startScreen.classList.remove('hidden');
-            userNameSpan.textContent = user.displayName || "TEST DRIVER";
-            window.fetchSRSItems();
-        } else {
-            window.currentUser = null;
-            gateScreen.classList.remove('hidden');
-            startScreen.classList.add('hidden');
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.add('hidden');
-            loginStatus.innerText = "Waiting for connection...";
-        }
-      });
-
       window.fetchSRSItems = async () => {
         if (!window.currentUser) return;
         const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
@@ -3138,110 +3435,229 @@ const idiomData = [
         const now = Date.now();
         const lastFetch = parseInt(localStorage.getItem(TIME_KEY) || '0');
         let allItems = [];
+        let loadedFromCache = false;
 
+        // --- Sector 1: Cache Read ---
         if (now - lastFetch < CACHE_DURATION && localStorage.getItem(CACHE_KEY)) {
-            const rawData = JSON.parse(localStorage.getItem(CACHE_KEY));
-            allItems = rawData.map(item => ({
-                ...item,
-                nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) }, 
-                seconds: item.nextReviewSeconds 
-            }));
-        } else {
+            try {
+                const rawString = localStorage.getItem(CACHE_KEY);
+                if (rawString) {
+                    const rawData = JSON.parse(rawString);
+                    allItems = rawData.map(item => ({ 
+                        ...item, 
+                        nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) } 
+                    }));
+                    loadedFromCache = true;
+                }
+            } catch (e) { 
+                console.warn("Cache corrupted"); 
+                localStorage.removeItem(CACHE_KEY); 
+            }
+        }
+
+        // --- Sector 2: Server Fetch ---
+        if (!loadedFromCache) {
             try {
                 const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
                 const snapshot = await getDocs(mistakesRef);
+                allItems = [];
                 snapshot.forEach(doc => {
                     const d = doc.data();
-                    allItems.push({ 
-                        id: doc.id, 
-                        ...d,
-                        nextReviewSeconds: d.nextReview.seconds 
-                    });
+                    allItems.push({ id: doc.id, ...d, nextReviewSeconds: d.nextReview.seconds });
                 });
                 localStorage.setItem(CACHE_KEY, JSON.stringify(allItems));
                 localStorage.setItem(TIME_KEY, now.toString());
-                allItems = allItems.map(item => ({
-                    ...item,
-                    nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) }
-                }));
-            } catch (e) { console.error("Telemetry Error:", e); }
-        }
-
-        if (window.quiz.masterList.length === 0 && allItems.length > 0) {
-            window.quiz.masterList = allItems.map(i => ({ w: i.word || i.w, m: i.meaning || i.m }));
-            window.quiz.generateRounds();
-            window.quiz.initUI();
+                allItems = allItems.map(item => ({ ...item, nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) } }));
+            } catch (e) { console.error("Telemetry Error:", e); throw e; }
         }
 
         const dueItems = [];
         const nowTs = Date.now() / 1000;
         allItems.forEach(item => { if (item.nextReviewSeconds <= nowTs) dueItems.push(item); });
 
-        window.quiz.allMistakes = allItems;
-        window.quiz.dueMistakes = dueItems;
-        window.quiz.updatePitStopButton(dueItems.length);
+        if(window.quiz) {
+            window.quiz.allMistakes = allItems;
+            window.quiz.dueMistakes = dueItems;
+            window.quiz.updatePitStopButton(dueItems.length);
+        }
       };
 
+      // ---------------------------------------------------------
+      // 3. SRS ALGORITHM v2.0
+      // ---------------------------------------------------------
       window.handleSRSUpdate = async (questionObj, isCorrect) => {
         if (!window.currentUser) return;
+        
         const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
         const now = new Date();
-        const safeWordId = btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
-        const targetRef = questionObj.docId ? doc(mistakesRef, questionObj.docId) : doc(mistakesRef, safeWordId);
+        const safeWordId = questionObj.docId || btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
+        const targetRef = doc(mistakesRef, safeWordId);
         
-        const currentParams = { interval: questionObj.interval || 0, repetitions: questionObj.repetitions || 0, easeFactor: questionObj.easeFactor || 2.5 };
+        const currentParams = { 
+            interval: questionObj.interval || 0, 
+            repetitions: questionObj.repetitions || 0, 
+            easeFactor: questionObj.easeFactor || 2.5 
+        };
+        
+        const timeTaken = questionObj.timeTaken || 3.0;
         let nextInterval, nextRepetitions, nextEaseFactor;
 
         if (!isCorrect) {
-            nextRepetitions = 0; nextInterval = 1; nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2);
+            // CRASH
+            nextRepetitions = 0; 
+            nextInterval = 1; 
+            nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2); 
         } else {
+            // FINISH
             nextRepetitions = currentParams.repetitions + 1;
-            if (nextRepetitions === 1) nextInterval = 1; else if (nextRepetitions === 2) nextInterval = 6; else nextInterval = Math.round(currentParams.interval * currentParams.easeFactor);
-            nextEaseFactor = currentParams.easeFactor + 0.1;
+            
+            // Speed Factor
+            let easeBonus = 0;
+            if (timeTaken < 1.2) easeBonus = 0.3;      // Fast
+            else if (timeTaken > 5.0) easeBonus = -0.15; // Slow
+            else easeBonus = 0.1;                      // Normal
+
+            let rawEase = currentParams.easeFactor + easeBonus;
+            nextEaseFactor = Math.min(3.0, Math.max(1.3, rawEase));
+
+            if (nextRepetitions === 1) nextInterval = 1; 
+            else if (nextRepetitions === 2) nextInterval = 6; 
+            else nextInterval = Math.max(1, Math.round(currentParams.interval * nextEaseFactor));
+            
+            console.log(`[SRS] Time: ${timeTaken.toFixed(2)}s | EF: ${currentParams.easeFactor.toFixed(2)} -> ${nextEaseFactor.toFixed(2)}`);
         }
 
-        const nextDate = new Date(); nextDate.setDate(now.getDate() + nextInterval);
+        const nextDate = new Date(); 
+        nextDate.setDate(now.getDate() + nextInterval);
 
-        // Optimistic Update
-        const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
-        let cachedData = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
-        const targetIndex = cachedData.findIndex(i => i.word === questionObj.w);
-        const newItemData = { id: questionObj.docId || safeWordId, word: questionObj.w, meaning: questionObj.meaning || questionObj.m, nextReviewSeconds: Math.floor(nextDate.getTime() / 1000), interval: nextInterval, repetitions: nextRepetitions, easeFactor: nextEaseFactor };
-        if (targetIndex > -1) cachedData[targetIndex] = { ...cachedData[targetIndex], ...newItemData }; else cachedData.push(newItemData);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cachedData));
+        setDoc(targetRef, { 
+            word: questionObj.w, 
+            meaning: questionObj.meaning || questionObj.m, 
+            nextReview: Timestamp.fromDate(nextDate), 
+            interval: nextInterval, 
+            repetitions: nextRepetitions, 
+            easeFactor: nextEaseFactor, 
+            lastReviewed: Timestamp.fromDate(now) 
+        }, { merge: true })
+        .catch((e) => console.error("Telemetry Failed:", e));
+      };
+      
+      // ---------------------------------------------------------
+      // 4. LEADERBOARD RECORDER
+      // ---------------------------------------------------------
+      window.saveRaceResult = async (data) => {
+          if (!window.currentUser) return;
+          
+          try {
+              const leaderboardRef = collection(db, "leaderboard");
+              const now = new Date();
+              const dateStr = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+              
+              const payload = {
+                  uid: window.currentUser.uid,
+                  driver: window.currentUser.displayName || "Unknown Driver",
+                  date: dateStr,            
+                  timestamp: Timestamp.now(), 
+                  ...data                   
+              };
 
-        await setDoc(targetRef, { word: questionObj.w, meaning: questionObj.meaning || questionObj.m, nextReview: Timestamp.fromDate(nextDate), interval: nextInterval, repetitions: nextRepetitions, easeFactor: nextEaseFactor, lastReviewed: Timestamp.fromDate(now) }, { merge: true });
+              await addDoc(leaderboardRef, payload);
+              console.log("[RACE CONTROL] Result saved to Leaderboard:", payload);
+              
+          } catch (e) {
+              console.error("[RACE CONTROL] Failed to save result:", e);
+          }
       };
 
-      window.recordLapTime = async (acc, time, round, score, streak) => {
-        if (!window.currentUser) return;
-        try {
-            await addDoc(collection(db, "leaderboard"), {
-                uid: window.currentUser.uid,
-                driver: window.currentUser.displayName || "Unknown",
-                accuracy: parseFloat(acc.toFixed(1)),
-                time: parseFloat(time.toFixed(2)),
-                round: round,
-                score: score,
-                streak: streak || 0,
-                date: Timestamp.now()
-            });
-            console.log("Lap time sent to Leaderboard");
-        } catch(e) {
-            console.error("Leaderboard Error:", e);
-        }
-      };
+      // ---------------------------------------------------------
+      // 5. BOOKMARK TOGGLER (NEW!)
+      // ---------------------------------------------------------
+      // ---------------------------------------------------------
+      // 5. BOOKMARK TOGGLER (INSTANT RESPONSE Ver.)
+      // ---------------------------------------------------------
+      // ---------------------------------------------------------
+      // 5. BOOKMARK TOGGLER (FIXED VERSION)
+      // ---------------------------------------------------------
+      window.toggleBookmark = async (safeWord, safeMeaning) => {
+          if (!window.currentUser) { alert("Sign in required."); return; }
+          
+          const word = decodeURIComponent(safeWord);
+          const meaning = decodeURIComponent(safeMeaning);
 
+          let currentItem = window.quiz.allMistakes.find(m => m.word === word || m.w === word);
+          const isCurrentlyBookmarked = currentItem && currentItem.bookmarked === true;
+          const newValue = !isCurrentlyBookmarked;
+
+          // 1. Memory Update (UI即時反映)
+          if (currentItem) {
+              currentItem.bookmarked = newValue;
+          } else {
+              window.quiz.allMistakes.push({ 
+                   word: word, meaning: meaning, bookmarked: newValue, 
+                   interval: 0, repetitions: 0, easeFactor: 2.5,
+                   // 新規の場合はダミーの秒数を入れておく
+                   nextReviewSeconds: Date.now() / 1000 
+              });
+              // 新規作成したアイテムを再取得
+              currentItem = window.quiz.allMistakes.find(m => m.word === word);
+          }
+          window.quiz.renderWordBook(); 
+
+          // 2. Prepare Data for Firestore
+          const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
+          const docId = btoa(encodeURIComponent(word)).replace(/\//g, '_').replace(/\+/g, '-');
+          const targetRef = doc(mistakesRef, docId);
+
+          // ★ CRITICAL FIX: 関数を含まないクリーンなTimestampを生成する ★
+          let safeNextReview = Timestamp.now();
+          if (currentItem && currentItem.nextReviewSeconds) {
+              // キャッシュの秒数データから正規のTimestampを復元
+              safeNextReview = Timestamp.fromDate(new Date(currentItem.nextReviewSeconds * 1000));
+          }
+
+          try {
+              await setDoc(targetRef, {
+                  word: word,
+                  meaning: meaning,
+                  bookmarked: newValue,
+                  interval: currentItem ? (currentItem.interval || 0) : 0,
+                  repetitions: currentItem ? (currentItem.repetitions || 0) : 0,
+                  easeFactor: currentItem ? (currentItem.easeFactor || 2.5) : 2.5,
+                  // ここで修正済みの safeNextReview を使う
+                  nextReview: safeNextReview
+              }, { merge: true });
+              
+              console.log(`[Flag] Saved: ${word}`);
+
+          } catch(e) {
+              console.error("Bookmark Error:", e);
+              // ロールバック
+              if(currentItem) currentItem.bookmarked = !newValue;
+              window.quiz.renderWordBook();
+          }
+      };
+        
+      window.incrementDailyLaps = () => {
+          const statsRef = doc(db, "stats", "daily_global");
+          const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
+          
+          setDoc(statsRef, { 
+              count: increment(1), 
+              date: todayStr 
+          }, { merge: true });
+      };
     </script>
+    
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js')
-            .then(reg => console.log('Service Worker Registered!', reg.scope))
-            .catch(err => console.log('Service Worker Failed:', err));
-        });
-      }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('Service Worker Registered!', reg.scope))
+                    .catch(err => console.error('Service Worker Failed:', err));
+            });
+        }
     </script>
 </body>
 </html>
+
 
