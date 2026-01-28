@@ -53,7 +53,7 @@
             /* 1. 背景画像を画面いっぱいに広げ、隙間をゼロにする */
             background-image: 
                 linear-gradient(rgba(11, 14, 20, 0.6), rgba(11, 14, 20, 0.85)), 
-                url('image.png'); /* お前のファイル名を確認しろ */
+                url('verstappen.png'); /* お前のファイル名を確認しろ */
             
             /* 2. 隙間を埋めるための重要設定 */
             background-size: cover;      /* 画面を完全に覆うまで拡大 */
@@ -206,6 +206,24 @@
             opacity: 1;
             pointer-events: auto;  /* クリックを確実に受け付ける */
         }
+        /* チャンピオン・レッドの特別仕様 */
+        .btn-start-engine {
+            background: linear-gradient(135deg, #e10600 0%, #aa0500 100%) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 
+                0 4px 0 #800400, /* ボタンの厚み */
+                0 0 20px rgba(225, 6, 0, 0.5) !important; /* レッドブル・グロウ */
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+            transition: all 0.1s active;
+        }
+
+        .btn-start-engine:active {
+            transform: translateY(3px) !important; /* 押し込む感触 */
+            box-shadow: 
+                0 1px 0 #800400,
+                0 0 30px rgba(225, 6, 0, 0.8) !important; /* 押した時に発光が強まる */
+        }
     </style>
 </head>
 <body class="carbon-bg">
@@ -263,10 +281,9 @@
                 </button>
             </div>
 
-            <button onclick="quiz.start()" class="w-full f1-font bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white py-5 rounded-xl font-bold tracking-[0.2em] uppercase transition-all transform active:scale-95 shadow-lg shadow-red-900/30 text-xl border-b-4 border-red-900 mt-2">
-                Start Engine
-            </button>
-
+            <button onclick="quiz.start()" class="w-full f1-font btn-start-engine py-5 rounded-xl font-bold tracking-[0.2em] uppercase shadow-lg text-xl mt-2">
+    START ENGINE
+</button>
             <div class="text-center">
                 <p id="strategy-summary" class="text-[10px] text-gray-500 font-mono">Setup: Standard / Medium Tires</p>
             </div>
