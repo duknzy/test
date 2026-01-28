@@ -49,24 +49,37 @@
 
         .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
-                .carbon-bg {
-            /* 1. 背景画像を画面いっぱいに広げ、隙間をゼロにする */
+                        .carbon-bg {
+            /* 1. 写真を背景に設定（オーバーレイを少し調整） */
             background-image: 
                 linear-gradient(rgba(11, 14, 20, 0.6), rgba(11, 14, 20, 0.85)), 
-                url('verstappen.png'); /* お前のファイル名を確認しろ */
-            
-            /* 2. 隙間を埋めるための重要設定 */
-            background-size: cover;      /* 画面を完全に覆うまで拡大 */
-            background-position: center bottom; /* マックスの顔が中央〜下に来るように配置 */
-            background-repeat: no-repeat;
-            background-attachment: fixed; /* スクロールしても背景を動かさない */
+                url('verstappen.png'); /* ファイル名に注意 */
 
-            /* 3. 背景が足りない場合の保険（ボディ同色） */
-            background-color: var(--rb-navy);
+            /* 2. モバイルの隙間を殺すための重要設定 */
+            background-size: cover;
+            background-position: center 20%; /* 少し上に寄せて、下の空白を物理的に消す */
+            background-repeat: no-repeat;
+            
+            /* モバイルブラウザの高さ変動に対応 */
+            background-attachment: scroll; 
+            min-height: 100vh;
+            min-height: -webkit-fill-available; /* iOS Safari用 */
+            
+            background-color: #0b0e14; /* 万が一の時の暗黒色 */
             
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
         }
+
+        /* htmlとbodyも高さを固定し、隙間を許さない */
+        html, body {
+            height: 100vh;
+            height: -webkit-fill-available;
+            margin: 0;
+            padding: 0;
+            background-color: #0b0e14;
+        }
+
 
 
         #app {
