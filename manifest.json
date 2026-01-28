@@ -3,12 +3,12 @@
   "name": "RB Hybrid Learning System",
   "icons": [
     {
-      "src": "./icon.jpg",
+      "src": "./icon.png",
       "sizes": "192x192",
       "type": "image/jpeg"
     },
     {
-      "src": "./icon.jpg",
+      "src": "./icon.png",
       "sizes": "512x512",
       "type": "image/jpeg"
     }
