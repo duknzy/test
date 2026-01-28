@@ -42,10 +42,15 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
-            padding-top: max(1rem, env(safe-area-inset-top));
-            padding-bottom: max(1rem, env(safe-area-inset-bottom));
-        }
+        /* 元の body 設定を探して、こう書き換える */
+body {
+    /* パディングは削除（0にする） */
+    padding-top: 0;
+    padding-bottom: 0;
+    
+    /* 背景色が画像の上に被らないように透明、もしくは削除 */
+    background-color: transparent; 
+}
 
         .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
@@ -81,15 +86,22 @@
         
         }
         
-        #app {
-            height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 1rem;
-            position: relative;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
+        /* 元の #app 設定を探して、paddingの部分をこう書き換える */
+#app {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    /* ★ここが変更点：余白設定を body からここに移植 */
+    /* 上下の安全マージン + デザイン的な余白(1rem) を確保 */
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
         #app::-webkit-scrollbar { display: none; }
 
         .race-card {
