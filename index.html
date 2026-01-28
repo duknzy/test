@@ -27,12 +27,19 @@
             --neon-green: #39ff14;
         }
 
+        /* 1. 基本設定：重複を避けるため、ここにまとめる */
         html, body {
-            height: 100%;
+            height: 100dvh; /* 画面の高さいっぱい */
             width: 100%;
-            overflow: hidden; 
-            background-color: var(--rb-navy);
-            color: #e2e8f0;
+            margin: 0;
+            
+            /* ★重要：ここでパディングを「0」にする */
+            padding: 0;
+            
+            /* ★最重要：背景色を「透明」にする。これを黒(#0b0e14)にすると背景画像が見えなくなる */
+            background-color: transparent; 
+            
+            overflow: hidden;
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             touch-action: manipulation;
@@ -42,48 +49,28 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 元の body 設定を探して、こう書き換える */
-body {
-    /* パディングは削除（0にする） */
-    padding-top: 0;
-    padding-bottom: 0;
-    
-    /* 背景色が画像の上に被らないように透明、もしくは削除 */
-    background-color: transparent; 
-}
-
-        .f1-font { font-family: 'Chakra Petch', sans-serif; }
-
-                        /* 1. 画面全体の高さを、ブラウザのバーに関わらず「見える範囲」に固定する */
-        html, body {
-            height: 100dvh; /* 動的ビューポート単位を使用 */
-            margin: 0;
-            padding: 0;
-            background-color: #0b0e14;
-            overflow: hidden;
-        }
-
+        /* 2. 背景画像の設定：回転と位置調整 */
         .carbon-bg {
-            /* 2. 背景画像を「画面」に対して固定し、要素の高さに引きずられないようにする */
             background-image: 
-                /* グラデーションの順序を調整: 回転後に下が暗くなるように設定 */
+                /* グラデーション：回転後に「下」が暗くなるように調整済み */
                 linear-gradient(rgba(11, 14, 20, 0.9), rgba(11, 14, 20, 0.4)), 
                 url('verstappen.png');
             
             background-size: cover;
-            /* 修正: bottom基準だと切れる可能性があるため、centerに変更して全体をカバーさせる */
             background-position: center center; 
             background-repeat: no-repeat;
             
-            /* 3. 背景の固定設定 */
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;  /* 画面幅いっぱい */
-            height: 100dvh; /* 画面高さいっぱい */
+            width: 100vw;
+            height: 100dvh;
             z-index: -1; 
 
-        
+            /* ★ここが抜けていた！画像を180度回して、正しい向きにする */
+            transform: rotate(180deg);
+            transform-origin: center center;
+            scale: 1.02; /* 隙間対策の拡大 */
         }
         
         /* 元の #app 設定を探して、paddingの部分をこう書き換える */
