@@ -34,12 +34,13 @@
 
         .carbon-bg {
             background-image: 
-                linear-gradient(rgba(11, 14, 20, 0.9), rgba(11, 14, 20, 0.95)),
-                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+                /* 写真が見えやすいように、被せる黒フィルターの透明度を少し下げた (0.9 -> 0.7) */
+                linear-gradient(rgba(11, 14, 20, 0.7), rgba(11, 14, 20, 0.8)),
+                url('./verstappen.avif');  /* ← ここを画像ファイル名に変更 */
             background-attachment: fixed;
             background-size: cover;
+            background-position: center center; /* ← 写真の中心が常に真ん中に来るように追加 */
         }
-
         #app {
             height: 100%;
             padding: 2rem;
@@ -313,9 +314,9 @@
                                 <div>
                                     <p class="text-[10px] text-gray-400 uppercase tracking-widest mb-3">Tire Strategy (Questions per Lap)</p>
                                     <div class="flex justify-between gap-2">
-                                        <button onclick="quiz.setTireStrategy(10, 'soft')" id="tire-soft" class="tire-btn tire-soft flex-1 bg-black/40 text-gray-400 p-3 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider">🔴 Soft (10)</button>
-                                        <button onclick="quiz.setTireStrategy(20, 'medium')" id="tire-medium" class="tire-btn tire-medium active flex-1 bg-black/40 text-gray-400 p-3 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider">🟡 Medium (20)</button>
-                                        <button onclick="quiz.setTireStrategy(50, 'hard')" id="tire-hard" class="tire-btn tire-hard flex-1 bg-black/40 text-gray-400 p-3 rounded-lg border border-gray-600 f1-font text-xs font-bold uppercase tracking-wider">⚪ Hard (50)</button>
+                                        <button onclick="quiz.setTireStrategy(10, 'soft')" id="tire-soft" class="...">🔴 Soft (10)</button>
+                                        <button onclick="quiz.setTireStrategy(20, 'medium')" id="tire-medium" class="...">🟡 Medium (20)</button>
+                                        <button onclick="quiz.setTireStrategy(50, 'hard')" id="tire-hard" class="...">⚪ Hard (50)</button>
                                     </div>
                                 </div>
 
