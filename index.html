@@ -2883,222 +2883,179 @@ lest: ～しないように
     </script>
     
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-      import { 
-          getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, 
-          Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, increment,
-          initializeFirestore, persistentLocalCache, 
-      } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+  import { 
+      getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, 
+      Timestamp, orderBy, limit, runTransaction, onSnapshot, getDoc, increment,
+      initializeFirestore, persistentLocalCache, 
+  } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
-        authDomain: "english-test-8ad4a.firebaseapp.com",
-        projectId: "english-test-8ad4a",
-        storageBucket: "english-test-8ad4a.firebasestorage.app",
-        messagingSenderId: "998730699699",
-        appId: "1:998730699699:web:8245c7259cec7dd20231c6",
-        measurementId: "G-FC2LRFVFGF"
-      };
+  // Kaguraから同期した最新のFirebase設定 [cite: 375, 891]
+  const firebaseConfig = {
+    apiKey: "AIzaSyDg2EgiI-DMzmoT20zF4VJfm1MxtmhdJQQ",
+    authDomain: "english-test-8ad4a.firebaseapp.com",
+    projectId: "english-test-8ad4a",
+    storageBucket: "english-test-8ad4a.firebasestorage.app",
+    messagingSenderId: "998730699699",
+    appId: "1:998730699699:web:8245c7259cec7dd20231c6",
+    measurementId: "G-FC2LRFVFGF"
+  };
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: undefined })
+  });
+
+  window.currentUser = null;
+  let unsubscribeStats = null;
+  const statsRef = doc(db, "stats", "daily_global");
+
+  // 1. 認証とリアルタイム・テレメトリー同期 [cite: 379, 896, 897]
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      window.currentUser = user;
+      document.getElementById('login-status').innerText = "Syncing Telemetry Data..."; [cite: 379, 896]
       
-      const db = initializeFirestore(app, {
-          localCache: persistentLocalCache({
-              tabManager: undefined 
-          })
-      });
-
-      const gateScreen = document.getElementById('gate-screen');
-      const startScreen = document.getElementById('start-screen');
-      const loginStatus = document.getElementById('login-status');
-      const gateLoginBtn = document.getElementById('gate-login-btn');
-      
-      const logoutBtn = document.getElementById('logout-btn') || document.createElement('button'); 
-
-      window.currentUser = null;
-      let unsubscribeStats = null;
-      const statsRef = doc(db, "stats", "daily_global");
-
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          console.log("Authorized Driver:", user.displayName);
-          window.currentUser = user;
-          loginStatus.innerText = "Syncing Telemetry Data...";
-          
-          if (!unsubscribeStats) {
-              unsubscribeStats = onSnapshot(statsRef, (docSnap) => {
-                  if (docSnap.exists()) {
-                      const data = docSnap.data();
-                      const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
-                      if (data.date === todayStr) {
-                          const display = document.getElementById('daily-laps-display');
-                          if(display) display.innerText = data.count;
-                      } else {
-                          const display = document.getElementById('daily-laps-display');
-                          if(display) display.innerText = 0;
-                      }
-                  }
-              }, (error) => { console.warn("Stats sync warning:", error.message); });
-          }
-
-          try {
-              await window.fetchSRSItems();
-              const userNameDisplay = document.getElementById('user-name');
-              if(userNameDisplay) userNameDisplay.innerText = user.displayName || "RACING DRIVER";
-              gateScreen.classList.add('hidden');
-              const isQuizActive = !document.getElementById('quiz-screen').classList.contains('hidden');
-              const isResultActive = !document.getElementById('result-screen').classList.contains('hidden');
-              if (!isQuizActive && !isResultActive) { startScreen.classList.remove('hidden'); }
-          } catch (error) {
-              console.error("Init Error:", error);
-              loginStatus.innerText = "Data Sync Failed. Retrying...";
-              setTimeout(() => location.reload(), 3000);
-          }
-        } else {
-          if (unsubscribeStats) { unsubscribeStats(); unsubscribeStats = null; }
-          window.currentUser = null;
-          startScreen.classList.add('hidden');
-          gateScreen.classList.remove('hidden');
-          loginStatus.innerText = "System Standby...";
-          const userNameDisplay = document.getElementById('user-name');
-          if(userNameDisplay) userNameDisplay.innerText = "TEST DRIVER";
-        }
-      });
-
-      gateLoginBtn.addEventListener('click', async () => {
-        loginStatus.innerText = "Connecting to Paddock...";
-        const provider = new GoogleAuthProvider();
-        try { await signInWithPopup(auth, provider); } 
-        catch (error) { console.error(error); loginStatus.innerText = "Access Denied."; }
-      });
-
-      if(document.getElementById('logout-btn')) {
-          document.getElementById('logout-btn').addEventListener('click', () => { 
-            if(window.currentUser) { localStorage.removeItem(`srs_data_${window.currentUser.uid}`); localStorage.removeItem(`srs_time_${window.currentUser.uid}`); }
-            signOut(auth).then(() => { alert("Signed Out Successfully"); location.reload(); }); 
+      // グローバルラップ数のリアルタイム監視 [cite: 897]
+      if (!unsubscribeStats) {
+          unsubscribeStats = onSnapshot(statsRef, (docSnap) => {
+              if (docSnap.exists()) {
+                  const data = docSnap.data();
+                  const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0]; [cite: 380, 898]
+                  const display = document.getElementById('daily-laps-display');
+                  if (display) display.innerText = (data.date === todayStr) ? data.count : 0; [cite: 381, 899, 900]
+              }
           });
       }
 
-      window.fetchSRSItems = async () => {
-        if (!window.currentUser) return;
-        const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
-        const TIME_KEY = `srs_time_${window.currentUser.uid}`;
-        const CACHE_DURATION = 12 * 60 * 60 * 1000; 
-        const now = Date.now();
-        const lastFetch = parseInt(localStorage.getItem(TIME_KEY) || '0');
-        let allItems = [];
-        let loadedFromCache = false;
+      try {
+          await window.fetchSRSItems(); // 復習が必要な単語を取得 [cite: 383, 901]
+          const userNameDisplay = document.getElementById('user-name');
+          if(userNameDisplay) userNameDisplay.innerText = user.displayName || "RACING DRIVER"; [cite: 384, 902]
+          
+          document.getElementById('gate-screen').classList.add('hidden'); [cite: 384, 902]
+          if (document.getElementById('quiz-screen').classList.contains('hidden') && 
+              document.getElementById('result-screen').classList.contains('hidden')) {
+              document.getElementById('start-screen').classList.remove('hidden'); [cite: 385, 903]
+          }
+      } catch (error) {
+          console.error("Init Error:", error);
+          setTimeout(() => location.reload(), 3000); [cite: 386, 905]
+      }
+    } else {
+      if (unsubscribeStats) { unsubscribeStats(); unsubscribeStats = null; } [cite: 387, 906]
+      window.currentUser = null;
+      document.getElementById('start-screen').classList.add('hidden'); [cite: 388, 907]
+      document.getElementById('gate-screen').classList.remove('hidden'); [cite: 388, 907]
+    }
+  });
 
-        if (now - lastFetch < CACHE_DURATION && localStorage.getItem(CACHE_KEY)) {
-            try {
-                const rawString = localStorage.getItem(CACHE_KEY);
-                if (rawString) {
-                    const rawData = JSON.parse(rawString);
-                    allItems = rawData.map(item => ({ ...item, nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) } }));
-                    loadedFromCache = true;
-                }
-            } catch (e) { console.warn("Cache corrupted"); localStorage.removeItem(CACHE_KEY); }
-        }
+  // 2. SRSデータ取得（キャッシュ対応） [cite: 392, 912]
+  window.fetchSRSItems = async () => {
+    if (!window.currentUser) return;
+    const CACHE_KEY = `srs_data_${window.currentUser.uid}`; [cite: 393, 913]
+    const TIME_KEY = `srs_time_${window.currentUser.uid}`;
+    const snapshot = await getDocs(collection(db, "users", window.currentUser.uid, "mistakes")); [cite: 400, 920]
+    
+    let allItems = [];
+    snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        const nrSec = d.nextReview?.seconds || (Date.now()/1000); [cite: 400, 920]
+        allItems.push({ id: docSnap.id, ...d, nextReviewSeconds: nrSec }); [cite: 401, 921]
+    });
 
-        if (!loadedFromCache) {
-            try {
-                const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
-                const snapshot = await getDocs(mistakesRef);
-                allItems = [];
-                snapshot.forEach(docSnap => {
-                    const d = docSnap.data();
-                    const nrSec = d.nextReview && d.nextReview.seconds ? d.nextReview.seconds : (Date.now()/1000);
-                    allItems.push({ id: docSnap.id, ...d, nextReviewSeconds: nrSec });
-                });
-                localStorage.setItem(CACHE_KEY, JSON.stringify(allItems));
-                localStorage.setItem(TIME_KEY, now.toString());
-                allItems = allItems.map(item => ({ ...item, nextReview: { toDate: () => new Date(item.nextReviewSeconds * 1000) } }));
-            } catch (e) { console.error("Telemetry Error:", e); throw e; }
-        }
+    const nowTs = Date.now() / 1000;
+    const dueItems = allItems.filter(item => item.nextReviewSeconds <= nowTs && !item.id.toString().startsWith('idiom_')); [cite: 403, 924]
+    
+    if(window.quiz) {
+        window.quiz.allMistakes = allItems;
+        window.quiz.dueMistakes = dueItems;
+        window.quiz.updatePitStopButton(dueItems.length); [cite: 404, 925, 926]
+    }
+  };
 
-        const dueItems = [];
-        const nowTs = Date.now() / 1000;
-        allItems.forEach(item => { if (item.nextReviewSeconds <= nowTs && !item.id.toString().startsWith('idiom_')) { dueItems.push(item); } });
-        if(window.quiz) { window.quiz.allMistakes = allItems; window.quiz.dueMistakes = dueItems; window.quiz.updatePitStopButton(dueItems.length); }
-      };
+  // 3. SRSアルゴリズム v2.1 (PC/Mobile完全同期) [cite: 405, 926]
+  window.handleSRSUpdate = async (questionObj, isCorrect) => {
+    if (!window.currentUser) return;
+    const safeWordId = questionObj.docId || btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-'); [cite: 406, 928]
+    const targetRef = doc(db, "users", window.currentUser.uid, "mistakes", safeWordId); [cite: 407, 928]
+    
+    const current = { 
+        interval: questionObj.interval || 0, 
+        repetitions: questionObj.repetitions || 0, 
+        easeFactor: questionObj.easeFactor || 2.5 
+    }; [cite: 407, 929, 930, 931, 932]
 
-      window.handleSRSUpdate = async (questionObj, isCorrect) => {
-        if (!window.currentUser) return;
-        const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
-        const now = new Date();
-        const safeWordId = questionObj.docId || btoa(encodeURIComponent(questionObj.w)).replace(/\//g, '_').replace(/\+/g, '-');
-        const targetRef = doc(mistakesRef, safeWordId);
-        const currentParams = { interval: questionObj.interval || 0, repetitions: questionObj.repetitions || 0, easeFactor: questionObj.easeFactor || 2.5 };
-        const timeTaken = questionObj.timeTaken || 3.0;
-        let nextInterval, nextRepetitions, nextEaseFactor;
+    let nextInterval, nextRepetitions, nextEaseFactor;
+    const timeTaken = questionObj.timeTaken || 3.0;
 
-        if (!isCorrect) { nextRepetitions = 0; nextInterval = 1; nextEaseFactor = Math.max(1.3, currentParams.easeFactor - 0.2); } 
-        else { nextRepetitions = currentParams.repetitions + 1; let easeBonus = 0; if (timeTaken < 1.2) easeBonus = 0.3; else if (timeTaken > 5.0) easeBonus = -0.15; else easeBonus = 0.1; let rawEase = currentParams.easeFactor + easeBonus; nextEaseFactor = Math.min(3.0, Math.max(1.3, rawEase)); if (nextRepetitions === 1) nextInterval = 1; else if (nextRepetitions === 2) nextInterval = 6; else nextInterval = Math.max(1, Math.round(currentParams.interval * nextEaseFactor)); }
+    if (!isCorrect) {
+        nextRepetitions = 0; nextInterval = 1; [cite: 408, 933, 934]
+        nextEaseFactor = Math.max(1.3, current.easeFactor - 0.2); [cite: 409, 934]
+    } else {
+        nextRepetitions = current.repetitions + 1; [cite: 409, 934]
+        let easeBonus = (timeTaken < 1.2) ? 0.3 : (timeTaken > 5.0) ? -0.15 : 0.1; [cite: 410, 411, 936]
+        nextEaseFactor = Math.min(3.0, Math.max(1.3, current.easeFactor + easeBonus)); [cite: 411, 937]
+        nextInterval = (nextRepetitions === 1) ? 1 : (nextRepetitions === 2) ? 6 : Math.round(current.interval * nextEaseFactor); [cite: 412, 413, 938]
+    }
 
-        const nextDate = new Date(); nextDate.setDate(now.getDate() + nextInterval);
-        const nextReviewSeconds = Math.floor(nextDate.getTime() / 1000);
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + nextInterval); [cite: 413, 414, 939]
 
-        setDoc(targetRef, { word: questionObj.w, meaning: questionObj.meaning || questionObj.m, nextReview: Timestamp.fromDate(nextDate), interval: nextInterval, repetitions: nextRepetitions, easeFactor: nextEaseFactor, lastReviewed: Timestamp.fromDate(now) }, { merge: true })
-        .catch((e) => console.error("Telemetry Failed:", e));
+    await setDoc(targetRef, { 
+        word: questionObj.w, 
+        meaning: questionObj.meaning || questionObj.m, 
+        nextReview: Timestamp.fromDate(nextDate), 
+        interval: nextInterval, 
+        repetitions: nextRepetitions, 
+        easeFactor: nextEaseFactor,
+        lastReviewed: Timestamp.fromDate(new Date()) 
+    }, { merge: true }); [cite: 414, 941, 942]
+    
+    await window.fetchSRSItems(); // UIとボタンの状態を即時更新 [cite: 425, 954, 955]
+  };
 
-        try {
-            const CACHE_KEY = `srs_data_${window.currentUser.uid}`;
-            const rawString = localStorage.getItem(CACHE_KEY);
-            let localData = [];
-            if (rawString) localData = JSON.parse(rawString);
-            const index = localData.findIndex(item => item.word === questionObj.w || item.id === safeWordId);
-            const newItemState = { id: safeWordId, word: questionObj.w, meaning: questionObj.meaning || questionObj.m, nextReviewSeconds: nextReviewSeconds, interval: nextInterval, repetitions: nextRepetitions, easeFactor: nextEaseFactor };
-            if (index !== -1) { localData[index] = { ...localData[index], ...newItemState }; } else { localData.push(newItemState); }
-            localStorage.setItem(CACHE_KEY, JSON.stringify(localData));
-            if(window.quiz && window.quiz.allMistakes) {
-                const memIndex = window.quiz.allMistakes.findIndex(m => m.id === safeWordId || m.word === questionObj.w);
-                if(memIndex !== -1) { window.quiz.allMistakes[memIndex] = { ...window.quiz.allMistakes[memIndex], ...newItemState, nextReview: { toDate: () => new Date(nextReviewSeconds * 1000) } }; }
-                const nowTs = Date.now() / 1000;
-                window.quiz.dueMistakes = window.quiz.allMistakes.filter(item => item.nextReviewSeconds <= nowTs && !item.id.toString().startsWith('idiom_'));
-                window.quiz.updatePitStopButton(window.quiz.dueMistakes.length);
+  // 4. リーダーボード保存 [cite: 427, 957]
+  window.saveRaceResult = async (data) => {
+    if (!window.currentUser) return;
+    const dateStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }); [cite: 429, 959]
+    await addDoc(collection(db, "leaderboard"), {
+        uid: window.currentUser.uid,
+        driver: window.currentUser.displayName || "Unknown Driver",
+        date: dateStr,
+        timestamp: Timestamp.now(),
+        ...data
+    }); [cite: 430, 960, 961, 962]
+  };
+
+  // 5. デイリーラップ加算 (トランザクション) [cite: 442, 977]
+  window.incrementDailyLaps = async () => {
+    if (!window.currentUser) return;
+    const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0]; [cite: 443, 978]
+    try {
+        await runTransaction(db, async (transaction) => {
+            const sfDoc = await transaction.get(statsRef); [cite: 444, 979]
+            if (!sfDoc.exists() || sfDoc.data().date !== todayStr) {
+                transaction.set(statsRef, { count: 1, date: todayStr }); [cite: 444, 979, 981]
+            } else {
+                transaction.update(statsRef, { count: increment(1) }); [cite: 444, 980]
             }
-        } catch(e) { console.error("Cache Update Failed:", e); }
-      };
-      
-      window.saveRaceResult = async (data) => {
-          if (!window.currentUser) return;
-          try {
-              const leaderboardRef = collection(db, "leaderboard");
-              const now = new Date();
-              const dateStr = now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
-              const payload = { uid: window.currentUser.uid, driver: window.currentUser.displayName || "Unknown Driver", date: dateStr, timestamp: Timestamp.now(), ...data };
-              await addDoc(leaderboardRef, payload);
-          } catch (e) { console.error("[RACE CONTROL] Failed to save result:", e); }
-      };
+        });
+    } catch (e) { console.error("Lap Count Error:", e); } [cite: 445, 982]
+  };
 
-      window.toggleBookmark = async (safeWord, safeMeaning) => {
-          if (!window.currentUser) { alert("Sign in required."); return; }
-          const word = decodeURIComponent(safeWord); const meaning = decodeURIComponent(safeMeaning);
-          let currentItem = window.quiz.allMistakes.find(m => m.word === word || m.w === word);
-          const isCurrentlyBookmarked = currentItem && currentItem.bookmarked === true;
-          const newValue = !isCurrentlyBookmarked;
+  // ログインボタンのイベントリスナー [cite: 390, 909]
+  document.getElementById('gate-login-btn').addEventListener('click', async () => {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider); [cite: 390, 909]
+  });
 
-          if (currentItem) { currentItem.bookmarked = newValue; } 
-          else { window.quiz.allMistakes.push({ word: word, meaning: meaning, bookmarked: newValue, interval: 0, repetitions: 0, easeFactor: 2.5, nextReviewSeconds: Date.now() / 1000 }); currentItem = window.quiz.allMistakes.find(m => m.word === word); }
-          window.quiz.renderWordBook(); 
-
-          const mistakesRef = collection(db, "users", window.currentUser.uid, "mistakes");
-          const docId = btoa(encodeURIComponent(word)).replace(/\//g, '_').replace(/\+/g, '-');
-          const targetRef = doc(mistakesRef, docId);
-          let safeNextReview = Timestamp.now();
-          if (currentItem && currentItem.nextReviewSeconds) { safeNextReview = Timestamp.fromDate(new Date(currentItem.nextReviewSeconds * 1000)); }
-
-          try { await setDoc(targetRef, { word: word, meaning: meaning, bookmarked: newValue, interval: currentItem ? (currentItem.interval || 0) : 0, repetitions: currentItem ? (currentItem.repetitions || 0) : 0, easeFactor: currentItem ? (currentItem.easeFactor || 2.5) : 2.5, nextReview: safeNextReview }, { merge: true }); } catch(e) { if(currentItem) currentItem.bookmarked = !newValue; window.quiz.renderWordBook(); }
-      };
-
-      window.incrementDailyLaps = async () => {
-          if (!window.currentUser) return; 
-          const statsRef = doc(db, "stats", "daily_global");
-          const todayStr = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }).split(' ')[0];
-          try { await runTransaction(db, async (transaction) => { const sfDoc = await transaction.get(statsRef); if (!sfDoc.exists()) { transaction.set(statsRef, { count: 1, date: todayStr }); } else { const data = sfDoc.data(); if (data.date === todayStr) { transaction.update(statsRef, { count: increment(1) }); } else { transaction.set(statsRef, { count: 1, date: todayStr }); } } }); console.log("[Global Lap] Count Updated"); } catch (e) { console.error("Lap Count Error:", e); }
-      };
-    </script>
+  // ログアウト処理 [cite: 391, 910]
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    signOut(auth).then(() => location.reload()); [cite: 391, 910]
+  });
+</script>
 </body>
 </html>
