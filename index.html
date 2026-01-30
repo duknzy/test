@@ -66,11 +66,12 @@
             filter: brightness(0.6); 
         }
         
+        /* 修正案 */
         .carbon-bg {
-            background-image: none; /* 画像はオフにする */
-            background-color: var(--rb-navy); /* 動画読み込み前の保険 */
+            background-image: none;
+            background-color: transparent; /* ここを透明にする */
         }
-
+        
         #app {
             height: 100%;
             overflow-y: auto;
