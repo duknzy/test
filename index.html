@@ -50,39 +50,41 @@
         .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
         .carbon-bg {
-    background-color: var(--rb-navy); /* 背景のベースカラー */
-    position: relative;
-    min-height: 100vh;
-}
-
+                /* background-color: var(--rb-navy); ← この行を削除するかコメントアウトしろ。これが画像を隠している犯人だ */
+                position: relative;
+                min-height: 100vh;
+        }
 /* iPadのSafariバグを回避し、背景を完全に固定するエンジニアリング */
         .carbon-bg::before {
     content: "";
-    position: fixed; /* 画面に対して完全に固定 */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -1; /* コンテンツの背後に配置 */
+    
+    /* z-indexを -1 から 0 に変更。これでベースカラーの上に画像が来る */
+    z-index: 0; 
     
     background-image: 
         linear-gradient(rgba(11, 14, 20, 0.5), rgba(11, 14, 20, 0.6)),
-        url('./verstappen.avif'); /* 背景画像 */
+        url('./verstappen.avif'); /* ← 画像パスが正しいか確認しろよ */
     
-    background-size: cover; /* 画面いっぱいに広げる */
-    background-position: center center; /* 常に中央に配置 */
+    background-size: cover;
+    background-position: center center;
     background-repeat: no-repeat;
-    
-    /* iPadのスクロールによるズレを防止 */
     pointer-events: none;
-}
+}       
         #app {
-            height: 100%;
-            padding: 2rem;
-            position: relative;
-            /* PCではスクロールバーを表示しつつスタイリッシュに */
-            overflow-y: auto;
-        }
+    height: 100%;
+    padding: 2rem;
+    position: relative;
+    
+    /* これを追加。背景画像(z-index:0)よりも手前に表示させる */
+    z-index: 1; 
+    
+    overflow-y: auto;
+}
 
         /* PC用カスタムスクロールバー */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
