@@ -27,19 +27,19 @@
 
         /* --- iPhone PWA用の基本設定（スクロール制御等）は維持 --- */
         html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden; 
-            background-color: var(--rb-navy);
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            touch-action: manipulation;
-            overscroll-behavior: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+    height: 100%;
+    width: 100%;
+    overflow: hidden; 
+    background-color: transparent; /* 透明にする */
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
 
         body {
             padding-top: max(1rem, env(safe-area-inset-top));
@@ -51,16 +51,24 @@
         /* --- デザイン移植部分（PC版のデザインを適用） --- */
         
         /* 背景設定：動画ではなく、PC版同様の画像＋オーバーレイに変更 */
-        .carbon-bg {
-            background-image: 
-                linear-gradient(rgba(11, 14, 20, 0.5), rgba(11, 14, 20, 0.6)),
-                url('./verstappen.avif'); /* ※PC版と同じ画像ファイルが必要です */
-            background-attachment: fixed;
-            background-size: cover;
-            background-position: center center;
+#bg-video {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: -1;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1; /* 全ての要素の後ろに配置 */
+            object-fit: cover; /* 画面いっぱいにトリミング */
+            
+            /* 動画の上から少し暗くしたい場合はフィルタをかける */
+            filter: brightness(0.6); 
+        }
+        
+        .carbon-bg {
+            background-image: none; /* 画像はオフにする */
+            background-color: var(--rb-navy); /* 動画読み込み前の保険 */
         }
 
         #app {
@@ -213,6 +221,10 @@
 </head>
 <body class="carbon-bg text-sm md:text-base">
 
+<video autoplay muted loop playsinline poster="./verstappen.png" id="bg-video">
+        <source src="./NewF1.mp4" type="video/mp4">
+        </video>
+    
     <div id="app" class="w-full max-w-2xl mx-auto flex flex-col justify-center">
         
         <div id="gate-screen" class="race-card p-8 rounded-2xl shadow-2xl text-center relative overflow-hidden animate-slide-in my-auto">
