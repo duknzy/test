@@ -50,14 +50,32 @@
         .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
         .carbon-bg {
-            background-image: 
-                /* 写真が見えやすいように、被せる黒フィルターの透明度を少し下げた (0.9 -> 0.7) */
-                linear-gradient(rgba(11, 14, 20, 0.5), rgba(11, 14, 20, 0.6)),
-                url('./verstappen.avif');  /* ← ここを画像ファイル名に変更 */
-            background-attachment: fixed;
-            background-size: cover;
-            background-position: center center; /* ← 写真の中心が常に真ん中に来るように追加 */
-        }
+    background-color: var(--rb-navy); /* 背景のベースカラー */
+    position: relative;
+    min-height: 100vh;
+}
+
+/* iPadのSafariバグを回避し、背景を完全に固定するエンジニアリング */
+        .carbon-bg::before {
+    content: "";
+    position: fixed; /* 画面に対して完全に固定 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* コンテンツの背後に配置 */
+    
+    background-image: 
+        linear-gradient(rgba(11, 14, 20, 0.5), rgba(11, 14, 20, 0.6)),
+        url('./verstappen.avif'); /* 背景画像 */
+    
+    background-size: cover; /* 画面いっぱいに広げる */
+    background-position: center center; /* 常に中央に配置 */
+    background-repeat: no-repeat;
+    
+    /* iPadのスクロールによるズレを防止 */
+    pointer-events: none;
+}
         #app {
             height: 100%;
             padding: 2rem;
