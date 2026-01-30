@@ -1,47 +1,52 @@
-// バージョン名を変更して、更新をブラウザに通知する (v3 -> v4)
-const CACHE_NAME = 'rb-hybrid-v4-video-cache';
-
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'rb-hybrid-v3'; // バージョンを上げておく
+const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon.png',
-  './verstappen.png',
-  './f1.mp4'  // ★ここに追加した！これで動画がスマホに保存される
+  './icon.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching App Shell & Video');
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-});
-
-self.addEventListener('fetch', (event) => {
-  // FirestoreやAuthなどの動的通信はキャッシュしない
-  if (event.request.url.includes('firestore.googleapis.com') || 
-      event.request.url.includes('googleapis.com')) {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // キャッシュにあればそれを使う（通信量ゼロ）
-      return response || fetch(event.request);
-    })
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(keyList.map((key) => {
-        if (key !== CACHE_NAME) {
-          return caches.delete(key);
-        }
-      }));
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  const url = event.request.url;
+
+  // ★重要：Firestore, Google API, そして「.mp4」はService Workerを通さない（スルーさせる）
+  if (url.includes('firestore.googleapis.com') || 
+      url.includes('googleapis.com') ||
+      url.includes('google-analytics.com') ||
+      url.endsWith('.mp4')) { // ← ここに .mp4 除外を追加した
+    return;
+  }
+
+  event.respondWith(
+    caches.open(CACHE_NAME).then((cache) => {
+      return fetch(event.request)
+        .then((response) => {
+          if (response.status === 200) {
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        })
+        .catch(() => {
+          return cache.match(event.request);
+        });
     })
   );
 });
