@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rb-hybrid-v1';
+const CACHE_NAME = 'rb-hybrid-v2'; /* v1 -> v2 に変更 */
 const STATIC_ASSETS = [
   './',
   './index.html',
