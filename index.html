@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RB Hybrid GP">
@@ -15,6 +16,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' blob: data: gap:; style-src * 'self' 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * 'self' 'unsafe-inline' blob: data: gap:; connect-src 'self' * 'unsafe-inline' blob: data: gap:; frame-src * 'self' blob: data: gap:;">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
         
@@ -25,7 +28,6 @@
             --neon-green: #39ff14;
         }
 
-        /* --- iPhone PWA用の基本設定（スクロール制御等）は維持 --- */
         html, body {
     height: 100%;
     width: 100%;
@@ -48,10 +50,8 @@
 
         .f1-font { font-family: 'Chakra Petch', sans-serif; }
 
-        /* --- デザイン移植部分（PC版のデザインを適用） --- */
-        
-        /* 背景設定：動画ではなく、PC版同様の画像＋オーバーレイに変更 */
-#bg-video {
+        /* 背景動画の設定 */
+        #bg-video {
             position: fixed;
             right: 0;
             bottom: 0;
@@ -65,13 +65,13 @@
             /* 動画の上から少し暗くしたい場合はフィルタをかける */
             filter: brightness(0.6); 
         }
-        
-        /* 修正案 */
+
+        /* 既存の .carbon-bg から画像設定を消して、ただのコンテナにする */
         .carbon-bg {
-            background-image: none;
-            background-color: transparent; /* ここを透明にする */
+            background-image: none; /* 画像はオフにする */
+            background-color: var(--rb-navy); /* 動画読み込み前の保険 */
         }
-        
+
         #app {
             height: 100%;
             overflow-y: auto;
@@ -83,29 +83,25 @@
         }
         #app::-webkit-scrollbar { display: none; }
 
-        /* ★ここが重要：PC版のRace Cardデザインを移植★ */
         .race-card {
-            /* PC版の透明度(0.3)を採用 */
-            background: rgba(11, 14, 20, 0.3);
+            /* ★重要：ここを 0.85 から 0.4 に変更した。これで透ける。 */
+            background: rgba(23, 28, 38, 0.4);
             
-            /* PC版のぼかし具合(3px)を採用＝よりクリアに見える */
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
+            /* すりガラス効果 */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             
-            /* PC版の境界線スタイル */
             border: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border-top: 4px solid var(--f1-red);
         }
 
-        /* --- UI COMPONENTS (基本はモバイル版の動作を維持しつつ、見た目を調整) --- */
+        /* --- UI COMPONENTS --- */
         .option-btn { 
             transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
             touch-action: manipulation;
-            /* PC版のようなボーダー処理を追加 */
-            border: 1px solid rgba(255,255,255,0.1);
         }
         .option-btn:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.1); }
         .option-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -200,7 +196,7 @@
         
         .locked { opacity: 0.5; pointer-events: none; }
         
-        /* Word Book Scrollbar - PC版のスタイルを少し適用して見栄えを良くする */
+        /* Word Book Scrollbar */
         .wb-scroll::-webkit-scrollbar { width: 4px; }
         .wb-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
         .wb-scroll::-webkit-scrollbar-thumb { background: #e10600; border-radius: 4px; }
@@ -213,19 +209,19 @@
             overflow: hidden;
         }
         .strategy-panel.open {
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 80vh;      /* 画面の80%まで広がるように変更 */
+            overflow-y: auto;      /* 内容が溢れたらスクロールできるようにする */
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: auto;  /* クリックを確実に受け付ける */
         }
     </style>
 </head>
 <body class="carbon-bg text-sm md:text-base">
 
-<video autoplay muted loop playsinline poster="./verstappen.avif" id="bg-video">
+    <video autoplay muted loop playsinline poster="./verstappen.avif" id="bg-video">
         <source src="./NewF1.mp4" type="video/mp4">
-        </video>
-    
+    </video>
+
     <div id="app" class="w-full max-w-2xl mx-auto flex flex-col justify-center">
         
         <div id="gate-screen" class="race-card p-8 rounded-2xl shadow-2xl text-center relative overflow-hidden animate-slide-in my-auto">
