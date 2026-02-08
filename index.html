@@ -3005,6 +3005,7 @@ lest: ～しないように
             document.getElementById('circuit-name').innerText = selectedRound.name + modeTitle;
             document.getElementById('question-label').innerText = this.isReverseMode ? "TRANSLATE" : "MEANING";
 
+            // ★ UPDATE: Load Telemetry Data (SRS Stats) for Normal GP
             this.questions = selectedRound.words.map(target => {
                 const qText = this.isReverseMode ? target.m : target.w;
                 const aText = this.isReverseMode ? target.w : target.m;
@@ -3013,7 +3014,22 @@ lest: ～しないように
                     ? [] // No options needed for spelling
                     : [aText, ...this.getDistractors(target, this.isReverseMode)].sort(() => Math.random() - 0.5);
                 
-                return { w: target.w, m: target.m, qText: qText, aText: aText, o: options };
+                // ここで既存の成績データ(allMistakes)と照合する
+                // マッチしなければデフォルト値 (0, 0, 2.5) を使用
+                const existingData = (this.allMistakes || []).find(item => item.word === target.w || item.w === target.w) || {};
+
+                return { 
+                    w: target.w, 
+                    m: target.m, 
+                    qText: qText, 
+                    aText: aText, 
+                    o: options,
+                    // データを継承させる重要な修正
+                    docId: existingData.id || null, 
+                    interval: existingData.interval || 0,
+                    repetitions: existingData.repetitions || 0,
+                    easeFactor: existingData.easeFactor || 2.5
+                };
             });
             this.questions.sort(() => Math.random() - 0.5);
             this.showVocabQuestion();
